@@ -1,9 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit';
 import uiReducer from './slices/uiSlice';
+import personasReducer from './slices/personasSlice';
 
 export const store = configureStore({
   reducer: {
     ui: uiReducer,
+    personas: personasReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

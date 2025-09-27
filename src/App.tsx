@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { ThemeProvider } from '@mui/material/styles';
@@ -7,8 +6,8 @@ import { theme } from './theme';
 import DashboardLayout from './components/layout/DashboardLayout';
 
 // Pages
-import Dashboard from './pages/Dashboard/Dashboard';
-import PersonasPage from './pages/Personas/PersonasPage';
+import Dashboard from './pages/Dashboard/DashboardSimple';
+import PersonasPage from './pages/Personas/PersonasPageSimple';
 import ActividadesPage from './pages/Actividades/ActividadesPage';
 
 function App() {

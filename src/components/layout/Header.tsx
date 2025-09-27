@@ -18,7 +18,7 @@ interface HeaderProps {
   onSidebarToggle: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ sidebarOpen, onSidebarToggle }) => {
+const Header: React.FC<HeaderProps> = ({ onSidebarToggle }) => {
   return (
     <AppBar
       position="fixed"

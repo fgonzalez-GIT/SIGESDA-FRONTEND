@@ -18,7 +18,7 @@ import {
   Room,
   Settings,
   Group,
-  Family,
+  GroupAdd,
   CalendarToday,
   Receipt,
   Payment,
@@ -61,7 +61,7 @@ const menuItems = [
   },
   {
     title: 'Familiares',
-    icon: <Family />,
+    icon: <GroupAdd />,
     path: '/familiares',
     color: '#f57c00',
   },
