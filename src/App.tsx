@@ -11,6 +11,7 @@ import PersonasPage from './pages/Personas/PersonasPageSimple';
 import ActividadesPage from './pages/Actividades/ActividadesPage';
 import CuotasPage from './pages/Cuotas/CuotasPage';
 import RecibosPage from './pages/Recibos/RecibosPage';
+import FamiliaresPage from './pages/Familiares/FamiliaresPage';
 
 function App() {
   return (
@@ -29,7 +30,7 @@ function App() {
               <Route path="/recibos" element={<RecibosPage />} />
               <Route path="/configuracion" element={<div>Módulo Configuración - En desarrollo</div>} />
               <Route path="/participacion" element={<div>Módulo Participación - En desarrollo</div>} />
-              <Route path="/familiares" element={<div>Módulo Familiares - En desarrollo</div>} />
+              <Route path="/familiares" element={<FamiliaresPage />} />
               <Route path="/reservas" element={<div>Módulo Reservas - En desarrollo</div>} />
             </Routes>
           </DashboardLayout>

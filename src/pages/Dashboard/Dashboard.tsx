@@ -16,6 +16,7 @@ import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { fetchPersonas } from '../../store/slices/personasSlice';
 import { fetchActividades } from '../../store/slices/actividadesSlice';
 import { fetchAulas } from '../../store/slices/aulasSlice';
+import { fetchRelaciones } from '../../store/slices/familiaresSlice';
 import StatCard from '../../components/dashboard/StatCard';
 import QuickActions from '../../components/dashboard/QuickActions';
 import RecentActivity from '../../components/dashboard/RecentActivity';
@@ -27,6 +28,7 @@ const Dashboard: React.FC = () => {
   const { personas, loading: personasLoading } = useAppSelector((state) => state.personas);
   const { actividades, loading: actividadesLoading } = useAppSelector((state) => state.actividades);
   const { aulas, loading: aulasLoading } = useAppSelector((state) => state.aulas);
+  const { relaciones, loading: familiaresLoading } = useAppSelector((state) => state.familiares);
 
   const [dashboardError, setDashboardError] = useState<string | null>(null);
 
@@ -37,6 +39,7 @@ const Dashboard: React.FC = () => {
         dispatch(fetchPersonas());
         dispatch(fetchActividades({}));
         dispatch(fetchAulas({}));
+        dispatch(fetchRelaciones({}));
       } catch (error) {
         setDashboardError('Error al cargar los datos del dashboard');
       }
@@ -54,6 +57,8 @@ const Dashboard: React.FC = () => {
   const actividadesActivas = actividades.filter(a => a.estado === 'activo').length;
   const totalAulas = aulas.length;
   const aulasDisponibles = aulas.filter(a => a.estado === 'disponible').length;
+  const totalRelaciones = relaciones.length;
+  const personasConFamiliares = [...new Set(relaciones.map(r => r.personaId))].length;
 
   // Datos para gráficos
   const personasPorTipo = [
@@ -78,7 +83,7 @@ const Dashboard: React.FC = () => {
     { label: 'Jun', value: 67 },
   ];
 
-  const isLoading = personasLoading || actividadesLoading || aulasLoading;
+  const isLoading = personasLoading || actividadesLoading || aulasLoading || familiaresLoading;
 
   return (
     <Box>
@@ -222,7 +227,7 @@ const Dashboard: React.FC = () => {
                 📊 Estado del Proyecto
               </Typography>
               <Typography variant="body2">
-                **FASE 4 COMPLETADA**: Sistema financiero completo implementado. Gestión de cuotas y recibos con generación automática, impresión, estadísticas avanzadas y funcionalidades de cobranza.
+                **FASE 5 COMPLETADA**: Sistema de gestión de familiares implementado. Incluye gestión de relaciones familiares, árboles genealógicos, grupos familiares, descuentos automáticos e integración completa con el sistema de personas.
               </Typography>
             </Alert>
           </Box>

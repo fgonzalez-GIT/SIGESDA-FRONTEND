@@ -5,6 +5,7 @@ import actividadesReducer from './slices/actividadesSlice';
 import aulasReducer from './slices/aulasSlice';
 import cuotasReducer from './slices/cuotasSlice';
 import recibosReducer from './slices/recibosSlice';
+import familiaresReducer from './slices/familiaresSlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     aulas: aulasReducer,
     cuotas: cuotasReducer,
     recibos: recibosReducer,
+    familiares: familiaresReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
