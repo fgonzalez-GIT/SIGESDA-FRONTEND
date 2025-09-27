@@ -25,7 +25,7 @@ import {
   StepContent,
 } from '@mui/material';
 import {
-  Family,
+  FamilyRestroom,
   Person,
   Percent,
   ContactPhone,
@@ -254,7 +254,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
     >
       <DialogTitle>
         <Box display="flex" alignItems="center" gap={1}>
-          <Family color="primary" />
+          <FamilyRestroom color="primary" />
           <Typography variant="h6">
             {relacion ? 'Editar Relación Familiar' : 'Nueva Relación Familiar'}
           </Typography>
@@ -289,7 +289,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                       }}
                     />
                   )}
-                  disabled={loading || !!personaPreseleccionada}
+                  disabled={loading || !!personaSeleccionada}
                 />
 
                 {/* Familiar */}
@@ -309,7 +309,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                       required
                       InputProps={{
                         ...params.InputProps,
-                        startAdornment: <Family color="secondary" sx={{ mr: 1 }} />,
+                        startAdornment: <FamilyRestroom color="secondary" sx={{ mr: 1 }} />,
                       }}
                     />
                   )}

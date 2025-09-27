@@ -30,7 +30,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
-import { Delete, SelectAll, DeselectAll, Person } from '@mui/icons-material';
+import { Delete, SelectAll, ClearAll, Person } from '@mui/icons-material';
 import { useAppSelector } from '../../hooks/redux';
 import { GenerarCuotasRequest } from '../../store/slices/cuotasSlice';
 
@@ -333,7 +333,7 @@ export const GenerarCuotasMasivasDialog: React.FC<GenerarCuotasMasivasDialogProp
                   </Button>
                   <Button
                     size="small"
-                    startIcon={<DeselectAll />}
+                    startIcon={<ClearAll />}
                     onClick={handleDeselectAll}
                     disabled={loading}
                   >
