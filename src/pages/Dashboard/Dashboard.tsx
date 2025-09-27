@@ -222,7 +222,7 @@ const Dashboard: React.FC = () => {
                 📊 Estado del Proyecto
               </Typography>
               <Typography variant="body2">
-                **FASE 3 COMPLETADA**: Módulo de gestión financiera implementado. Sistema de cuotas con generación masiva, filtros avanzados y estadísticas de recaudación.
+                **FASE 4 COMPLETADA**: Sistema financiero completo implementado. Gestión de cuotas y recibos con generación automática, impresión, estadísticas avanzadas y funcionalidades de cobranza.
               </Typography>
             </Alert>
           </Box>
