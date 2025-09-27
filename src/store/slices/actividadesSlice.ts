@@ -1,0 +1,235 @@
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+
+export interface Actividad {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+  tipo: 'coro' | 'clase' | 'taller' | 'evento';
+  categoria: 'infantil' | 'juvenil' | 'adulto' | 'general';
+  docenteId?: number;
+  docenteNombre?: string;
+  aulaId?: number;
+  aulaNombre?: string;
+  diaSemana: 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' | 'sabado' | 'domingo';
+  horaInicio: string; // HH:mm format
+  horaFin: string; // HH:mm format
+  fechaInicio: string; // YYYY-MM-DD
+  fechaFin?: string; // YYYY-MM-DD
+  cupoMaximo?: number;
+  cupoActual: number;
+  estado: 'activo' | 'inactivo' | 'suspendido' | 'finalizado';
+  costo?: number;
+  observaciones?: string;
+  fechaCreacion: string;
+}
+
+interface ActividadesState {
+  actividades: Actividad[];
+  loading: boolean;
+  error: string | null;
+  selectedActividad: Actividad | null;
+  filters: {
+    tipo?: string;
+    categoria?: string;
+    estado?: string;
+    docenteId?: number;
+  };
+}
+
+const initialState: ActividadesState = {
+  actividades: [],
+  loading: false,
+  error: null,
+  selectedActividad: null,
+  filters: {},
+};
+
+export const fetchActividades = createAsyncThunk(
+  'actividades/fetchActividades',
+  async (params: any = {}, { rejectWithValue }) => {
+    try {
+      const response = await fetch('/api/actividades?' + new URLSearchParams(params || {}));
+      if (!response.ok) {
+        throw new Error('Error al cargar actividades');
+      }
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
+    }
+  }
+);
+
+export const createActividad = createAsyncThunk(
+  'actividades/createActividad',
+  async (actividad: Omit<Actividad, 'id' | 'cupoActual' | 'fechaCreacion'>, { rejectWithValue }) => {
+    try {
+      const response = await fetch('/api/actividades', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(actividad),
+      });
+      if (!response.ok) {
+        throw new Error('Error al crear actividad');
+      }
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
+    }
+  }
+);
+
+export const updateActividad = createAsyncThunk(
+  'actividades/updateActividad',
+  async (actividad: Actividad, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/actividades/${actividad.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(actividad),
+      });
+      if (!response.ok) {
+        throw new Error('Error al actualizar actividad');
+      }
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
+    }
+  }
+);
+
+export const deleteActividad = createAsyncThunk(
+  'actividades/deleteActividad',
+  async (id: number, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/actividades/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Error al eliminar actividad');
+      }
+      return id;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
+    }
+  }
+);
+
+export const duplicateActividad = createAsyncThunk(
+  'actividades/duplicateActividad',
+  async (id: number, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/actividades/${id}/duplicate`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        throw new Error('Error al duplicar actividad');
+      }
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
+    }
+  }
+);
+
+const actividadesSlice = createSlice({
+  name: 'actividades',
+  initialState,
+  reducers: {
+    setSelectedActividad: (state, action: PayloadAction<Actividad | null>) => {
+      state.selectedActividad = action.payload;
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
+    setFilters: (state, action: PayloadAction<Partial<ActividadesState['filters']>>) => {
+      state.filters = { ...state.filters, ...action.payload };
+    },
+    clearFilters: (state) => {
+      state.filters = {};
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // Fetch actividades
+      .addCase(fetchActividades.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchActividades.fulfilled, (state, action) => {
+        state.loading = false;
+        state.actividades = action.payload;
+      })
+      .addCase(fetchActividades.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Create actividad
+      .addCase(createActividad.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createActividad.fulfilled, (state, action) => {
+        state.loading = false;
+        state.actividades.push(action.payload);
+      })
+      .addCase(createActividad.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Update actividad
+      .addCase(updateActividad.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateActividad.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.actividades.findIndex(a => a.id === action.payload.id);
+        if (index !== -1) {
+          state.actividades[index] = action.payload;
+        }
+      })
+      .addCase(updateActividad.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Delete actividad
+      .addCase(deleteActividad.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteActividad.fulfilled, (state, action) => {
+        state.loading = false;
+        state.actividades = state.actividades.filter(a => a.id !== action.payload);
+      })
+      .addCase(deleteActividad.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Duplicate actividad
+      .addCase(duplicateActividad.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(duplicateActividad.fulfilled, (state, action) => {
+        state.loading = false;
+        state.actividades.push(action.payload);
+      })
+      .addCase(duplicateActividad.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+  },
+});
+
+export const {
+  setSelectedActividad,
+  clearError,
+  setFilters,
+  clearFilters
+} = actividadesSlice.actions;
+
+export default actividadesSlice.reducer;

@@ -93,14 +93,20 @@ const DashboardSimple: React.FC = () => {
 
         <Paper sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>
-            Próximas Funcionalidades
+            Estado de Funcionalidades
           </Typography>
           <Stack spacing={2}>
-            <Typography variant="body1">
+            <Typography variant="body1" color="success.main">
               ✅ Gestión de Personas (Completado)
             </Typography>
+            <Typography variant="body1" color="success.main">
+              ✅ Gestión de Actividades (Completado)
+            </Typography>
+            <Typography variant="body1" color="success.main">
+              ✅ Gestión de Aulas (Completado)
+            </Typography>
             <Typography variant="body1" color="text.secondary">
-              🔄 Gestión de Actividades (En desarrollo)
+              🔄 Dashboard Principal (En desarrollo)
             </Typography>
             <Typography variant="body1" color="text.secondary">
               ⏳ Gestión de Cuotas (Pendiente)
@@ -109,7 +115,7 @@ const DashboardSimple: React.FC = () => {
               ⏳ Gestión de Recibos (Pendiente)
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              ⏳ Dashboard con métricas (Pendiente)
+              ⏳ Gestión de Medios de Pago (Pendiente)
             </Typography>
           </Stack>
         </Paper>
@@ -119,10 +125,13 @@ const DashboardSimple: React.FC = () => {
             Estado del Sistema
           </Typography>
           <Typography variant="body1" color="success.main">
-            ✅ Sistema operativo - Módulo de Personas funcional
+            ✅ Sistema operativo - Módulos de Personas, Actividades y Aulas funcionales
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Última actualización: Hoy
+            **FASE 2 - Semana 3 COMPLETADA**: Módulos Actividades y Aulas implementados
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Próximo: Dashboard Principal con métricas (Semana 4)
           </Typography>
         </Paper>
       </Stack>

@@ -6,9 +6,10 @@ import { theme } from './theme';
 import DashboardLayout from './components/layout/DashboardLayout';
 
 // Pages
-import Dashboard from './pages/Dashboard/DashboardSimple';
+import Dashboard from './pages/Dashboard/Dashboard';
 import PersonasPage from './pages/Personas/PersonasPageSimple';
 import ActividadesPage from './pages/Actividades/ActividadesPage';
+import CuotasPage from './pages/Cuotas/CuotasPage';
 
 function App() {
   return (
@@ -22,7 +23,7 @@ function App() {
               <Route path="/personas" element={<PersonasPage />} />
               <Route path="/actividades" element={<ActividadesPage />} />
               <Route path="/aulas" element={<div>Módulo Aulas - En desarrollo</div>} />
-              <Route path="/cuotas" element={<div>Módulo Cuotas - En desarrollo</div>} />
+              <Route path="/cuotas" element={<CuotasPage />} />
               <Route path="/medios-pago" element={<div>Módulo Medios de Pago - En desarrollo</div>} />
               <Route path="/recibos" element={<div>Módulo Recibos - En desarrollo</div>} />
               <Route path="/configuracion" element={<div>Módulo Configuración - En desarrollo</div>} />
