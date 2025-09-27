@@ -1,0 +1,133 @@
+import React from 'react';
+import {
+  Box,
+  Typography,
+  Paper,
+  Stack,
+} from '@mui/material';
+
+const DashboardSimple: React.FC = () => {
+  return (
+    <Box>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Dashboard
+      </Typography>
+      <Typography variant="body1" color="text.secondary" gutterBottom>
+        Bienvenido al Sistema de Gestión de Socios y Actividades (SIGESDA)
+      </Typography>
+
+      <Stack spacing={3} sx={{ mt: 3 }}>
+        <Box display="flex" gap={3} flexWrap="wrap">
+          <Paper
+            sx={{
+              p: 3,
+              minWidth: 250,
+              flex: 1,
+              textAlign: 'center',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white'
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Total Socios
+            </Typography>
+            <Typography variant="h3">
+              150
+            </Typography>
+          </Paper>
+
+          <Paper
+            sx={{
+              p: 3,
+              minWidth: 250,
+              flex: 1,
+              textAlign: 'center',
+              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              color: 'white'
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Actividades Activas
+            </Typography>
+            <Typography variant="h3">
+              8
+            </Typography>
+          </Paper>
+
+          <Paper
+            sx={{
+              p: 3,
+              minWidth: 250,
+              flex: 1,
+              textAlign: 'center',
+              background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+              color: 'white'
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Docentes
+            </Typography>
+            <Typography variant="h3">
+              12
+            </Typography>
+          </Paper>
+
+          <Paper
+            sx={{
+              p: 3,
+              minWidth: 250,
+              flex: 1,
+              textAlign: 'center',
+              background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+              color: 'white'
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Estudiantes
+            </Typography>
+            <Typography variant="h3">
+              85
+            </Typography>
+          </Paper>
+        </Box>
+
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Próximas Funcionalidades
+          </Typography>
+          <Stack spacing={2}>
+            <Typography variant="body1">
+              ✅ Gestión de Personas (Completado)
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              🔄 Gestión de Actividades (En desarrollo)
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              ⏳ Gestión de Cuotas (Pendiente)
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              ⏳ Gestión de Recibos (Pendiente)
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              ⏳ Dashboard con métricas (Pendiente)
+            </Typography>
+          </Stack>
+        </Paper>
+
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Estado del Sistema
+          </Typography>
+          <Typography variant="body1" color="success.main">
+            ✅ Sistema operativo - Módulo de Personas funcional
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Última actualización: Hoy
+          </Typography>
+        </Paper>
+      </Stack>
+    </Box>
+  );
+};
+
+export default DashboardSimple;
