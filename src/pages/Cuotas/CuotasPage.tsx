@@ -46,6 +46,7 @@ import {
   Cancel,
   GetApp,
   Refresh,
+  ReceiptLong,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -464,15 +465,26 @@ const CuotasPage: React.FC = () => {
                   <TableCell align="right">
                     <Box display="flex" justifyContent="flex-end">
                       {cuota.estado === 'pendiente' && (
-                        <Tooltip title="Marcar como pagada">
-                          <IconButton
-                            size="small"
-                            onClick={() => handlePagarCuota(cuota.id)}
-                            color="success"
-                          >
-                            <Payment />
-                          </IconButton>
-                        </Tooltip>
+                        <>
+                          <Tooltip title="Generar recibo">
+                            <IconButton
+                              size="small"
+                              onClick={() => console.log('Generar recibo para cuota', cuota.id)}
+                              color="primary"
+                            >
+                              <ReceiptLong />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Marcar como pagada">
+                            <IconButton
+                              size="small"
+                              onClick={() => handlePagarCuota(cuota.id)}
+                              color="success"
+                            >
+                              <Payment />
+                            </IconButton>
+                          </Tooltip>
+                        </>
                       )}
                       <Tooltip title="Editar">
                         <IconButton
