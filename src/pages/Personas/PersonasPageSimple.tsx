@@ -24,6 +24,7 @@ import {
   Delete as DeleteIcon,
   Add as AddIcon,
   Visibility as ViewIcon,
+  FamilyRestroom as FamilyIcon,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import {
@@ -36,18 +37,24 @@ import {
   Persona,
 } from '../../store/slices/personasSlice';
 import { showNotification } from '../../store/slices/uiSlice';
+import { fetchPersonasConFamiliares } from '../../store/slices/familiaresSlice';
 import PersonaForm from '../../components/forms/PersonaFormSimple';
+import RelacionFamiliarDialog from '../../components/forms/RelacionFamiliarDialogSimple';
 
 const PersonasPageSimple: React.FC = () => {
   const dispatch = useAppDispatch();
   const { personas, loading, error, selectedPersona } = useAppSelector((state) => state.personas);
+  const { personasConFamiliares } = useAppSelector((state) => state.familiares);
 
   const [formOpen, setFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [personaToDelete, setPersonaToDelete] = useState<Persona | null>(null);
+  const [familiaresDialogOpen, setFamiliaresDialogOpen] = useState(false);
+  const [selectedPersonaFamiliares, setSelectedPersonaFamiliares] = useState<number | null>(null);
 
   useEffect(() => {
     dispatch(fetchPersonas());
+    dispatch(fetchPersonasConFamiliares());
   }, [dispatch]);
 
   useEffect(() => {
@@ -78,6 +85,15 @@ const PersonasPageSimple: React.FC = () => {
   const handleDeleteClick = (persona: Persona) => {
     setPersonaToDelete(persona);
     setDeleteDialogOpen(true);
+  };
+
+  const handleFamiliaresClick = (persona: Persona) => {
+    setSelectedPersonaFamiliares(persona.id);
+    setFamiliaresDialogOpen(true);
+  };
+
+  const getPersonaFamiliares = (personaId: number) => {
+    return personasConFamiliares.find(p => p.id === personaId);
   };
 
   const handleFormSubmit = async (data: Omit<Persona, 'id' | 'fechaIngreso'>) => {
@@ -169,6 +185,7 @@ const PersonasPageSimple: React.FC = () => {
               <TableCell>Teléfono</TableCell>
               <TableCell>Tipo</TableCell>
               <TableCell>Estado</TableCell>
+              <TableCell>Familiares</TableCell>
               <TableCell>Fecha Ingreso</TableCell>
               <TableCell align="center">Acciones</TableCell>
             </TableRow>
@@ -176,14 +193,14 @@ const PersonasPageSimple: React.FC = () => {
           <TableBody>
             {loading && (
               <TableRow>
-                <TableCell colSpan={9} align="center">
+                <TableCell colSpan={10} align="center">
                   Cargando...
                 </TableCell>
               </TableRow>
             )}
             {!loading && personas.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} align="center">
+                <TableCell colSpan={10} align="center">
                   No hay personas registradas
                 </TableCell>
               </TableRow>
@@ -204,6 +221,44 @@ const PersonasPageSimple: React.FC = () => {
                     variant={persona.estado === 'activo' ? 'filled' : 'outlined'}
                   />
                 </TableCell>
+                <TableCell>
+                  {(() => {
+                    const personaFamiliares = getPersonaFamiliares(persona.id);
+                    const cantidadFamiliares = personaFamiliares?.familiares.length || 0;
+                    const tieneGrupo = !!personaFamiliares?.grupoFamiliar;
+
+                    return (
+                      <Box display="flex" alignItems="center" gap={1}>
+                        {cantidadFamiliares > 0 ? (
+                          <Chip
+                            label={`${cantidadFamiliares} relaciones`}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            icon={<FamilyIcon />}
+                            onClick={() => handleFamiliaresClick(persona)}
+                            sx={{ cursor: 'pointer' }}
+                          />
+                        ) : (
+                          <Chip
+                            label="Sin familiares"
+                            size="small"
+                            color="default"
+                            variant="outlined"
+                          />
+                        )}
+                        {tieneGrupo && (
+                          <Chip
+                            label="Grupo"
+                            size="small"
+                            color="success"
+                            variant="filled"
+                          />
+                        )}
+                      </Box>
+                    );
+                  })()}
+                </TableCell>
                 <TableCell>{formatDate(persona.fechaIngreso)}</TableCell>
                 <TableCell>
                   <Stack direction="row" spacing={1}>
@@ -220,6 +275,14 @@ const PersonasPageSimple: React.FC = () => {
                       color="primary"
                     >
                       <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleFamiliaresClick(persona)}
+                      color="secondary"
+                      title="Gestionar familiares"
+                    >
+                      <FamilyIcon />
                     </IconButton>
                     <IconButton
                       size="small"
@@ -264,6 +327,20 @@ const PersonasPageSimple: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <RelacionFamiliarDialog
+        open={familiaresDialogOpen}
+        onClose={() => {
+          setFamiliaresDialogOpen(false);
+          setSelectedPersonaFamiliares(null);
+        }}
+        onSuccess={() => {
+          setFamiliaresDialogOpen(false);
+          setSelectedPersonaFamiliares(null);
+          dispatch(fetchPersonasConFamiliares());
+        }}
+        personaSeleccionada={selectedPersonaFamiliares || undefined}
+      />
     </Box>
   );
 };
