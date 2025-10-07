@@ -307,7 +307,7 @@ const ParticipacionPage: React.FC = () => {
 
       {/* Resumen rápido */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -319,7 +319,7 @@ const ParticipacionPage: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -331,7 +331,7 @@ const ParticipacionPage: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -343,7 +343,7 @@ const ParticipacionPage: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -384,7 +384,7 @@ const ParticipacionPage: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Autocomplete
                 options={personas}
                 getOptionLabel={(option) => `${option.nombre} ${option.apellido} (${option.tipo})`}
@@ -403,7 +403,7 @@ const ParticipacionPage: React.FC = () => {
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Autocomplete
                 options={actividades}
                 getOptionLabel={(option) => `${option.nombre} (${option.tipo})`}
@@ -422,7 +422,7 @@ const ParticipacionPage: React.FC = () => {
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <DatePicker
                 label="Fecha de Inscripción"
                 value={formData.fechaInscripcion || new Date()}
@@ -437,7 +437,7 @@ const ParticipacionPage: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth required>
                 <InputLabel>Estado</InputLabel>
                 <Select
@@ -457,7 +457,7 @@ const ParticipacionPage: React.FC = () => {
               </FormControl>
             </Grid>
             {formData.estado === 'Inactivo' && (
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <DatePicker
                   label="Fecha de Baja"
                   value={formData.fechaBaja || null}
@@ -472,7 +472,7 @@ const ParticipacionPage: React.FC = () => {
                 />
               </Grid>
             )}
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Observaciones"

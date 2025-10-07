@@ -191,7 +191,7 @@ const ConfiguracionPage: React.FC = () => {
 
       <Grid container spacing={3}>
         {/* Configuración General */}
-        <Grid item xs={12} lg={6}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <Card>
             <CardHeader
               avatar={<OrganizationIcon color="primary" />}
@@ -200,7 +200,7 @@ const ConfiguracionPage: React.FC = () => {
             />
             <CardContent>
               <Grid container spacing={2}>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <TextField
                     fullWidth
                     label="Nombre de la Organización"
@@ -211,7 +211,7 @@ const ConfiguracionPage: React.FC = () => {
                     })}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <TextField
                     fullWidth
                     label="Dirección"
@@ -222,7 +222,7 @@ const ConfiguracionPage: React.FC = () => {
                     })}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Teléfono"
@@ -233,7 +233,7 @@ const ConfiguracionPage: React.FC = () => {
                     })}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Email"
@@ -245,7 +245,7 @@ const ConfiguracionPage: React.FC = () => {
                     })}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <TextField
                     fullWidth
                     label="Sitio Web"
@@ -256,7 +256,7 @@ const ConfiguracionPage: React.FC = () => {
                     })}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Button
                     variant="contained"
                     startIcon={<SaveIcon />}
@@ -272,7 +272,7 @@ const ConfiguracionPage: React.FC = () => {
         </Grid>
 
         {/* Configuración de Pagos */}
-        <Grid item xs={12} lg={6}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <Card>
             <CardHeader
               avatar={<PaymentIcon color="primary" />}
@@ -281,7 +281,7 @@ const ConfiguracionPage: React.FC = () => {
             />
             <CardContent>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Monto por Defecto de Cuota"
@@ -294,7 +294,7 @@ const ConfiguracionPage: React.FC = () => {
                     InputProps={{ startAdornment: '$' }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Días de Vencimiento"
@@ -306,7 +306,7 @@ const ConfiguracionPage: React.FC = () => {
                     })}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Recargo por Vencimiento (%)"
@@ -318,7 +318,7 @@ const ConfiguracionPage: React.FC = () => {
                     })}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <FormControlLabel
                     control={
                       <Switch
@@ -332,7 +332,7 @@ const ConfiguracionPage: React.FC = () => {
                     label="Permitir pagos parciales"
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <FormControlLabel
                     control={
                       <Switch
@@ -346,7 +346,7 @@ const ConfiguracionPage: React.FC = () => {
                     label="Requiere comprobante para transferencias"
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Button
                     variant="contained"
                     startIcon={<SaveIcon />}
@@ -362,7 +362,7 @@ const ConfiguracionPage: React.FC = () => {
         </Grid>
 
         {/* Configuración de Notificaciones */}
-        <Grid item xs={12} lg={6}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <Card>
             <CardHeader
               avatar={<NotificationIcon color="primary" />}
@@ -371,7 +371,7 @@ const ConfiguracionPage: React.FC = () => {
             />
             <CardContent>
               <Grid container spacing={2}>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <TextField
                     fullWidth
                     label="Email Remitente"
@@ -383,7 +383,7 @@ const ConfiguracionPage: React.FC = () => {
                     })}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <TextField
                     fullWidth
                     label="Días de Aviso Previo a Vencimiento"
@@ -395,7 +395,7 @@ const ConfiguracionPage: React.FC = () => {
                     })}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <FormControlLabel
                     control={
                       <Switch
@@ -409,7 +409,7 @@ const ConfiguracionPage: React.FC = () => {
                     label="Habilitar notificaciones por email"
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <FormControlLabel
                     control={
                       <Switch
@@ -423,7 +423,7 @@ const ConfiguracionPage: React.FC = () => {
                     label="Notificar vencimientos de cuotas"
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <FormControlLabel
                     control={
                       <Switch
@@ -437,7 +437,7 @@ const ConfiguracionPage: React.FC = () => {
                     label="Notificar nuevos recibos"
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Button
                     variant="contained"
                     startIcon={<SaveIcon />}
@@ -453,7 +453,7 @@ const ConfiguracionPage: React.FC = () => {
         </Grid>
 
         {/* Horarios de Actividades */}
-        <Grid item xs={12} lg={6}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <Card>
             <CardHeader
               avatar={<ScheduleIcon color="primary" />}
@@ -516,7 +516,7 @@ const ConfiguracionPage: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Actividad"
@@ -524,7 +524,7 @@ const ConfiguracionPage: React.FC = () => {
                 onChange={(e) => setFormHorario({ ...formHorario, actividad: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth>
                 <InputLabel>Día</InputLabel>
                 <Select
@@ -540,7 +540,7 @@ const ConfiguracionPage: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }}>
               <TextField
                 fullWidth
                 label="Hora Inicio"
@@ -550,7 +550,7 @@ const ConfiguracionPage: React.FC = () => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }}>
               <TextField
                 fullWidth
                 label="Hora Fin"
