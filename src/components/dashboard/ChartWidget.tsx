@@ -97,6 +97,18 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({
 
   const getPieChart = () => {
     const total = data.reduce((sum, item) => sum + item.value, 0);
+
+    // Si no hay datos, mostrar mensaje
+    if (total === 0) {
+      return (
+        <Box display="flex" alignItems="center" justifyContent="center" sx={{ p: 2, height: '100%' }}>
+          <Typography variant="body2" color="text.secondary">
+            No hay datos para mostrar
+          </Typography>
+        </Box>
+      );
+    }
+
     let cumulativePercentage = 0;
 
     return (
@@ -127,7 +139,7 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({
                   stroke={item.color || colors[index % colors.length]}
                   strokeWidth="3"
                   strokeDasharray={strokeDasharray}
-                  strokeDashoffset={strokeDashoffset}
+                  strokeDashoffset={String(strokeDashoffset)}
                   transform="rotate(-90 21 21)"
                 />
               );

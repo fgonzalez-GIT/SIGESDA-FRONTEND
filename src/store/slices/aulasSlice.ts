@@ -77,11 +77,12 @@ export const fetchAulas = createAsyncThunk(
   'aulas/fetchAulas',
   async (params: any = {}, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/aulas?' + new URLSearchParams(params || {}));
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas?` + new URLSearchParams(params || {}));
       if (!response.ok) {
         throw new Error('Error al cargar aulas');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -92,7 +93,7 @@ export const createAula = createAsyncThunk(
   'aulas/createAula',
   async (aula: Omit<Aula, 'id' | 'fechaCreacion'>, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/aulas', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +103,8 @@ export const createAula = createAsyncThunk(
       if (!response.ok) {
         throw new Error('Error al crear aula');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -113,7 +115,7 @@ export const updateAula = createAsyncThunk(
   'aulas/updateAula',
   async (aula: Aula, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/aulas/${aula.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/${aula.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -123,7 +125,8 @@ export const updateAula = createAsyncThunk(
       if (!response.ok) {
         throw new Error('Error al actualizar aula');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -134,7 +137,7 @@ export const deleteAula = createAsyncThunk(
   'aulas/deleteAula',
   async (id: number, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/aulas/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -152,11 +155,12 @@ export const fetchReservas = createAsyncThunk(
   'aulas/fetchReservas',
   async (params: any = {}, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/aulas/reservas?' + new URLSearchParams(params || {}));
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/reservas?` + new URLSearchParams(params || {}));
       if (!response.ok) {
         throw new Error('Error al cargar reservas');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -167,7 +171,7 @@ export const createReserva = createAsyncThunk(
   'aulas/createReserva',
   async (reserva: Omit<ReservaAula, 'id' | 'fechaCreacion'>, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/aulas/reservas', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/reservas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -177,7 +181,8 @@ export const createReserva = createAsyncThunk(
       if (!response.ok) {
         throw new Error('Error al crear reserva');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -188,7 +193,7 @@ export const updateReserva = createAsyncThunk(
   'aulas/updateReserva',
   async (reserva: ReservaAula, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/aulas/reservas/${reserva.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/reservas/${reserva.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -198,7 +203,8 @@ export const updateReserva = createAsyncThunk(
       if (!response.ok) {
         throw new Error('Error al actualizar reserva');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -209,7 +215,7 @@ export const deleteReserva = createAsyncThunk(
   'aulas/deleteReserva',
   async (id: number, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/aulas/reservas/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/reservas/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -232,11 +238,12 @@ export const checkDisponibilidad = createAsyncThunk(
     horaFin?: string;
   }, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/aulas/disponibilidad?' + new URLSearchParams(params as any));
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/disponibilidad?` + new URLSearchParams(params as any));
       if (!response.ok) {
         throw new Error('Error al consultar disponibilidad');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }

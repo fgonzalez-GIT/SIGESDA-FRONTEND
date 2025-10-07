@@ -161,7 +161,8 @@ const ActividadesPage: React.FC = () => {
     }
   };
 
-  const formatTime = (time: string) => {
+  const formatTime = (time?: string | null) => {
+    if (!time) return '-';
     return time.slice(0, 5); // HH:mm format
   };
 

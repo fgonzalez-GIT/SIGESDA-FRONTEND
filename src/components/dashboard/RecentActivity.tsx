@@ -147,7 +147,7 @@ export const RecentActivity: React.FC = () => {
               </ListItemAvatar>
               <ListItemText
                 primary={
-                  <Box display="flex" alignItems="center" gap={1}>
+                  <Box display="flex" alignItems="center" gap={1} component="div">
                     <Typography variant="subtitle2" component="span">
                       {activity.title}
                     </Typography>
@@ -163,20 +163,21 @@ export const RecentActivity: React.FC = () => {
                   </Box>
                 }
                 secondary={
-                  <Box>
+                  <Box component="span">
                     <Typography
                       variant="body2"
+                      component="span"
                       color="text.secondary"
-                      sx={{ mb: 0.5 }}
+                      sx={{ mb: 0.5, display: 'block' }}
                     >
                       {activity.description}
                     </Typography>
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="caption" color="text.secondary">
+                    <Box display="flex" justifyContent="space-between" alignItems="center" component="span" sx={{ display: 'flex' }}>
+                      <Typography variant="caption" component="span" color="text.secondary">
                         {formatTime(activity.time)}
                       </Typography>
                       {activity.user && (
-                        <Typography variant="caption" color="primary">
+                        <Typography variant="caption" component="span" color="primary">
                           {activity.user}
                         </Typography>
                       )}
