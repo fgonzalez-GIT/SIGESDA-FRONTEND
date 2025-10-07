@@ -26,11 +26,12 @@ import { Persona } from '../../store/slices/personasSlice';
 interface PersonaFormData {
   nombre: string;
   apellido: string;
+  dni: string;
   email: string;
   telefono: string;
   direccion: string;
   fechaNacimiento: Date | null;
-  tipo: 'socio' | 'docente' | 'estudiante' | '';
+  tipo: 'SOCIO' | 'NO_SOCIO' | 'DOCENTE' | 'PROVEEDOR' | '';
   estado: 'activo' | 'inactivo';
   observaciones: string;
 }
@@ -38,6 +39,7 @@ interface PersonaFormData {
 interface PersonaFormErrors {
   nombre?: string;
   apellido?: string;
+  dni?: string;
   email?: string;
   telefono?: string;
   tipo?: string;
@@ -56,6 +58,7 @@ interface PersonaFormProps {
 const initialFormData: PersonaFormData = {
   nombre: '',
   apellido: '',
+  dni: '',
   email: '',
   telefono: '',
   direccion: '',
@@ -94,6 +97,7 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
       setFormData({
         nombre: persona.nombre || '',
         apellido: persona.apellido || '',
+        dni: persona.dni || '',
         email: persona.email || '',
         telefono: persona.telefono || '',
         direccion: persona.direccion || '',
@@ -136,6 +140,12 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
       newErrors.apellido = 'El apellido es requerido';
     }
 
+    if (!formData.dni.trim()) {
+      newErrors.dni = 'El DNI es requerido';
+    } else if (formData.dni.trim().length < 7 || formData.dni.trim().length > 8) {
+      newErrors.dni = 'El DNI debe tener entre 7 y 8 caracteres';
+    }
+
     if (!formData.tipo) {
       newErrors.tipo = 'El tipo es requerido';
     }
@@ -164,11 +174,12 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
     const submitData: Omit<Persona, 'id' | 'fechaIngreso'> = {
       nombre: formData.nombre.trim(),
       apellido: formData.apellido.trim(),
+      dni: formData.dni.trim(),
       email: formData.email.trim() || undefined,
       telefono: formData.telefono.trim() || undefined,
       direccion: formData.direccion.trim() || undefined,
-      fechaNacimiento: formData.fechaNacimiento?.toISOString().split('T')[0] || undefined,
-      tipo: formData.tipo as 'socio' | 'docente' | 'estudiante',
+      fechaNacimiento: formData.fechaNacimiento?.toISOString() || undefined,
+      tipo: formData.tipo as Persona['tipo'],
       estado: formData.estado,
       observaciones: formData.observaciones.trim() || undefined,
     };
@@ -231,6 +242,17 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
               />
             </Box>
 
+            <TextField
+              fullWidth
+              label="DNI *"
+              value={formData.dni}
+              onChange={handleChange('dni')}
+              error={!!errors.dni}
+              helperText={errors.dni}
+              disabled={loading}
+              inputProps={{ maxLength: 8 }}
+            />
+
             <Box display="flex" gap={2}>
               <TextField
                 fullWidth
@@ -288,9 +310,10 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
                   onChange={handleChange('tipo')}
                   label="Tipo *"
                 >
-                  <MenuItem value="socio">Socio</MenuItem>
-                  <MenuItem value="docente">Docente</MenuItem>
-                  <MenuItem value="estudiante">Estudiante</MenuItem>
+                  <MenuItem value="SOCIO">Socio</MenuItem>
+                  <MenuItem value="NO_SOCIO">No Socio</MenuItem>
+                  <MenuItem value="DOCENTE">Docente</MenuItem>
+                  <MenuItem value="PROVEEDOR">Proveedor</MenuItem>
                 </Select>
                 {errors.tipo && <FormHelperText>{errors.tipo}</FormHelperText>}
               </FormControl>

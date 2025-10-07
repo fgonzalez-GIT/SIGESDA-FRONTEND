@@ -361,7 +361,7 @@ const ReservasPage: React.FC = () => {
 
       {/* Resumen rápido */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -373,7 +373,7 @@ const ReservasPage: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -385,7 +385,7 @@ const ReservasPage: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -397,7 +397,7 @@ const ReservasPage: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -442,7 +442,7 @@ const ReservasPage: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Autocomplete
                 options={aulas.filter(a => a.disponible)}
                 getOptionLabel={(option) => `${option.nombre} (${option.tipo}) - Cap: ${option.capacidad}`}
@@ -461,7 +461,7 @@ const ReservasPage: React.FC = () => {
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Autocomplete
                 options={personas}
                 getOptionLabel={(option) => `${option.nombre} ${option.apellido} (${option.tipo})`}
@@ -480,7 +480,7 @@ const ReservasPage: React.FC = () => {
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <DateTimePicker
                 label="Fecha y Hora de Inicio"
                 value={formData.fechaHoraInicio || new Date()}
@@ -495,7 +495,7 @@ const ReservasPage: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <DateTimePicker
                 label="Fecha y Hora de Fin"
                 value={formData.fechaHoraFin || new Date()}
@@ -510,7 +510,7 @@ const ReservasPage: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={8}>
+            <Grid size={{ xs: 12, sm: 8 }}>
               <TextField
                 fullWidth
                 label="Motivo de la Reserva"
@@ -519,7 +519,7 @@ const ReservasPage: React.FC = () => {
                 required
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <FormControl fullWidth required>
                 <InputLabel>Estado</InputLabel>
                 <Select
@@ -535,7 +535,7 @@ const ReservasPage: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Observaciones"
@@ -549,7 +549,7 @@ const ReservasPage: React.FC = () => {
 
             {/* Mostrar conflictos */}
             {conflictos.length > 0 && (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Alert severity="error" icon={<ConflictIcon />}>
                   <Typography variant="subtitle2" gutterBottom>
                     ⚠️ Conflictos de horario detectados:

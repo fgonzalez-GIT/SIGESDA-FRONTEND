@@ -233,7 +233,7 @@ const AulasPage: React.FC = () => {
 
       {/* Resumen rápido */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -245,7 +245,7 @@ const AulasPage: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -257,7 +257,7 @@ const AulasPage: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -269,7 +269,7 @@ const AulasPage: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -306,7 +306,7 @@ const AulasPage: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Nombre del Aula"
@@ -314,7 +314,7 @@ const AulasPage: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth>
                 <InputLabel>Tipo de Aula</InputLabel>
                 <Select
@@ -330,7 +330,7 @@ const AulasPage: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Capacidad"
@@ -339,7 +339,7 @@ const AulasPage: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, capacidad: parseInt(e.target.value) || 0 })}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Ubicación"
@@ -347,7 +347,7 @@ const AulasPage: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
               />
             </Grid>
-            <Grid xs={12}>
+            <Grid size={{ xs: 12 }}>
               <FormControl fullWidth>
                 <InputLabel>Equipamiento</InputLabel>
                 <Select
@@ -371,7 +371,7 @@ const AulasPage: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid xs={12}>
+            <Grid size={{ xs: 12 }}>
               <FormControlLabel
                 control={
                   <Switch
@@ -382,7 +382,7 @@ const AulasPage: React.FC = () => {
                 label="Aula disponible"
               />
             </Grid>
-            <Grid xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Observaciones"

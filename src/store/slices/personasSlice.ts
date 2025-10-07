@@ -67,7 +67,10 @@ export const createPersona = createAsyncThunk(
         body: JSON.stringify(persona),
       });
       if (!response.ok) {
-        throw new Error('Error al crear persona');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || errorData.message || 'Error al crear persona';
+        console.error('Error creating persona:', errorData);
+        throw new Error(errorMessage);
       }
       const result = await response.json();
       return result.data || result;
