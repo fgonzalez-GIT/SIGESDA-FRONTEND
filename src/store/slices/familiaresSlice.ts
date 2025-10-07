@@ -324,39 +324,52 @@ const familiaresAPI = {
   },
 };
 
+// Helper para envolver respuesta mock en estructura API
+const wrapMockResponse = <T>(data: T) => ({ success: true, data });
+
 // Async thunks
 export const fetchRelaciones = createAsyncThunk(
   'familiares/fetchRelaciones',
   async (filters: FamiliaresFilters = {}) => {
-    return await familiaresAPI.getRelaciones(filters);
+    const result = await familiaresAPI.getRelaciones(filters);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const fetchGrupos = createAsyncThunk(
   'familiares/fetchGrupos',
   async () => {
-    return await familiaresAPI.getGrupos();
+    const result = await familiaresAPI.getGrupos();
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const fetchPersonasConFamiliares = createAsyncThunk(
   'familiares/fetchPersonasConFamiliares',
   async () => {
-    return await familiaresAPI.getPersonasConFamiliares();
+    const result = await familiaresAPI.getPersonasConFamiliares();
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const crearRelacion = createAsyncThunk(
   'familiares/crearRelacion',
   async (request: CrearRelacionRequest) => {
-    return await familiaresAPI.crearRelacion(request);
+    const result = await familiaresAPI.crearRelacion(request);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const crearGrupoFamiliar = createAsyncThunk(
   'familiares/crearGrupoFamiliar',
   async (request: CrearGrupoFamiliarRequest) => {
-    return await familiaresAPI.crearGrupoFamiliar(request);
+    const result = await familiaresAPI.crearGrupoFamiliar(request);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
@@ -371,7 +384,9 @@ export const eliminarRelacion = createAsyncThunk(
 export const actualizarRelacion = createAsyncThunk(
   'familiares/actualizarRelacion',
   async ({ id, relacion }: { id: number; relacion: Partial<RelacionFamiliar> }) => {
-    return await familiaresAPI.actualizarRelacion(id, relacion);
+    const result = await familiaresAPI.actualizarRelacion(id, relacion);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 

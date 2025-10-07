@@ -48,17 +48,22 @@ const Dashboard: React.FC = () => {
     loadDashboardData();
   }, [dispatch]);
 
-  // Estadísticas calculadas
-  const totalPersonas = personas.length;
-  const totalSocios = personas.filter(p => p.tipo === 'socio').length;
-  const totalDocentes = personas.filter(p => p.tipo === 'docente').length;
-  const totalEstudiantes = personas.filter(p => p.tipo === 'estudiante').length;
-  const totalActividades = actividades.length;
-  const actividadesActivas = actividades.filter(a => a.estado === 'activo').length;
-  const totalAulas = aulas.length;
-  const aulasDisponibles = aulas.filter(a => a.estado === 'disponible').length;
-  const totalRelaciones = relaciones.length;
-  const personasConFamiliares = [...new Set(relaciones.map(r => r.personaId))].length;
+  // Estadísticas calculadas con validación de arrays
+  const personasArray = Array.isArray(personas) ? personas : [];
+  const actividadesArray = Array.isArray(actividades) ? actividades : [];
+  const aulasArray = Array.isArray(aulas) ? aulas : [];
+  const relacionesArray = Array.isArray(relaciones) ? relaciones : [];
+
+  const totalPersonas = personasArray.length;
+  const totalSocios = personasArray.filter(p => p.tipo?.toLowerCase() === 'socio').length;
+  const totalDocentes = personasArray.filter(p => p.tipo?.toLowerCase() === 'docente').length;
+  const totalEstudiantes = personasArray.filter(p => p.tipo?.toLowerCase() === 'estudiante').length;
+  const totalActividades = actividadesArray.length;
+  const actividadesActivas = actividadesArray.filter(a => a.estado === 'activo').length;
+  const totalAulas = aulasArray.length;
+  const aulasDisponibles = aulasArray.filter(a => a.estado === 'disponible').length;
+  const totalRelaciones = relacionesArray.length;
+  const personasConFamiliares = [...new Set(relacionesArray.map(r => r.personaId))].length;
 
   // Datos para gráficos
   const personasPorTipo = [
@@ -68,10 +73,10 @@ const Dashboard: React.FC = () => {
   ];
 
   const actividadesPorTipo = [
-    { label: 'Coros', value: actividades.filter(a => a.tipo === 'coro').length, color: '#1976d2' },
-    { label: 'Clases', value: actividades.filter(a => a.tipo === 'clase').length, color: '#9c27b0' },
-    { label: 'Talleres', value: actividades.filter(a => a.tipo === 'taller').length, color: '#2e7d32' },
-    { label: 'Eventos', value: actividades.filter(a => a.tipo === 'evento').length, color: '#ed6c02' },
+    { label: 'Coros', value: actividadesArray.filter(a => a.tipo === 'coro').length, color: '#1976d2' },
+    { label: 'Clases', value: actividadesArray.filter(a => a.tipo === 'clase').length, color: '#9c27b0' },
+    { label: 'Talleres', value: actividadesArray.filter(a => a.tipo === 'taller').length, color: '#2e7d32' },
+    { label: 'Eventos', value: actividadesArray.filter(a => a.tipo === 'evento').length, color: '#ed6c02' },
   ];
 
   const ocupacionActividades = [

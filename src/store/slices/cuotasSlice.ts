@@ -208,21 +208,27 @@ const cuotasAPI = {
 export const fetchCuotas = createAsyncThunk(
   'cuotas/fetchCuotas',
   async (filters: CuotasFilters = {}) => {
-    return await cuotasAPI.getAll(filters);
+    const result = await cuotasAPI.getAll(filters);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const createCuota = createAsyncThunk(
   'cuotas/createCuota',
   async (cuota: Omit<Cuota, 'id'>) => {
-    return await cuotasAPI.create(cuota);
+    const result = await cuotasAPI.create(cuota);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const updateCuota = createAsyncThunk(
   'cuotas/updateCuota',
   async ({ id, cuota }: { id: number; cuota: Partial<Cuota> }) => {
-    return await cuotasAPI.update(id, cuota);
+    const result = await cuotasAPI.update(id, cuota);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
@@ -237,14 +243,18 @@ export const deleteCuota = createAsyncThunk(
 export const generarCuotasMasivas = createAsyncThunk(
   'cuotas/generarCuotasMasivas',
   async (request: GenerarCuotasRequest) => {
-    return await cuotasAPI.generarCuotas(request);
+    const result = await cuotasAPI.generarCuotas(request);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const pagarCuota = createAsyncThunk(
   'cuotas/pagarCuota',
   async (request: PagarCuotaRequest) => {
-    return await cuotasAPI.pagarCuota(request);
+    const result = await cuotasAPI.pagarCuota(request);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 

@@ -223,9 +223,10 @@ export const NotificationWidget: React.FC = () => {
                 </ListItemIcon>
                 <ListItemText
                   primary={
-                    <Box display="flex" alignItems="center" gap={1}>
+                    <Box display="flex" alignItems="center" gap={1} component="div">
                       <Typography
                         variant="subtitle2"
+                        component="span"
                         sx={{
                           fontWeight: notification.read ? 400 : 600,
                         }}
@@ -242,19 +243,20 @@ export const NotificationWidget: React.FC = () => {
                     </Box>
                   }
                   secondary={
-                    <Box>
+                    <Box component="span">
                       <Typography
                         variant="body2"
+                        component="span"
                         color="text.secondary"
-                        sx={{ mb: 0.5 }}
+                        sx={{ mb: 0.5, display: 'block' }}
                       >
                         {notification.message}
                       </Typography>
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Typography variant="caption" color="text.secondary">
+                      <Box display="flex" justifyContent="space-between" alignItems="center" component="span" sx={{ display: 'flex' }}>
+                        <Typography variant="caption" component="span" color="text.secondary">
                           {formatTime(notification.timestamp)}
                         </Typography>
-                        <Box>
+                        <Box component="span" sx={{ display: 'flex', gap: 1 }}>
                           {!notification.read && (
                             <Button
                               size="small"

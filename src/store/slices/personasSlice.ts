@@ -1,17 +1,28 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 
 export interface Persona {
-  id: number;
+  id: string | number;
   nombre: string;
   apellido: string;
+  dni?: string;
   email?: string;
   telefono?: string;
   direccion?: string;
-  fechaNacimiento?: string;
-  tipo: 'socio' | 'docente' | 'estudiante';
-  estado: 'activo' | 'inactivo';
-  fechaIngreso: string;
+  fechaNacimiento?: string | null;
+  tipo: 'SOCIO' | 'DOCENTE' | 'ESTUDIANTE' | 'socio' | 'docente' | 'estudiante';
+  estado?: 'activo' | 'inactivo';
+  fechaIngreso?: string | null;
+  numeroSocio?: number | null;
+  categoria?: string | null;
+  fechaBaja?: string | null;
+  motivoBaja?: string | null;
+  especialidad?: string | null;
+  honorariosPorHora?: string | null;
+  cuit?: string | null;
+  razonSocial?: string | null;
   observaciones?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface PersonasState {
@@ -32,11 +43,12 @@ export const fetchPersonas = createAsyncThunk(
   'personas/fetchPersonas',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/personas');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/personas`);
       if (!response.ok) {
         throw new Error('Error al cargar personas');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -47,7 +59,7 @@ export const createPersona = createAsyncThunk(
   'personas/createPersona',
   async (persona: Omit<Persona, 'id'>, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/personas', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/personas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,7 +69,8 @@ export const createPersona = createAsyncThunk(
       if (!response.ok) {
         throw new Error('Error al crear persona');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -68,7 +81,7 @@ export const updatePersona = createAsyncThunk(
   'personas/updatePersona',
   async (persona: Persona, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/personas/${persona.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/personas/${persona.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +91,8 @@ export const updatePersona = createAsyncThunk(
       if (!response.ok) {
         throw new Error('Error al actualizar persona');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -89,7 +103,7 @@ export const deletePersona = createAsyncThunk(
   'personas/deletePersona',
   async (id: number, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/personas/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/personas/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {

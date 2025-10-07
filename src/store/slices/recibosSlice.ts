@@ -333,28 +333,36 @@ const recibosAPI = {
 export const fetchRecibos = createAsyncThunk(
   'recibos/fetchRecibos',
   async (filters: RecibosFilters = {}) => {
-    return await recibosAPI.getAll(filters);
+    const result = await recibosAPI.getAll(filters);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const fetchReciboById = createAsyncThunk(
   'recibos/fetchReciboById',
   async (id: number) => {
-    return await recibosAPI.getById(id);
+    const result = await recibosAPI.getById(id);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const createRecibo = createAsyncThunk(
   'recibos/createRecibo',
   async (recibo: Omit<Recibo, 'id' | 'numero' | 'fechaEmision'>) => {
-    return await recibosAPI.create(recibo);
+    const result = await recibosAPI.create(recibo);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const updateRecibo = createAsyncThunk(
   'recibos/updateRecibo',
   async ({ id, recibo }: { id: number; recibo: Partial<Recibo> }) => {
-    return await recibosAPI.update(id, recibo);
+    const result = await recibosAPI.update(id, recibo);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
@@ -369,21 +377,27 @@ export const deleteRecibo = createAsyncThunk(
 export const generarRecibo = createAsyncThunk(
   'recibos/generarRecibo',
   async (request: GenerarReciboRequest) => {
-    return await recibosAPI.generarRecibo(request);
+    const result = await recibosAPI.generarRecibo(request);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const pagarRecibo = createAsyncThunk(
   'recibos/pagarRecibo',
   async (request: PagarReciboRequest) => {
-    return await recibosAPI.pagarRecibo(request);
+    const result = await recibosAPI.pagarRecibo(request);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const generarPdfRecibo = createAsyncThunk(
   'recibos/generarPdfRecibo',
   async (reciboId: number) => {
-    return await recibosAPI.generarPdf(reciboId);
+    const result = await recibosAPI.generarPdf(reciboId);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
@@ -398,7 +412,9 @@ export const enviarRecibo = createAsyncThunk(
 export const anularRecibo = createAsyncThunk(
   'recibos/anularRecibo',
   async ({ reciboId, motivo }: { reciboId: number; motivo: string }) => {
-    return await recibosAPI.anularRecibo(reciboId, motivo);
+    const result = await recibosAPI.anularRecibo(reciboId, motivo);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 

@@ -48,11 +48,12 @@ export const fetchActividades = createAsyncThunk(
   'actividades/fetchActividades',
   async (params: any = {}, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/actividades?' + new URLSearchParams(params || {}));
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/actividades?` + new URLSearchParams(params || {}));
       if (!response.ok) {
         throw new Error('Error al cargar actividades');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -63,7 +64,7 @@ export const createActividad = createAsyncThunk(
   'actividades/createActividad',
   async (actividad: Omit<Actividad, 'id' | 'cupoActual' | 'fechaCreacion'>, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/actividades', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/actividades`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -73,7 +74,8 @@ export const createActividad = createAsyncThunk(
       if (!response.ok) {
         throw new Error('Error al crear actividad');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -84,7 +86,7 @@ export const updateActividad = createAsyncThunk(
   'actividades/updateActividad',
   async (actividad: Actividad, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/actividades/${actividad.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/actividades/${actividad.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -94,7 +96,8 @@ export const updateActividad = createAsyncThunk(
       if (!response.ok) {
         throw new Error('Error al actualizar actividad');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -105,7 +108,7 @@ export const deleteActividad = createAsyncThunk(
   'actividades/deleteActividad',
   async (id: number, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/actividades/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/actividades/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -122,13 +125,14 @@ export const duplicateActividad = createAsyncThunk(
   'actividades/duplicateActividad',
   async (id: number, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/actividades/${id}/duplicate`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/actividades/${id}/duplicate`, {
         method: 'POST',
       });
       if (!response.ok) {
         throw new Error('Error al duplicar actividad');
       }
-      return await response.json();
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
