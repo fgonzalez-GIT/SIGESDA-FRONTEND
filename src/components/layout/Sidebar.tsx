@@ -23,6 +23,8 @@ import {
   Receipt,
   Payment,
   AccountBalance,
+  School,
+  Category,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -46,6 +48,12 @@ const menuItems = [
     icon: <MusicNote />,
     path: '/actividades',
     color: '#ed6c02',
+  },
+  {
+    title: 'Secciones',
+    icon: <School />,
+    path: '/secciones',
+    color: '#0288d1',
   },
   {
     title: 'Aulas',
@@ -82,6 +90,12 @@ const menuItems = [
     icon: <AccountBalance />,
     path: '/cuotas',
     color: '#1976d2',
+  },
+  {
+    title: 'Categorías',
+    icon: <Category />,
+    path: '/categorias',
+    color: '#e91e63',
   },
   {
     title: 'Medios de Pago',

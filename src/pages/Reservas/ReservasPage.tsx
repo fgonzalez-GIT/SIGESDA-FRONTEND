@@ -31,6 +31,9 @@ import {
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { es } from 'date-fns/locale';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 
 interface Reserva {
@@ -441,6 +444,7 @@ const ReservasPage: React.FC = () => {
           {selectedReserva ? 'Editar Reserva' : 'Nueva Reserva'}
         </DialogTitle>
         <DialogContent>
+          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <Autocomplete
@@ -453,12 +457,15 @@ const ReservasPage: React.FC = () => {
                 renderInput={(params) => (
                   <TextField {...params} label="Aula" required />
                 )}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
-                    <AulaIcon sx={{ mr: 1 }} />
-                    {option.nombre} ({option.tipo}) - Capacidad: {option.capacidad}
-                  </Box>
-                )}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <Box component="li" key={key} {...otherProps}>
+                      <AulaIcon sx={{ mr: 1 }} />
+                      {option.nombre} ({option.tipo}) - Capacidad: {option.capacidad}
+                    </Box>
+                  );
+                }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -472,12 +479,15 @@ const ReservasPage: React.FC = () => {
                 renderInput={(params) => (
                   <TextField {...params} label="Solicitante" required />
                 )}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
-                    <PersonIcon sx={{ mr: 1 }} />
-                    {option.nombre} {option.apellido} ({option.tipo})
-                  </Box>
-                )}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <Box component="li" key={key} {...otherProps}>
+                      <PersonIcon sx={{ mr: 1 }} />
+                      {option.nombre} {option.apellido} ({option.tipo})
+                    </Box>
+                  );
+                }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -563,6 +573,7 @@ const ReservasPage: React.FC = () => {
               </Grid>
             )}
           </Grid>
+          </LocalizationProvider>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancelar</Button>

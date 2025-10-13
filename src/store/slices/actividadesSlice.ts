@@ -4,7 +4,7 @@ export interface Actividad {
   id: number;
   nombre: string;
   descripcion?: string;
-  tipo: 'coro' | 'clase' | 'taller' | 'evento';
+  tipo: 'CORO' | 'CLASE_CANTO' | 'CLASE_INSTRUMENTO' | 'TALLER' | 'EVENTO' | 'coro' | 'clase' | 'taller' | 'evento';
   categoria: 'infantil' | 'juvenil' | 'adulto' | 'general';
   docenteId?: number;
   docenteNombre?: string;
@@ -64,15 +64,40 @@ export const createActividad = createAsyncThunk(
   'actividades/createActividad',
   async (actividad: Omit<Actividad, 'id' | 'cupoActual' | 'fechaCreacion'>, { rejectWithValue }) => {
     try {
+      // Transformar datos del frontend al formato del backend
+      const backendData = {
+        nombre: actividad.nombre,
+        tipo: actividad.tipo.toUpperCase(),
+        descripcion: actividad.descripcion || undefined,
+        precio: actividad.costo || 0,
+        capacidadMaxima: actividad.cupoMaximo || undefined,
+        activa: actividad.estado === 'activo',
+        docenteIds: actividad.docenteId ? [String(actividad.docenteId)] : [],
+        horarios: actividad.diaSemana ? [{
+          diaSemana: actividad.diaSemana.toUpperCase(),
+          horaInicio: actividad.horaInicio,
+          horaFin: actividad.horaFin,
+          activo: true
+        }] : []
+      };
+
+      // Limpiar campos undefined
+      const cleanData = Object.fromEntries(
+        Object.entries(backendData).filter(([_, value]) => value !== undefined && value !== null && value !== '')
+      );
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/actividades`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(actividad),
+        body: JSON.stringify(cleanData),
       });
       if (!response.ok) {
-        throw new Error('Error al crear actividad');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || errorData.message || 'Error al crear actividad';
+        console.error('Error creating actividad:', errorData);
+        throw new Error(errorMessage);
       }
       const result = await response.json();
       return result.data || result;

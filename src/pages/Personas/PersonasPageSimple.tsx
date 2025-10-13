@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -18,6 +19,8 @@ import {
   DialogActions,
   DialogContentText,
   Stack,
+  Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -25,7 +28,9 @@ import {
   Add as AddIcon,
   Visibility as ViewIcon,
   FamilyRestroom as FamilyIcon,
+  School as SchoolIcon,
 } from '@mui/icons-material';
+import seccionesApi from '../../services/seccionesApi';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import {
   fetchPersonas,
@@ -40,9 +45,12 @@ import { showNotification } from '../../store/slices/uiSlice';
 import { fetchPersonasConFamiliares } from '../../store/slices/familiaresSlice';
 import PersonaForm from '../../components/forms/PersonaFormSimple';
 import RelacionFamiliarDialog from '../../components/forms/RelacionFamiliarDialogSimple';
+import ReactivatePersonaDialog from '../../components/dialogs/ReactivatePersonaDialog';
+import { CategoriaBadge } from '../../components/categorias/CategoriaBadge';
 
 const PersonasPageSimple: React.FC = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { personas, loading, error, selectedPersona } = useAppSelector((state) => state.personas);
   const { personasConFamiliares } = useAppSelector((state) => state.familiares);
 
@@ -50,12 +58,53 @@ const PersonasPageSimple: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [personaToDelete, setPersonaToDelete] = useState<Persona | null>(null);
   const [familiaresDialogOpen, setFamiliaresDialogOpen] = useState(false);
-  const [selectedPersonaFamiliares, setSelectedPersonaFamiliares] = useState<number | null>(null);
+  const [selectedPersonaFamiliares, setSelectedPersonaFamiliares] = useState<string | number | null>(null);
+  const [participacionesPorPersona, setParticipacionesPorPersona] = useState<{ [key: string | number]: number }>({});
+  const participacionesLoadedRef = useRef<Set<string | number>>(new Set());
+  const isLoadingParticipacionesRef = useRef(false);
+  const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
+  const [personaToReactivate, setPersonaToReactivate] = useState<Persona | null>(null);
+  const [pendingFormData, setPendingFormData] = useState<Omit<Persona, 'id' | 'fechaIngreso'> | null>(null);
 
   useEffect(() => {
     dispatch(fetchPersonas());
     dispatch(fetchPersonasConFamiliares());
   }, [dispatch]);
+
+  // Cargar participaciones en secciones para cada persona
+  useEffect(() => {
+    const loadParticipaciones = async () => {
+      // Evitar llamadas duplicadas si ya se están cargando
+      if (isLoadingParticipacionesRef.current) return;
+
+      // Filtrar solo personas que no han sido cargadas
+      const personasToLoad = personas.filter(p => !participacionesLoadedRef.current.has(p.id));
+
+      if (personasToLoad.length === 0) return;
+
+      isLoadingParticipacionesRef.current = true;
+
+      const participaciones: { [key: string | number]: number } = { ...participacionesPorPersona };
+
+      for (const persona of personasToLoad) {
+        try {
+          const response = await seccionesApi.getSeccionesPorPersona(persona.id.toString(), true);
+          participaciones[persona.id] = response.data.length;
+          participacionesLoadedRef.current.add(persona.id);
+        } catch (error) {
+          participaciones[persona.id] = 0;
+          participacionesLoadedRef.current.add(persona.id);
+        }
+      }
+
+      setParticipacionesPorPersona(participaciones);
+      isLoadingParticipacionesRef.current = false;
+    };
+
+    if (personas.length > 0) {
+      loadParticipaciones();
+    }
+  }, [personas]); // ✅ Removida dependencia circular
 
   useEffect(() => {
     if (error) {
@@ -92,8 +141,29 @@ const PersonasPageSimple: React.FC = () => {
     setFamiliaresDialogOpen(true);
   };
 
-  const getPersonaFamiliares = (personaId: number) => {
+  const getPersonaFamiliares = (personaId: string | number) => {
     return personasConFamiliares.find(p => p.id === personaId);
+  };
+
+  const handleDniCheck = async (dni: string) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/personas/check-dni/${dni}`
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        const data = result.data || result;
+
+        if (data.exists && data.isInactive && data.persona) {
+          // Persona existe y está inactiva
+          setPersonaToReactivate(data.persona);
+          setReactivateDialogOpen(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking DNI:', error);
+    }
   };
 
   const handleFormSubmit = async (data: Omit<Persona, 'id' | 'fechaIngreso'>) => {
@@ -104,19 +174,87 @@ const PersonasPageSimple: React.FC = () => {
           message: 'Persona actualizada exitosamente',
           severity: 'success'
         }));
+        // Recargar personas para asegurar sincronización con backend
+        dispatch(fetchPersonas());
       } else {
-        await dispatch(createPersona({ ...data, fechaIngreso: new Date().toISOString().split('T')[0] })).unwrap();
+        // Verificar si hay persona a reactivar
+        if (personaToReactivate) {
+          setPendingFormData(data);
+          setReactivateDialogOpen(true);
+          return; // Esperar confirmación
+        }
+
+        // Solo agregar fechaIngreso para tipo SOCIO
+        const personaData = data.tipo === 'SOCIO'
+          ? { ...data, fechaIngreso: new Date().toISOString() }
+          : data;
+
+        await dispatch(createPersona(personaData)).unwrap();
         dispatch(showNotification({
           message: 'Persona creada exitosamente',
           severity: 'success'
         }));
+        // Recargar personas para asegurar sincronización con backend
+        dispatch(fetchPersonas());
       }
       setFormOpen(false);
-    } catch (error) {
-      dispatch(showNotification({
-        message: 'Error al guardar la persona',
-        severity: 'error'
-      }));
+    } catch (error: any) {
+      // Detectar error DNI_DUPLICADO específicamente
+      if (error.message === 'DNI_DUPLICADO') {
+        dispatch(showNotification({
+          message: 'Ya existe una persona con este DNI. Por favor, verifique los datos.',
+          severity: 'warning'
+        }));
+      } else {
+        dispatch(showNotification({
+          message: 'Error al guardar la persona',
+          severity: 'error'
+        }));
+      }
+    }
+  };
+
+  const handleReactivateConfirm = async () => {
+    if (personaToReactivate && pendingFormData) {
+      try {
+        // Limpiar campos undefined/null antes de enviar
+        const cleanData = Object.fromEntries(
+          Object.entries(pendingFormData).filter(([_, value]) => value !== undefined && value !== null && value !== '')
+        );
+
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/personas/${personaToReactivate.id}/reactivate`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...cleanData,
+              estado: 'activo'
+            })
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Error al reactivar persona');
+        }
+
+        dispatch(showNotification({
+          message: 'Persona reactivada y actualizada exitosamente',
+          severity: 'success'
+        }));
+
+        setReactivateDialogOpen(false);
+        setPersonaToReactivate(null);
+        setPendingFormData(null);
+        setFormOpen(false);
+        dispatch(fetchPersonas());
+        dispatch(fetchPersonasConFamiliares());
+      } catch (error) {
+        dispatch(showNotification({
+          message: 'Error al reactivar la persona',
+          severity: 'error'
+        }));
+      }
     }
   };
 
@@ -184,8 +322,10 @@ const PersonasPageSimple: React.FC = () => {
               <TableCell>Email</TableCell>
               <TableCell>Teléfono</TableCell>
               <TableCell>Tipo</TableCell>
+              <TableCell>Categoría</TableCell>
               <TableCell>Estado</TableCell>
               <TableCell>Familiares</TableCell>
+              <TableCell>Secciones</TableCell>
               <TableCell>Fecha Ingreso</TableCell>
               <TableCell align="center">Acciones</TableCell>
             </TableRow>
@@ -193,14 +333,14 @@ const PersonasPageSimple: React.FC = () => {
           <TableBody>
             {loading && (
               <TableRow>
-                <TableCell colSpan={10} align="center">
+                <TableCell colSpan={12} align="center">
                   Cargando...
                 </TableCell>
               </TableRow>
             )}
             {!loading && personas.length === 0 && (
               <TableRow>
-                <TableCell colSpan={10} align="center">
+                <TableCell colSpan={12} align="center">
                   No hay personas registradas
                 </TableCell>
               </TableRow>
@@ -213,6 +353,13 @@ const PersonasPageSimple: React.FC = () => {
                 <TableCell>{persona.email || '-'}</TableCell>
                 <TableCell>{persona.telefono || '-'}</TableCell>
                 <TableCell>{getTipoLabel(persona.tipo)}</TableCell>
+                <TableCell>
+                  {persona.tipo === 'SOCIO' || persona.tipo === 'socio' ? (
+                    <CategoriaBadge categoria={persona.categoria} size="small" />
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">-</Typography>
+                  )}
+                </TableCell>
                 <TableCell>
                   <Chip
                     label={persona.estado === 'activo' ? 'Activo' : 'Inactivo'}
@@ -259,6 +406,32 @@ const PersonasPageSimple: React.FC = () => {
                     );
                   })()}
                 </TableCell>
+                <TableCell>
+                  {participacionesPorPersona[persona.id] !== undefined ? (
+                    participacionesPorPersona[persona.id] > 0 ? (
+                      <Tooltip title="Ver secciones de esta persona">
+                        <Chip
+                          label={`${participacionesPorPersona[persona.id]} ${participacionesPorPersona[persona.id] === 1 ? 'sección' : 'secciones'}`}
+                          size="small"
+                          color="success"
+                          variant="outlined"
+                          icon={<SchoolIcon />}
+                          onClick={() => navigate(`/participacion?personaId=${persona.id}`)}
+                          sx={{ cursor: 'pointer' }}
+                        />
+                      </Tooltip>
+                    ) : (
+                      <Chip
+                        label="Sin secciones"
+                        size="small"
+                        color="default"
+                        variant="outlined"
+                      />
+                    )
+                  ) : (
+                    <CircularProgress size={20} />
+                  )}
+                </TableCell>
                 <TableCell>{formatDate(persona.fechaIngreso)}</TableCell>
                 <TableCell>
                   <Stack direction="row" spacing={1}>
@@ -303,7 +476,20 @@ const PersonasPageSimple: React.FC = () => {
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSubmit={handleFormSubmit}
+        onDniCheck={handleDniCheck}
         persona={selectedPersona}
+        loading={loading}
+      />
+
+      <ReactivatePersonaDialog
+        open={reactivateDialogOpen}
+        persona={personaToReactivate}
+        onConfirm={handleReactivateConfirm}
+        onCancel={() => {
+          setReactivateDialogOpen(false);
+          setPersonaToReactivate(null);
+          setPendingFormData(null);
+        }}
         loading={loading}
       />
 

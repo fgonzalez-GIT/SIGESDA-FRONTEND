@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -19,7 +20,9 @@ import {
   Alert,
   Autocomplete,
   FormControlLabel,
-  Switch
+  Switch,
+  Tooltip,
+  CircularProgress
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -29,11 +32,17 @@ import {
   MusicNote as ActivityIcon,
   DateRange as DateIcon,
   CheckCircle as ActiveIcon,
-  Cancel as InactiveIcon
+  Cancel as InactiveIcon,
+  School as SchoolIcon,
+  Visibility as ViewIcon
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { es } from 'date-fns/locale';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
+import seccionesApi from '../../services/seccionesApi';
 
 interface Participacion {
   id: number;
@@ -41,6 +50,8 @@ interface Participacion {
   personaNombre: string;
   actividadId: number;
   actividadNombre: string;
+  seccionId?: number;
+  seccionNombre?: string;
   fechaInscripcion: Date;
   fechaBaja?: Date;
   estado: 'Activo' | 'Inactivo' | 'Suspendido';
@@ -62,13 +73,19 @@ interface Actividad {
 
 const ParticipacionPage: React.FC = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const personaIdParam = searchParams.get('personaId');
+
   const [participaciones, setParticipaciones] = useState<Participacion[]>([]);
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [actividades, setActividades] = useState<Actividad[]>([]);
+  const [seccionesPorPersona, setSeccionesPorPersona] = useState<{ [key: number]: any[] }>({});
+  const [loadingSecciones, setLoadingSecciones] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedParticipacion, setSelectedParticipacion] = useState<Participacion | null>(null);
   const [formData, setFormData] = useState<Partial<Participacion>>({
-    personaId: 0,
+    personaId: personaIdParam ? parseInt(personaIdParam) : 0,
     actividadId: 0,
     fechaInscripcion: new Date(),
     estado: 'Activo',
@@ -137,6 +154,42 @@ const ParticipacionPage: React.FC = () => {
       }
     ]);
   }, []);
+
+  // Cargar secciones para cada persona
+  // NOTA: Deshabilitado porque esta página usa datos mock con IDs numéricos
+  // que no existen en el backend (que usa IDs tipo string/cuid)
+  // La funcionalidad de secciones está disponible en PersonasPageSimple con datos reales
+  useEffect(() => {
+    // Comentado para evitar errores 400 con datos mock
+    // En producción, esta funcionalidad debería integrarse con datos reales de la API
+    /*
+    const loadSeccionesPorPersona = async () => {
+      setLoadingSecciones(true);
+      const secciones: { [key: number]: any[] } = {};
+
+      // Obtener IDs únicos de personas
+      const personasIds = Array.from(new Set(participaciones.map(p => p.personaId)));
+
+      for (const personaId of personasIds) {
+        try {
+          const response = await seccionesApi.getSeccionesPorPersona(personaId.toString(), true);
+          secciones[personaId] = response.data;
+        } catch (error) {
+          console.error(`Error al cargar secciones para persona ${personaId}:`, error);
+          secciones[personaId] = [];
+        }
+      }
+
+      setSeccionesPorPersona(secciones);
+      setLoadingSecciones(false);
+    };
+
+    if (participaciones.length > 0) {
+      loadSeccionesPorPersona();
+    }
+    */
+    setLoadingSecciones(false);
+  }, [participaciones]);
 
   const handleOpenDialog = (participacion?: Participacion) => {
     if (participacion) {
@@ -219,7 +272,7 @@ const ParticipacionPage: React.FC = () => {
     {
       field: 'personaNombre',
       headerName: 'Persona',
-      width: 200,
+      width: 180,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <PersonIcon color="primary" />
@@ -230,7 +283,7 @@ const ParticipacionPage: React.FC = () => {
     {
       field: 'actividadNombre',
       headerName: 'Actividad',
-      width: 200,
+      width: 180,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <ActivityIcon color="secondary" />
@@ -239,15 +292,61 @@ const ParticipacionPage: React.FC = () => {
       )
     },
     {
+      field: 'secciones',
+      headerName: 'Secciones',
+      width: 150,
+      renderCell: (params) => {
+        const personaId = params.row.personaId;
+        const secciones = seccionesPorPersona[personaId] || [];
+
+        if (loadingSecciones && !seccionesPorPersona[personaId]) {
+          return <CircularProgress size={20} />;
+        }
+
+        if (secciones.length === 0) {
+          return (
+            <Chip
+              label="Sin secciones"
+              size="small"
+              color="default"
+              variant="outlined"
+            />
+          );
+        }
+
+        return (
+          <Tooltip title={secciones.map(s => s.nombre).join(', ')}>
+            <Chip
+              label={`${secciones.length} ${secciones.length === 1 ? 'sección' : 'secciones'}`}
+              size="small"
+              color="success"
+              variant="outlined"
+              icon={<SchoolIcon />}
+              onClick={() => {
+                // Si hay solo una sección, navegar directamente
+                if (secciones.length === 1) {
+                  navigate(`/secciones/${secciones[0].id}`);
+                } else {
+                  // Si hay múltiples, ir a la lista filtrada
+                  navigate(`/secciones?personaId=${personaId}`);
+                }
+              }}
+              sx={{ cursor: 'pointer' }}
+            />
+          </Tooltip>
+        );
+      }
+    },
+    {
       field: 'fechaInscripcion',
       headerName: 'Fecha Inscripción',
-      width: 150,
+      width: 130,
       renderCell: (params) => new Date(params.value).toLocaleDateString()
     },
     {
       field: 'fechaBaja',
       headerName: 'Fecha Baja',
-      width: 120,
+      width: 110,
       renderCell: (params) => params.value ? new Date(params.value).toLocaleDateString() : '-'
     },
     {
@@ -267,14 +366,14 @@ const ParticipacionPage: React.FC = () => {
     {
       field: 'observaciones',
       headerName: 'Observaciones',
-      width: 200,
+      width: 150,
       renderCell: (params) => params.value || '-'
     },
     {
       field: 'actions',
       type: 'actions',
       headerName: 'Acciones',
-      width: 120,
+      width: 100,
       getActions: (params) => [
         <GridActionsCellItem
           icon={<EditIcon />}
@@ -290,12 +389,32 @@ const ParticipacionPage: React.FC = () => {
     }
   ];
 
+  // Filtrar participaciones si hay personaId en URL
+  const filteredParticipaciones = personaIdParam
+    ? participaciones.filter(p => p.personaId === parseInt(personaIdParam))
+    : participaciones;
+
+  // Obtener nombre de la persona si hay filtro
+  const personaFiltrada = personaIdParam
+    ? personas.find(p => p.id === parseInt(personaIdParam))
+    : null;
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          🎭 Participación en Actividades
-        </Typography>
+        <Box>
+          <Typography variant="h4" component="h1" gutterBottom>
+            🎭 Participación en Actividades
+          </Typography>
+          {personaFiltrada && (
+            <Chip
+              label={`Filtrando por: ${personaFiltrada.nombre} ${personaFiltrada.apellido}`}
+              onDelete={() => navigate('/participacion')}
+              color="primary"
+              sx={{ mt: 1 }}
+            />
+          )}
+        </Box>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -314,7 +433,7 @@ const ParticipacionPage: React.FC = () => {
                 Total Participaciones
               </Typography>
               <Typography variant="h4">
-                {participaciones.length}
+                {filteredParticipaciones.length}
               </Typography>
             </CardContent>
           </Card>
@@ -326,7 +445,7 @@ const ParticipacionPage: React.FC = () => {
                 Activas
               </Typography>
               <Typography variant="h4" color="success.main">
-                {participaciones.filter(p => p.estado === 'Activo').length}
+                {filteredParticipaciones.filter(p => p.estado === 'Activo').length}
               </Typography>
             </CardContent>
           </Card>
@@ -338,7 +457,7 @@ const ParticipacionPage: React.FC = () => {
                 Suspendidas
               </Typography>
               <Typography variant="h4" color="warning.main">
-                {participaciones.filter(p => p.estado === 'Suspendido').length}
+                {filteredParticipaciones.filter(p => p.estado === 'Suspendido').length}
               </Typography>
             </CardContent>
           </Card>
@@ -350,7 +469,7 @@ const ParticipacionPage: React.FC = () => {
                 Inactivas
               </Typography>
               <Typography variant="h4" color="error.main">
-                {participaciones.filter(p => p.estado === 'Inactivo').length}
+                {filteredParticipaciones.filter(p => p.estado === 'Inactivo').length}
               </Typography>
             </CardContent>
           </Card>
@@ -364,7 +483,7 @@ const ParticipacionPage: React.FC = () => {
       {/* Tabla de participaciones */}
       <Box sx={{ height: 600, width: '100%' }}>
         <DataGrid
-          rows={participaciones}
+          rows={filteredParticipaciones}
           columns={columns}
           pageSize={10}
           rowsPerPageOptions={[10]}
@@ -383,6 +502,7 @@ const ParticipacionPage: React.FC = () => {
           {selectedParticipacion ? 'Editar Participación' : 'Nueva Participación'}
         </DialogTitle>
         <DialogContent>
+          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <Autocomplete
@@ -395,12 +515,15 @@ const ParticipacionPage: React.FC = () => {
                 renderInput={(params) => (
                   <TextField {...params} label="Persona" required />
                 )}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
-                    <PersonIcon sx={{ mr: 1 }} />
-                    {option.nombre} {option.apellido} ({option.tipo})
-                  </Box>
-                )}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <Box component="li" key={key} {...otherProps}>
+                      <PersonIcon sx={{ mr: 1 }} />
+                      {option.nombre} {option.apellido} ({option.tipo})
+                    </Box>
+                  );
+                }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -414,12 +537,15 @@ const ParticipacionPage: React.FC = () => {
                 renderInput={(params) => (
                   <TextField {...params} label="Actividad" required />
                 )}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
-                    <ActivityIcon sx={{ mr: 1 }} />
-                    {option.nombre} ({option.tipo})
-                  </Box>
-                )}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <Box component="li" key={key} {...otherProps}>
+                      <ActivityIcon sx={{ mr: 1 }} />
+                      {option.nombre} ({option.tipo})
+                    </Box>
+                  );
+                }}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -484,6 +610,7 @@ const ParticipacionPage: React.FC = () => {
               />
             </Grid>
           </Grid>
+          </LocalizationProvider>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancelar</Button>

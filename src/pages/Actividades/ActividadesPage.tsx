@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -20,6 +21,7 @@ import {
   Stack,
   Tabs,
   Tab,
+  Tooltip,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -27,6 +29,7 @@ import {
   Add as AddIcon,
   Visibility as ViewIcon,
   ContentCopy as CopyIcon,
+  School as SchoolIcon,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import {
@@ -44,6 +47,7 @@ import ActividadForm from '../../components/forms/ActividadForm';
 
 const ActividadesPage: React.FC = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { actividades, loading, error, selectedActividad } = useAppSelector((state) => state.actividades);
 
   const [formOpen, setFormOpen] = useState(false);
@@ -168,13 +172,18 @@ const ActividadesPage: React.FC = () => {
 
 
   const getTipoLabel = (tipo: string) => {
-    const labels = {
-      coro: 'Coro',
-      clase: 'Clase',
-      taller: 'Taller',
-      evento: 'Evento'
+    const labels: Record<string, string> = {
+      'CORO': 'Coro',
+      'CLASE_CANTO': 'Clase de Canto',
+      'CLASE_INSTRUMENTO': 'Clase de Instrumento',
+      'TALLER': 'Taller',
+      'EVENTO': 'Evento',
+      'coro': 'Coro',
+      'clase': 'Clase',
+      'taller': 'Taller',
+      'evento': 'Evento'
     };
-    return labels[tipo as keyof typeof labels] || tipo;
+    return labels[tipo] || tipo;
   };
 
   const getCategoriaLabel = (categoria: string) => {
@@ -211,11 +220,12 @@ const ActividadesPage: React.FC = () => {
   };
 
   const filteredActividades = actividades.filter((actividad) => {
+    const tipoUpper = actividad.tipo.toUpperCase();
     switch (tabValue) {
-      case 1: return actividad.tipo === 'coro';
-      case 2: return actividad.tipo === 'clase';
-      case 3: return actividad.tipo === 'taller';
-      case 4: return actividad.tipo === 'evento';
+      case 1: return tipoUpper === 'CORO';
+      case 2: return tipoUpper === 'CLASE' || tipoUpper === 'CLASE_CANTO' || tipoUpper === 'CLASE_INSTRUMENTO';
+      case 3: return tipoUpper === 'TALLER';
+      case 4: return tipoUpper === 'EVENTO';
       default: return true;
     }
   });
@@ -266,6 +276,7 @@ const ActividadesPage: React.FC = () => {
               <TableCell>Horario</TableCell>
               <TableCell>Docente</TableCell>
               <TableCell>Cupo</TableCell>
+              <TableCell>Secciones</TableCell>
               <TableCell>Estado</TableCell>
               <TableCell align="center">Acciones</TableCell>
             </TableRow>
@@ -309,6 +320,19 @@ const ActividadesPage: React.FC = () => {
                 <TableCell>
                   {actividad.cupoActual}
                   {actividad.cupoMaximo && ` / ${actividad.cupoMaximo}`}
+                </TableCell>
+                <TableCell>
+                  <Tooltip title="Crear sección para esta actividad">
+                    <Button
+                      size="small"
+                      startIcon={<SchoolIcon />}
+                      onClick={() => navigate(`/secciones/new?actividadId=${actividad.id}`)}
+                      variant="outlined"
+                      sx={{ minWidth: 'auto' }}
+                    >
+                      Nueva
+                    </Button>
+                  </Tooltip>
                 </TableCell>
                 <TableCell>
                   <Chip

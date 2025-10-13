@@ -17,6 +17,12 @@ import ParticipacionPage from './pages/Participacion/ParticipacionPage';
 import FamiliaresPage from './pages/Familiares/FamiliaresPage';
 import ReservasPage from './pages/Reservas/ReservasPage';
 import ConfiguracionPage from './pages/Configuracion/ConfiguracionPage';
+import SeccionesPage from './pages/Secciones/SeccionesPage';
+import SeccionDetailPage from './pages/Secciones/SeccionDetailPage';
+import SeccionFormPage from './pages/Secciones/SeccionFormPage';
+import HorarioSemanalPage from './pages/Secciones/HorarioSemanalPage';
+import DashboardSeccionesPage from './pages/Secciones/DashboardSeccionesPage';
+import CategoriasPage from './pages/Categorias/CategoriasPage';
 
 function App() {
   return (
@@ -31,12 +37,19 @@ function App() {
               <Route path="/actividades" element={<ActividadesPage />} />
               <Route path="/aulas" element={<AulasPage />} />
               <Route path="/cuotas" element={<CuotasPage />} />
+              <Route path="/categorias" element={<CategoriasPage />} />
               <Route path="/medios-pago" element={<MediosPagoPage />} />
               <Route path="/recibos" element={<RecibosPage />} />
               <Route path="/participacion" element={<ParticipacionPage />} />
               <Route path="/familiares" element={<FamiliaresPage />} />
               <Route path="/reservas" element={<ReservasPage />} />
               <Route path="/configuracion" element={<ConfiguracionPage />} />
+              <Route path="/secciones" element={<SeccionesPage />} />
+              <Route path="/secciones/new" element={<SeccionFormPage />} />
+              <Route path="/secciones/horario-semanal" element={<HorarioSemanalPage />} />
+              <Route path="/secciones/dashboard" element={<DashboardSeccionesPage />} />
+              <Route path="/secciones/:id" element={<SeccionDetailPage />} />
+              <Route path="/secciones/:id/edit" element={<SeccionFormPage />} />
             </Routes>
           </DashboardLayout>
         </Router>
