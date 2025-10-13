@@ -73,6 +73,23 @@ export const personasApi = {
       responseType: 'blob'
     });
     return response.data;
+  },
+
+  checkDniExists: async (dni: string): Promise<ApiResponse<{
+    exists: boolean;
+    persona?: Persona;
+    isInactive?: boolean;
+  }>> => {
+    const response = await api.get(`/personas/check-dni/${dni}`);
+    return response.data;
+  },
+
+  reactivate: async (id: number, updatedData: Partial<Persona>): Promise<ApiResponse<Persona>> => {
+    const response = await api.patch(`/personas/${id}/reactivate`, {
+      ...updatedData,
+      estado: 'activo'
+    });
+    return response.data;
   }
 };
 

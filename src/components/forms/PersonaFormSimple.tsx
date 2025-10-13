@@ -22,6 +22,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { Persona } from '../../store/slices/personasSlice';
+import { CategoriaSelect } from '../categorias/CategoriaSelect';
 
 interface PersonaFormData {
   nombre: string;
@@ -31,8 +32,9 @@ interface PersonaFormData {
   telefono: string;
   direccion: string;
   fechaNacimiento: Date | null;
-  tipo: 'SOCIO' | 'NO_SOCIO' | 'DOCENTE' | 'PROVEEDOR' | '';
+  tipo: 'SOCIO' | 'NO_SOCIO' | 'DOCENTE' | 'ESTUDIANTE' | 'PROVEEDOR' | '';
   estado: 'activo' | 'inactivo';
+  categoriaId: string; // Ahora es ID de categoría
   observaciones: string;
 }
 
@@ -50,6 +52,7 @@ interface PersonaFormProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: Omit<Persona, 'id' | 'fechaIngreso'>) => void;
+  onDniCheck?: (dni: string) => Promise<void>;
   persona?: Persona | null;
   loading?: boolean;
   title?: string;
@@ -65,6 +68,7 @@ const initialFormData: PersonaFormData = {
   fechaNacimiento: null,
   tipo: '',
   estado: 'activo',
+  categoriaId: '',
   observaciones: '',
 };
 
@@ -82,6 +86,7 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
   open,
   onClose,
   onSubmit,
+  onDniCheck,
   persona,
   loading = false,
   title,
@@ -104,6 +109,7 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
         fechaNacimiento: persona.fechaNacimiento ? new Date(persona.fechaNacimiento) : null,
         tipo: persona.tipo || '',
         estado: persona.estado || 'activo',
+        categoriaId: persona.categoriaId || '', // Usar categoriaId
         observaciones: persona.observaciones || '',
       });
     } else {
@@ -150,6 +156,10 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
       newErrors.tipo = 'El tipo es requerido';
     }
 
+    if (formData.tipo === 'SOCIO' && !formData.categoriaId) {
+      newErrors.tipo = 'La categoría es requerida para socios';
+    }
+
     if (formData.email && !validateEmail(formData.email)) {
       newErrors.email = 'El formato del email no es válido';
     }
@@ -181,6 +191,7 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
       fechaNacimiento: formData.fechaNacimiento?.toISOString() || undefined,
       tipo: formData.tipo as Persona['tipo'],
       estado: formData.estado,
+      categoriaId: formData.categoriaId || undefined, // Enviar categoriaId
       observaciones: formData.observaciones.trim() || undefined,
     };
 
@@ -190,6 +201,12 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
   const handleClose = () => {
     if (!loading) {
       onClose();
+    }
+  };
+
+  const handleDniBlur = async () => {
+    if (formData.dni.trim().length >= 7 && !isEditing && onDniCheck) {
+      await onDniCheck(formData.dni.trim());
     }
   };
 
@@ -247,9 +264,10 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
               label="DNI *"
               value={formData.dni}
               onChange={handleChange('dni')}
+              onBlur={handleDniBlur}
               error={!!errors.dni}
               helperText={errors.dni}
-              disabled={loading}
+              disabled={loading || isEditing}
               inputProps={{ maxLength: 8 }}
             />
 
@@ -312,6 +330,7 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
                 >
                   <MenuItem value="SOCIO">Socio</MenuItem>
                   <MenuItem value="NO_SOCIO">No Socio</MenuItem>
+                  <MenuItem value="ESTUDIANTE">Estudiante</MenuItem>
                   <MenuItem value="DOCENTE">Docente</MenuItem>
                   <MenuItem value="PROVEEDOR">Proveedor</MenuItem>
                 </Select>
@@ -330,6 +349,22 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
                 </Select>
               </FormControl>
             </Box>
+
+            {formData.tipo === 'SOCIO' && (
+              <CategoriaSelect
+                value={formData.categoriaId}
+                onChange={(id) => {
+                  setFormData(prev => ({ ...prev, categoriaId: id }));
+                  if (errors.tipo) {
+                    setErrors(prev => ({ ...prev, tipo: undefined }));
+                  }
+                }}
+                error={errors.tipo}
+                required
+                disabled={loading}
+                includeInactive={false}
+              />
+            )}
 
             <TextField
               fullWidth

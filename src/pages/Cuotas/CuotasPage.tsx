@@ -63,6 +63,7 @@ import {
   Cuota,
   CuotasFilters,
 } from '../../store/slices/cuotasSlice';
+import { fetchPersonas } from '../../store/slices/personasSlice';
 import CuotaForm from '../../components/forms/CuotaForm';
 import GenerarCuotasMasivasDialog from '../../components/forms/GenerarCuotasMasivasDialog';
 
@@ -96,6 +97,7 @@ const CuotasPage: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchCuotas());
+    dispatch(fetchPersonas());
   }, [dispatch]);
 
   const handleFilterChange = (newFilters: Partial<CuotasFilters>) => {

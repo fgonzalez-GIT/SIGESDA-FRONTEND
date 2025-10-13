@@ -112,12 +112,8 @@ const initialState: FamiliaresState = {
   },
 };
 
-// Mock API functions
-const familiaresAPI = {
-  getRelaciones: async (filters: FamiliaresFilters = {}): Promise<RelacionFamiliar[]> => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const mockRelaciones: RelacionFamiliar[] = [
+// Mock data store (para simular persistencia entre llamadas)
+let mockRelacionesStore: RelacionFamiliar[] = [
       {
         id: 1,
         personaId: 1,
@@ -169,9 +165,14 @@ const familiaresAPI = {
         contactoEmergencia: false,
         porcentajeDescuento: 15,
       },
-    ];
+];
 
-    return mockRelaciones.filter(relacion => {
+// Mock API functions
+const familiaresAPI = {
+  getRelaciones: async (filters: FamiliaresFilters = {}): Promise<RelacionFamiliar[]> => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    return mockRelacionesStore.filter(relacion => {
       if (filters.personaId && relacion.personaId !== filters.personaId) return false;
       if (filters.tipoRelacion && relacion.tipoRelacion !== filters.tipoRelacion) return false;
       if (filters.responsableFinanciero !== undefined && relacion.responsableFinanciero !== filters.responsableFinanciero) return false;
@@ -221,47 +222,33 @@ const familiaresAPI = {
   getPersonasConFamiliares: async (): Promise<PersonaConFamiliares[]> => {
     await new Promise(resolve => setTimeout(resolve, 400));
 
-    return [
-      {
-        id: 1,
-        nombre: 'Juan',
-        apellido: 'Pérez',
-        tipo: 'socio',
-        familiares: [
-          {
-            familiar: { id: 2, nombre: 'María', apellido: 'González', tipo: 'socio' },
-            relacion: {
-              id: 1,
-              personaId: 1,
-              familiarId: 2,
-              tipoRelacion: 'esposa',
-              descripcion: 'Cónyuge',
-              fechaCreacion: '2025-01-15',
-              activo: true,
-              responsableFinanciero: false,
-              autorizadoRetiro: true,
-              contactoEmergencia: true,
-              porcentajeDescuento: 10,
-            }
-          },
-          {
-            familiar: { id: 3, nombre: 'Pedro', apellido: 'Pérez', tipo: 'estudiante' },
-            relacion: {
-              id: 2,
-              personaId: 1,
-              familiarId: 3,
-              tipoRelacion: 'hijo',
-              descripcion: 'Hijo menor',
-              fechaCreacion: '2025-01-15',
-              activo: true,
-              responsableFinanciero: true,
-              autorizadoRetiro: true,
-              contactoEmergencia: false,
-              porcentajeDescuento: 15,
-            }
-          }
-        ],
-        grupoFamiliar: {
+    // Mock de personas base (en producción vendría de la API de personas)
+    const mockPersonas = [
+      { id: 1, nombre: 'Juan', apellido: 'Pérez', tipo: 'socio' as const },
+      { id: 2, nombre: 'María', apellido: 'González', tipo: 'socio' as const },
+      { id: 3, nombre: 'Pedro', apellido: 'Pérez', tipo: 'estudiante' as const },
+      { id: 4, nombre: 'Ana', apellido: 'García', tipo: 'socio' as const },
+      { id: 5, nombre: 'Luis', apellido: 'García', tipo: 'estudiante' as const },
+    ];
+
+    // Construir PersonasConFamiliares dinámicamente desde mockRelacionesStore
+    const personasConFamiliares: PersonaConFamiliares[] = mockPersonas.map(persona => {
+      // Buscar todas las relaciones donde esta persona es el titular
+      const relaciones = mockRelacionesStore.filter(r => r.personaId === persona.id);
+
+      // Mapear relaciones a familiares
+      const familiares = relaciones.map(relacion => {
+        const familiar = mockPersonas.find(p => p.id === relacion.familiarId);
+        return {
+          familiar: familiar || { id: relacion.familiarId, nombre: 'Desconocido', apellido: '', tipo: 'socio' as const },
+          relacion
+        };
+      });
+
+      return {
+        ...persona,
+        familiares,
+        grupoFamiliar: persona.id === 1 ? {
           id: 1,
           nombre: 'Familia Pérez',
           descripcion: 'Grupo familiar principal',
@@ -275,15 +262,17 @@ const familiaresAPI = {
             descuentoProgresivo: true,
             limiteCuotas: 0,
           },
-        },
-      },
-    ];
+        } : undefined
+      };
+    });
+
+    return personasConFamiliares;
   },
 
   crearRelacion: async (request: CrearRelacionRequest): Promise<RelacionFamiliar> => {
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    return {
+    const nuevaRelacion: RelacionFamiliar = {
       id: Date.now(),
       personaId: request.personaId,
       familiarId: request.familiarId,
@@ -296,6 +285,11 @@ const familiaresAPI = {
       contactoEmergencia: request.contactoEmergencia || false,
       porcentajeDescuento: request.porcentajeDescuento,
     };
+
+    // Agregar al store mock para que persista
+    mockRelacionesStore.push(nuevaRelacion);
+
+    return nuevaRelacion;
   },
 
   crearGrupoFamiliar: async (request: CrearGrupoFamiliarRequest): Promise<GrupoFamiliar> => {
@@ -316,10 +310,21 @@ const familiaresAPI = {
 
   eliminarRelacion: async (id: number): Promise<void> => {
     await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Eliminar del store mock
+    mockRelacionesStore = mockRelacionesStore.filter(r => r.id !== id);
   },
 
   actualizarRelacion: async (id: number, relacion: Partial<RelacionFamiliar>): Promise<RelacionFamiliar> => {
     await new Promise(resolve => setTimeout(resolve, 400));
+
+    // Actualizar en el store mock
+    const index = mockRelacionesStore.findIndex(r => r.id === id);
+    if (index !== -1) {
+      mockRelacionesStore[index] = { ...mockRelacionesStore[index], ...relacion };
+      return mockRelacionesStore[index];
+    }
+
     return { id, ...relacion } as RelacionFamiliar;
   },
 };

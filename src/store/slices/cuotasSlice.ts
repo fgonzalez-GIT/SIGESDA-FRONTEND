@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { CategoriaSocio } from '../../types/categoria.types';
 
 export interface Cuota {
   id: number;
@@ -6,6 +7,8 @@ export interface Cuota {
   personaNombre: string;
   personaApellido: string;
   personaTipo: 'socio' | 'docente' | 'estudiante';
+  categoriaId: string; // FK a CategoriaSocio (requerido por backend)
+  categoria?: CategoriaSocio; // Relación populada (cuando se incluye en la query)
   monto: number;
   concepto: string;
   mesVencimiento: string; // YYYY-MM
@@ -96,6 +99,7 @@ const cuotasAPI = {
         personaNombre: 'Juan',
         personaApellido: 'Pérez',
         personaTipo: 'socio',
+        categoriaId: 'clwactivo000001', // Categoría ACTIVO
         monto: 5000,
         concepto: 'Cuota mensual - Septiembre 2025',
         mesVencimiento: '2025-09',
@@ -110,6 +114,7 @@ const cuotasAPI = {
         personaNombre: 'María',
         personaApellido: 'García',
         personaTipo: 'socio',
+        categoriaId: 'clwactivo000001', // Categoría ACTIVO
         monto: 5000,
         concepto: 'Cuota mensual - Septiembre 2025',
         mesVencimiento: '2025-09',
@@ -127,6 +132,7 @@ const cuotasAPI = {
         personaNombre: 'Carlos',
         personaApellido: 'López',
         personaTipo: 'estudiante',
+        categoriaId: 'clwestudiant001', // Categoría ESTUDIANTE
         monto: 3000,
         concepto: 'Cuota mensual - Agosto 2025',
         mesVencimiento: '2025-08',
@@ -169,6 +175,7 @@ const cuotasAPI = {
       personaNombre: `Persona ${personaId}`,
       personaApellido: `Apellido ${personaId}`,
       personaTipo: 'socio' as const,
+      categoriaId: 'clwactivo000001', // Categoría por defecto ACTIVO
       monto: request.monto,
       concepto: request.concepto,
       mesVencimiento: request.mesVencimiento,
@@ -187,6 +194,7 @@ const cuotasAPI = {
       personaNombre: 'Juan',
       personaApellido: 'Pérez',
       personaTipo: 'socio',
+      categoriaId: 'clwactivo000001', // Categoría ACTIVO
       monto: 5000,
       concepto: 'Cuota mensual',
       mesVencimiento: '2025-09',

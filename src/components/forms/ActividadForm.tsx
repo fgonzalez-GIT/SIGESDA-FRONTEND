@@ -29,7 +29,7 @@ import { Actividad } from '../../store/slices/actividadesSlice';
 interface ActividadFormData {
   nombre: string;
   descripcion: string;
-  tipo: 'coro' | 'clase' | 'taller' | 'evento' | '';
+  tipo: 'CORO' | 'CLASE_CANTO' | 'CLASE_INSTRUMENTO' | 'TALLER' | 'EVENTO' | 'coro' | 'clase' | 'taller' | 'evento' | '';
   categoria: 'infantil' | 'juvenil' | 'adulto' | 'general' | '';
   docenteId: number | null;
   aulaId: number | null;
@@ -109,10 +109,15 @@ const diasSemana = [
 ];
 
 const tiposActividad = [
-  { value: 'coro', label: 'Coro' },
-  { value: 'clase', label: 'Clase' },
-  { value: 'taller', label: 'Taller' },
-  { value: 'evento', label: 'Evento' },
+  { value: 'CORO', label: 'Coro' },
+  { value: 'CLASE_CANTO', label: 'Clase de Canto' },
+  { value: 'CLASE_INSTRUMENTO', label: 'Clase de Instrumento' },
+  { value: 'TALLER', label: 'Taller' },
+  { value: 'EVENTO', label: 'Evento' },
+  { value: 'coro', label: 'Coro (legacy)' },
+  { value: 'clase', label: 'Clase (legacy)' },
+  { value: 'taller', label: 'Taller (legacy)' },
+  { value: 'evento', label: 'Evento (legacy)' },
 ];
 
 const categorias = [
@@ -258,7 +263,7 @@ export const ActividadForm: React.FC<ActividadFormProps> = ({
     const submitData: Omit<Actividad, 'id' | 'cupoActual' | 'fechaCreacion' | 'docenteNombre' | 'aulaNombre'> = {
       nombre: formData.nombre.trim(),
       descripcion: formData.descripcion.trim() || undefined,
-      tipo: formData.tipo as 'coro' | 'clase' | 'taller' | 'evento',
+      tipo: formData.tipo as 'CORO' | 'CLASE_CANTO' | 'CLASE_INSTRUMENTO' | 'TALLER' | 'EVENTO' | 'coro' | 'clase' | 'taller' | 'evento',
       categoria: formData.categoria as 'infantil' | 'juvenil' | 'adulto' | 'general',
       docenteId: formData.docenteId || undefined,
       aulaId: formData.aulaId || undefined,
