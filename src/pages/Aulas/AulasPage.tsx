@@ -31,84 +31,77 @@ import {
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
-
-interface Aula {
-  id: number;
-  nombre: string;
-  tipo: string;
-  capacidad: number;
-  ubicacion: string;
-  equipamiento: string[];
-  disponible: boolean;
-  observaciones?: string;
-}
+import {
+  fetchAulas,
+  createAula,
+  updateAula,
+  deleteAula,
+  setSelectedAula,
+  clearError,
+  type Aula
+} from '../../store/slices/aulasSlice';
+import { showNotification } from '../../store/slices/uiSlice';
 
 const AulasPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const [aulas, setAulas] = useState<Aula[]>([]);
+  const { aulas, loading, error, selectedAula } = useAppSelector((state) => state.aulas);
+
   const [openDialog, setOpenDialog] = useState(false);
-  const [selectedAula, setSelectedAula] = useState<Aula | null>(null);
   const [formData, setFormData] = useState<Partial<Aula>>({
     nombre: '',
-    tipo: '',
+    tipo: 'salon',
     capacidad: 0,
     ubicacion: '',
     equipamiento: [],
-    disponible: true,
+    estado: 'disponible',
     observaciones: ''
   });
 
-  const tiposAula = ['Aula de Coro', 'Aula de Instrumentos', 'Aula de Teoría', 'Salón de Actos', 'Estudio de Grabación'];
+  const tiposAula = [
+    { value: 'salon', label: 'Salón' },
+    { value: 'ensayo', label: 'Sala de Ensayo' },
+    { value: 'auditorio', label: 'Auditorio' },
+    { value: 'exterior', label: 'Exterior' }
+  ];
+
+  const estadosAula = [
+    { value: 'disponible', label: 'Disponible' },
+    { value: 'ocupado', label: 'Ocupado' },
+    { value: 'mantenimiento', label: 'En Mantenimiento' },
+    { value: 'fuera_servicio', label: 'Fuera de Servicio' }
+  ];
+
   const equipamientoDisponible = ['Piano', 'Proyector', 'Sistema de Audio', 'Micrófono', 'Pizarra', 'Atriles', 'Sillas', 'Mesas'];
 
+  // Cargar aulas al montar el componente
   useEffect(() => {
-    // Datos de ejemplo - en producción vendría de la API
-    setAulas([
-      {
-        id: 1,
-        nombre: 'Aula Principal',
-        tipo: 'Aula de Coro',
-        capacidad: 50,
-        ubicacion: 'Planta Baja - A101',
-        equipamiento: ['Piano', 'Sistema de Audio', 'Atriles'],
-        disponible: true,
-        observaciones: 'Aula principal para ensayos del coro'
-      },
-      {
-        id: 2,
-        nombre: 'Estudio 1',
-        tipo: 'Estudio de Grabación',
-        capacidad: 10,
-        ubicacion: 'Primer Piso - B205',
-        equipamiento: ['Sistema de Audio', 'Micrófono', 'Piano'],
-        disponible: true
-      },
-      {
-        id: 3,
-        nombre: 'Aula de Teoría',
-        tipo: 'Aula de Teoría',
-        capacidad: 25,
-        ubicacion: 'Primer Piso - B103',
-        equipamiento: ['Proyector', 'Pizarra', 'Sillas', 'Mesas'],
-        disponible: false,
-        observaciones: 'En mantenimiento hasta fin de mes'
-      }
-    ]);
-  }, []);
+    dispatch(fetchAulas());
+  }, [dispatch]);
+
+  // Mostrar errores
+  useEffect(() => {
+    if (error) {
+      dispatch(showNotification({
+        message: error,
+        severity: 'error'
+      }));
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   const handleOpenDialog = (aula?: Aula) => {
     if (aula) {
-      setSelectedAula(aula);
+      dispatch(setSelectedAula(aula));
       setFormData(aula);
     } else {
-      setSelectedAula(null);
+      dispatch(setSelectedAula(null));
       setFormData({
         nombre: '',
-        tipo: '',
+        tipo: 'salon',
         capacidad: 0,
         ubicacion: '',
         equipamiento: [],
-        disponible: true,
+        estado: 'disponible',
         observaciones: ''
       });
     }
@@ -117,35 +110,92 @@ const AulasPage: React.FC = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setSelectedAula(null);
+    dispatch(setSelectedAula(null));
     setFormData({});
   };
 
-  const handleSave = () => {
-    if (selectedAula) {
-      // Actualizar aula existente
-      setAulas(prev => prev.map(aula =>
-        aula.id === selectedAula.id ? { ...formData as Aula } : aula
-      ));
-    } else {
-      // Crear nueva aula
-      const newAula: Aula = {
-        ...formData as Aula,
-        id: Date.now()
-      };
-      setAulas(prev => [...prev, newAula]);
+  const handleSave = async () => {
+    try {
+      if (selectedAula) {
+        // Actualizar aula existente
+        await dispatch(updateAula({ ...formData as Aula, id: selectedAula.id, fechaCreacion: selectedAula.fechaCreacion })).unwrap();
+        dispatch(showNotification({
+          message: 'Aula actualizada exitosamente',
+          severity: 'success'
+        }));
+      } else {
+        // Crear nueva aula
+        await dispatch(createAula(formData as Omit<Aula, 'id' | 'fechaCreacion'>)).unwrap();
+        dispatch(showNotification({
+          message: 'Aula creada exitosamente',
+          severity: 'success'
+        }));
+      }
+      handleCloseDialog();
+    } catch (error) {
+      dispatch(showNotification({
+        message: 'Error al guardar el aula',
+        severity: 'error'
+      }));
     }
-    handleCloseDialog();
   };
 
-  const handleDelete = (id: number) => {
-    setAulas(prev => prev.filter(aula => aula.id !== id));
+  const handleDelete = async (id: number) => {
+    if (window.confirm('¿Está seguro que desea eliminar esta aula?')) {
+      try {
+        await dispatch(deleteAula(id)).unwrap();
+        dispatch(showNotification({
+          message: 'Aula eliminada exitosamente',
+          severity: 'success'
+        }));
+      } catch (error) {
+        dispatch(showNotification({
+          message: 'Error al eliminar el aula',
+          severity: 'error'
+        }));
+      }
+    }
   };
 
-  const handleToggleDisponibilidad = (id: number) => {
-    setAulas(prev => prev.map(aula =>
-      aula.id === id ? { ...aula, disponible: !aula.disponible } : aula
-    ));
+  const handleToggleEstado = async (aula: Aula) => {
+    try {
+      const nuevoEstado = aula.estado === 'disponible' ? 'ocupado' : 'disponible';
+      await dispatch(updateAula({ ...aula, estado: nuevoEstado })).unwrap();
+      dispatch(showNotification({
+        message: `Aula marcada como ${nuevoEstado}`,
+        severity: 'success'
+      }));
+    } catch (error) {
+      dispatch(showNotification({
+        message: 'Error al actualizar el estado',
+        severity: 'error'
+      }));
+    }
+  };
+
+  const getEstadoChipColor = (estado: string) => {
+    switch (estado) {
+      case 'disponible':
+        return 'success';
+      case 'ocupado':
+        return 'warning';
+      case 'mantenimiento':
+        return 'info';
+      case 'fuera_servicio':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getEstadoLabel = (estado: string) => {
+    const estadoObj = estadosAula.find(e => e.value === estado);
+    return estadoObj?.label || estado;
+  };
+
+  const getTipoLabel = (tipo: string) => {
+    const tipoObj = tiposAula.find(t => t.value === tipo);
+    return tipoObj?.label || tipo;
   };
 
   const columns: GridColDef[] = [
@@ -160,34 +210,49 @@ const AulasPage: React.FC = () => {
         </Box>
       )
     },
-    { field: 'tipo', headerName: 'Tipo', width: 150 },
+    {
+      field: 'tipo',
+      headerName: 'Tipo',
+      width: 150,
+      valueFormatter: (value) => getTipoLabel(value)
+    },
     { field: 'capacidad', headerName: 'Capacidad', width: 100 },
     { field: 'ubicacion', headerName: 'Ubicación', width: 180 },
     {
       field: 'equipamiento',
       headerName: 'Equipamiento',
       width: 200,
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-          {params.value.slice(0, 2).map((equipo: string, index: number) => (
-            <Chip key={index} label={equipo} size="small" variant="outlined" />
-          ))}
-          {params.value.length > 2 && (
-            <Chip label={`+${params.value.length - 2}`} size="small" />
-          )}
-        </Box>
-      )
+      renderCell: (params) => {
+        // Asegurar que params.value sea un array
+        const equipamiento = Array.isArray(params.value) ? params.value : [];
+
+        if (equipamiento.length === 0) {
+          return <Chip label="Sin equipamiento" size="small" variant="outlined" color="default" />;
+        }
+
+        return (
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+            {equipamiento.slice(0, 2).map((equipo: string, index: number) => (
+              <Chip key={index} label={equipo} size="small" variant="outlined" />
+            ))}
+            {equipamiento.length > 2 && (
+              <Chip label={`+${equipamiento.length - 2}`} size="small" />
+            )}
+          </Box>
+        );
+      }
     },
     {
-      field: 'disponible',
+      field: 'estado',
       headerName: 'Estado',
-      width: 120,
+      width: 150,
       renderCell: (params) => (
         <Chip
-          icon={params.value ? <AvailableIcon /> : <BusyIcon />}
-          label={params.value ? 'Disponible' : 'No disponible'}
-          color={params.value ? 'success' : 'error'}
+          icon={params.value === 'disponible' ? <AvailableIcon /> : <BusyIcon />}
+          label={getEstadoLabel(params.value)}
+          color={getEstadoChipColor(params.value) as any}
           variant="outlined"
+          size="small"
         />
       )
     },
@@ -203,9 +268,9 @@ const AulasPage: React.FC = () => {
           onClick={() => handleOpenDialog(params.row)}
         />,
         <GridActionsCellItem
-          icon={params.row.disponible ? <BusyIcon /> : <AvailableIcon />}
-          label={params.row.disponible ? 'Deshabilitar' : 'Habilitar'}
-          onClick={() => handleToggleDisponibilidad(params.row.id)}
+          icon={params.row.estado === 'disponible' ? <BusyIcon /> : <AvailableIcon />}
+          label={params.row.estado === 'disponible' ? 'Marcar ocupado' : 'Marcar disponible'}
+          onClick={() => handleToggleEstado(params.row)}
         />,
         <GridActionsCellItem
           icon={<DeleteIcon />}
@@ -252,7 +317,7 @@ const AulasPage: React.FC = () => {
                 Disponibles
               </Typography>
               <Typography variant="h4" color="success.main">
-                {aulas.filter(a => a.disponible).length}
+                {aulas.filter(a => a.estado === 'disponible').length}
               </Typography>
             </CardContent>
           </Card>
@@ -261,10 +326,10 @@ const AulasPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                No Disponibles
+                Ocupadas
               </Typography>
-              <Typography variant="h4" color="error.main">
-                {aulas.filter(a => !a.disponible).length}
+              <Typography variant="h4" color="warning.main">
+                {aulas.filter(a => a.estado === 'ocupado').length}
               </Typography>
             </CardContent>
           </Card>
@@ -288,6 +353,7 @@ const AulasPage: React.FC = () => {
         <DataGrid
           rows={aulas}
           columns={columns}
+          loading={loading}
           paginationModel={{ pageSize: 10, page: 0 }}
           pageSizeOptions={[10]}
           disableRowSelectionOnClick
@@ -312,19 +378,20 @@ const AulasPage: React.FC = () => {
                 label="Nombre del Aula"
                 value={formData.nombre || ''}
                 onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                required
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth>
+              <FormControl fullWidth required>
                 <InputLabel>Tipo de Aula</InputLabel>
                 <Select
-                  value={formData.tipo || ''}
+                  value={formData.tipo || 'salon'}
                   label="Tipo de Aula"
-                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value as Aula['tipo'] })}
                 >
                   {tiposAula.map((tipo) => (
-                    <MenuItem key={tipo} value={tipo}>
-                      {tipo}
+                    <MenuItem key={tipo.value} value={tipo.value}>
+                      {tipo.label}
                     </MenuItem>
                   ))}
                 </Select>
@@ -337,6 +404,7 @@ const AulasPage: React.FC = () => {
                 type="number"
                 value={formData.capacidad || ''}
                 onChange={(e) => setFormData({ ...formData, capacidad: parseInt(e.target.value) || 0 })}
+                required
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -345,6 +413,30 @@ const AulasPage: React.FC = () => {
                 label="Ubicación"
                 value={formData.ubicacion || ''}
                 onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth>
+                <InputLabel>Estado</InputLabel>
+                <Select
+                  value={formData.estado || 'disponible'}
+                  label="Estado"
+                  onChange={(e) => setFormData({ ...formData, estado: e.target.value as Aula['estado'] })}
+                >
+                  {estadosAula.map((estado) => (
+                    <MenuItem key={estado.value} value={estado.value}>
+                      {estado.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Descripción"
+                value={formData.descripcion || ''}
+                onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
@@ -372,17 +464,6 @@ const AulasPage: React.FC = () => {
               </FormControl>
             </Grid>
             <Grid size={{ xs: 12 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.disponible || false}
-                    onChange={(e) => setFormData({ ...formData, disponible: e.target.checked })}
-                  />
-                }
-                label="Aula disponible"
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Observaciones"
@@ -396,7 +477,7 @@ const AulasPage: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleSave} variant="contained">
+          <Button onClick={handleSave} variant="contained" disabled={loading}>
             {selectedAula ? 'Actualizar' : 'Crear'}
           </Button>
         </DialogActions>

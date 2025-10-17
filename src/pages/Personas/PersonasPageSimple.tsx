@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+// import { useNavigate } from 'react-router-dom'; // Unused - Secciones navigation removed
 import {
   Box,
   Typography,
@@ -19,8 +19,8 @@ import {
   DialogActions,
   DialogContentText,
   Stack,
-  Tooltip,
-  CircularProgress,
+  // Tooltip, // Unused - Secciones module removed
+  // CircularProgress, // Unused - Secciones module removed
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -28,9 +28,9 @@ import {
   Add as AddIcon,
   Visibility as ViewIcon,
   FamilyRestroom as FamilyIcon,
-  School as SchoolIcon,
+  // School as SchoolIcon, // Unused - Secciones module removed
 } from '@mui/icons-material';
-import seccionesApi from '../../services/seccionesApi';
+// import seccionesApi from '../../services/seccionesApi'; // REMOVED: Secciones module deleted
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import {
   fetchPersonas,
@@ -50,7 +50,7 @@ import { CategoriaBadge } from '../../components/categorias/CategoriaBadge';
 
 const PersonasPageSimple: React.FC = () => {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); // Unused - Secciones navigation removed
   const { personas, loading, error, selectedPersona } = useAppSelector((state) => state.personas);
   const { personasConFamiliares } = useAppSelector((state) => state.familiares);
 
@@ -59,9 +59,9 @@ const PersonasPageSimple: React.FC = () => {
   const [personaToDelete, setPersonaToDelete] = useState<Persona | null>(null);
   const [familiaresDialogOpen, setFamiliaresDialogOpen] = useState(false);
   const [selectedPersonaFamiliares, setSelectedPersonaFamiliares] = useState<string | number | null>(null);
-  const [participacionesPorPersona, setParticipacionesPorPersona] = useState<{ [key: string | number]: number }>({});
-  const participacionesLoadedRef = useRef<Set<string | number>>(new Set());
-  const isLoadingParticipacionesRef = useRef(false);
+  // const [participacionesPorPersona, setParticipacionesPorPersona] = useState<{ [key: string | number]: number }>({}); // Unused - Secciones removed
+  // const participacionesLoadedRef = useRef<Set<string | number>>(new Set()); // Unused - Secciones removed
+  // const isLoadingParticipacionesRef = useRef(false); // Unused - Secciones removed
   const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
   const [personaToReactivate, setPersonaToReactivate] = useState<Persona | null>(null);
   const [pendingFormData, setPendingFormData] = useState<Omit<Persona, 'id' | 'fechaIngreso'> | null>(null);
@@ -71,40 +71,41 @@ const PersonasPageSimple: React.FC = () => {
     dispatch(fetchPersonasConFamiliares());
   }, [dispatch]);
 
+  // COMMENTED OUT: Secciones module was removed
   // Cargar participaciones en secciones para cada persona
-  useEffect(() => {
-    const loadParticipaciones = async () => {
-      // Evitar llamadas duplicadas si ya se están cargando
-      if (isLoadingParticipacionesRef.current) return;
+  // useEffect(() => {
+  //   const loadParticipaciones = async () => {
+  //     // Evitar llamadas duplicadas si ya se están cargando
+  //     if (isLoadingParticipacionesRef.current) return;
 
-      // Filtrar solo personas que no han sido cargadas
-      const personasToLoad = personas.filter(p => !participacionesLoadedRef.current.has(p.id));
+  //     // Filtrar solo personas que no han sido cargadas
+  //     const personasToLoad = personas.filter(p => !participacionesLoadedRef.current.has(p.id));
 
-      if (personasToLoad.length === 0) return;
+  //     if (personasToLoad.length === 0) return;
 
-      isLoadingParticipacionesRef.current = true;
+  //     isLoadingParticipacionesRef.current = true;
 
-      const participaciones: { [key: string | number]: number } = { ...participacionesPorPersona };
+  //     const participaciones: { [key: string | number]: number } = { ...participacionesPorPersona };
 
-      for (const persona of personasToLoad) {
-        try {
-          const response = await seccionesApi.getSeccionesPorPersona(persona.id.toString(), true);
-          participaciones[persona.id] = response.data.length;
-          participacionesLoadedRef.current.add(persona.id);
-        } catch (error) {
-          participaciones[persona.id] = 0;
-          participacionesLoadedRef.current.add(persona.id);
-        }
-      }
+  //     for (const persona of personasToLoad) {
+  //       try {
+  //         const response = await seccionesApi.getSeccionesPorPersona(persona.id.toString(), true);
+  //         participaciones[persona.id] = response.data.length;
+  //         participacionesLoadedRef.current.add(persona.id);
+  //       } catch (error) {
+  //         participaciones[persona.id] = 0;
+  //         participacionesLoadedRef.current.add(persona.id);
+  //       }
+  //     }
 
-      setParticipacionesPorPersona(participaciones);
-      isLoadingParticipacionesRef.current = false;
-    };
+  //     setParticipacionesPorPersona(participaciones);
+  //     isLoadingParticipacionesRef.current = false;
+  //   };
 
-    if (personas.length > 0) {
-      loadParticipaciones();
-    }
-  }, [personas]); // ✅ Removida dependencia circular
+  //   if (personas.length > 0) {
+  //     loadParticipaciones();
+  //   }
+  // }, [personas]); // ✅ Removida dependencia circular
 
   useEffect(() => {
     if (error) {
@@ -261,7 +262,7 @@ const PersonasPageSimple: React.FC = () => {
   const handleDeleteConfirm = async () => {
     if (personaToDelete) {
       try {
-        await dispatch(deletePersona(personaToDelete.id)).unwrap();
+        await dispatch(deletePersona(typeof personaToDelete.id === 'string' ? parseInt(personaToDelete.id) : personaToDelete.id)).unwrap();
         dispatch(showNotification({
           message: 'Persona eliminada exitosamente',
           severity: 'success'
@@ -325,7 +326,7 @@ const PersonasPageSimple: React.FC = () => {
               <TableCell>Categoría</TableCell>
               <TableCell>Estado</TableCell>
               <TableCell>Familiares</TableCell>
-              <TableCell>Secciones</TableCell>
+              {/* <TableCell>Secciones</TableCell> */}
               <TableCell>Fecha Ingreso</TableCell>
               <TableCell align="center">Acciones</TableCell>
             </TableRow>
@@ -333,14 +334,14 @@ const PersonasPageSimple: React.FC = () => {
           <TableBody>
             {loading && (
               <TableRow>
-                <TableCell colSpan={12} align="center">
+                <TableCell colSpan={11} align="center">
                   Cargando...
                 </TableCell>
               </TableRow>
             )}
             {!loading && personas.length === 0 && (
               <TableRow>
-                <TableCell colSpan={12} align="center">
+                <TableCell colSpan={11} align="center">
                   No hay personas registradas
                 </TableCell>
               </TableRow>
@@ -406,7 +407,8 @@ const PersonasPageSimple: React.FC = () => {
                     );
                   })()}
                 </TableCell>
-                <TableCell>
+                {/* COMMENTED OUT: Secciones module removed */}
+                {/* <TableCell>
                   {participacionesPorPersona[persona.id] !== undefined ? (
                     participacionesPorPersona[persona.id] > 0 ? (
                       <Tooltip title="Ver secciones de esta persona">
@@ -431,7 +433,7 @@ const PersonasPageSimple: React.FC = () => {
                   ) : (
                     <CircularProgress size={20} />
                   )}
-                </TableCell>
+                </TableCell> */}
                 <TableCell>{formatDate(persona.fechaIngreso)}</TableCell>
                 <TableCell>
                   <Stack direction="row" spacing={1}>
@@ -525,7 +527,13 @@ const PersonasPageSimple: React.FC = () => {
           setSelectedPersonaFamiliares(null);
           dispatch(fetchPersonasConFamiliares());
         }}
-        personaSeleccionada={selectedPersonaFamiliares || undefined}
+        personaSeleccionada={
+          selectedPersonaFamiliares
+            ? (typeof selectedPersonaFamiliares === 'string'
+                ? parseInt(selectedPersonaFamiliares)
+                : selectedPersonaFamiliares)
+            : undefined
+        }
       />
     </Box>
   );
