@@ -42,11 +42,19 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
+import { fetchPersonas } from '../../store/slices/personasSlice';
+import { useActividades } from '../../hooks/useActividadesV2';
+import {
+  participacionApi,
+  type Participacion as ParticipacionAPI,
+  type CreateParticipacionDTO
+} from '../../services/participacionApi';
+import { showNotification } from '../../store/slices/uiSlice';
 // import seccionesApi from '../../services/seccionesApi'; // REMOVED: Secciones module deleted
 
 interface Participacion {
   id: number;
-  personaId: number;
+  personaId: string;
   personaNombre: string;
   actividadId: number;
   actividadNombre: string;
@@ -58,18 +66,9 @@ interface Participacion {
   observaciones?: string;
 }
 
-interface Persona {
-  id: number;
-  nombre: string;
-  apellido: string;
-  tipo: string;
-}
-
-interface Actividad {
-  id: number;
-  nombre: string;
-  tipo: string;
-}
+// Usar tipos de Redux para Persona
+import type { Persona as PersonaRedux } from '../../store/slices/personasSlice';
+import type { ActividadV2 } from '../../types/actividadV2.types';
 
 const ParticipacionPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -77,15 +76,24 @@ const ParticipacionPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const personaIdParam = searchParams.get('personaId');
 
+  // Obtener personas desde Redux
+  const { personas: personasRedux, loading: loadingPersonas } = useAppSelector((state) => state.personas);
+
+  // Obtener actividades desde el hook useActividades
+  const { actividades: actividadesV2, loading: loadingActividades } = useActividades({
+    page: 1,
+    limit: 100, // Obtener todas las actividades disponibles
+    incluirRelaciones: false
+  });
+
   const [participaciones, setParticipaciones] = useState<Participacion[]>([]);
-  const [personas, setPersonas] = useState<Persona[]>([]);
-  const [actividades, setActividades] = useState<Actividad[]>([]);
+  const [loadingParticipaciones, setLoadingParticipaciones] = useState(false);
   const [seccionesPorPersona, setSeccionesPorPersona] = useState<{ [key: number]: any[] }>({});
   const [loadingSecciones, setLoadingSecciones] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedParticipacion, setSelectedParticipacion] = useState<Participacion | null>(null);
   const [formData, setFormData] = useState<Partial<Participacion>>({
-    personaId: personaIdParam ? parseInt(personaIdParam) : 0,
+    personaId: personaIdParam || '',
     actividadId: 0,
     fechaInscripcion: new Date(),
     estado: 'Activo',
@@ -94,66 +102,41 @@ const ParticipacionPage: React.FC = () => {
 
   const estadosParticipacion = ['Activo', 'Inactivo', 'Suspendido'] as const;
 
+  // Cargar datos reales desde APIs
   useEffect(() => {
-    // Datos de ejemplo - en producción vendrían de la API
-    setPersonas([
-      { id: 1, nombre: 'María', apellido: 'González', tipo: 'Socio' },
-      { id: 2, nombre: 'Carlos', apellido: 'Rodríguez', tipo: 'Socio' },
-      { id: 3, nombre: 'Ana', apellido: 'López', tipo: 'Docente' },
-      { id: 4, nombre: 'Pedro', apellido: 'Martínez', tipo: 'Socio' },
-      { id: 5, nombre: 'Laura', apellido: 'Fernández', tipo: 'Socio' }
-    ]);
+    // Cargar personas desde Redux
+    dispatch(fetchPersonas());
+  }, [dispatch]);
 
-    setActividades([
-      { id: 1, nombre: 'Coro Principal', tipo: 'Coro' },
-      { id: 2, nombre: 'Coro Infantil', tipo: 'Coro' },
-      { id: 3, nombre: 'Clases de Piano', tipo: 'Clase' },
-      { id: 4, nombre: 'Clases de Guitarra', tipo: 'Clase' },
-      { id: 5, nombre: 'Teoría Musical', tipo: 'Clase' }
-    ]);
+  // Cargar participaciones desde la API
+  const cargarParticipaciones = async () => {
+    try {
+      setLoadingParticipaciones(true);
 
-    setParticipaciones([
-      {
-        id: 1,
-        personaId: 1,
-        personaNombre: 'María González',
-        actividadId: 1,
-        actividadNombre: 'Coro Principal',
-        fechaInscripcion: new Date('2024-01-15'),
-        estado: 'Activo'
-      },
-      {
-        id: 2,
-        personaId: 2,
-        personaNombre: 'Carlos Rodríguez',
-        actividadId: 3,
-        actividadNombre: 'Clases de Piano',
-        fechaInscripcion: new Date('2024-02-01'),
-        estado: 'Activo'
-      },
-      {
-        id: 3,
-        personaId: 4,
-        personaNombre: 'Pedro Martínez',
-        actividadId: 2,
-        actividadNombre: 'Coro Infantil',
-        fechaInscripcion: new Date('2024-01-20'),
-        fechaBaja: new Date('2024-06-15'),
-        estado: 'Inactivo',
-        observaciones: 'Se mudó de ciudad'
-      },
-      {
-        id: 4,
-        personaId: 5,
-        personaNombre: 'Laura Fernández',
-        actividadId: 4,
-        actividadNombre: 'Clases de Guitarra',
-        fechaInscripcion: new Date('2024-03-10'),
-        estado: 'Suspendido',
-        observaciones: 'Problemas de pago'
+      // Por ahora, mostrar mensaje que deben seleccionar una actividad
+      // TODO: Implementar carga de todas las participaciones cuando esté disponible el endpoint
+      setParticipaciones([]);
+
+      if (personaIdParam) {
+        dispatch(showNotification({
+          message: 'Filtrado por persona no disponible aún. Selecciona una actividad específica.',
+          severity: 'info'
+        }));
       }
-    ]);
-  }, []);
+    } catch (error) {
+      console.error('Error al cargar participaciones:', error);
+      dispatch(showNotification({
+        message: 'Error al cargar participaciones',
+        severity: 'error'
+      }));
+    } finally {
+      setLoadingParticipaciones(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarParticipaciones();
+  }, [personaIdParam]);
 
   // Cargar secciones para cada persona
   // NOTA: Deshabilitado porque esta página usa datos mock con IDs numéricos
@@ -198,7 +181,7 @@ const ParticipacionPage: React.FC = () => {
     } else {
       setSelectedParticipacion(null);
       setFormData({
-        personaId: 0,
+        personaId: '',
         actividadId: 0,
         fechaInscripcion: new Date(),
         estado: 'Activo',
@@ -214,45 +197,90 @@ const ParticipacionPage: React.FC = () => {
     setFormData({});
   };
 
-  const handleSave = () => {
-    const persona = personas.find(p => p.id === formData.personaId);
-    const actividad = actividades.find(a => a.id === formData.actividadId);
+  const handleSave = async () => {
+    const persona = personasRedux.find(p => String(p.id) === String(formData.personaId));
+    const actividad = actividadesV2.find(a => a.id === formData.actividadId);
 
     if (!persona || !actividad) {
-      alert('Debe seleccionar una persona y una actividad');
+      dispatch(showNotification({
+        message: 'Debe seleccionar una persona y una actividad',
+        severity: 'warning'
+      }));
       return;
     }
 
-    const participacionData = {
-      ...formData as Participacion,
-      personaNombre: `${persona.nombre} ${persona.apellido}`,
-      actividadNombre: actividad.nombre
-    };
+    try {
+      if (selectedParticipacion) {
+        // Actualizar participación existente - NO DISPONIBLE en ActividadesV2
+        dispatch(showNotification({
+          message: 'La edición de participaciones no está disponible aún. Por favor, elimine y cree una nueva.',
+          severity: 'warning'
+        }));
+        return;
+      } else {
+        // Crear nueva participación usando endpoint de ActividadesV2
+        const createData: CreateParticipacionDTO = {
+          persona_id: String(persona.id),
+          actividad_id: actividad.id,
+          fecha_inicio: formData.fechaInscripcion?.toISOString() || new Date().toISOString(),
+          observaciones: formData.observaciones
+        };
 
-    if (selectedParticipacion) {
-      // Actualizar participación existente
-      setParticipaciones(prev => prev.map(part =>
-        part.id === selectedParticipacion.id ? participacionData : part
-      ));
-    } else {
-      // Crear nueva participación
-      const newParticipacion: Participacion = {
-        ...participacionData,
-        id: Date.now()
-      };
-      setParticipaciones(prev => [...prev, newParticipacion]);
+        await participacionApi.crear(createData);
+
+        dispatch(showNotification({
+          message: `Participación creada: ${persona.nombre} ${persona.apellido} inscrito en ${actividad.nombre}`,
+          severity: 'success'
+        }));
+      }
+
+      // Recargar participaciones
+      await cargarParticipaciones();
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Error al guardar participación:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al guardar participación';
+      dispatch(showNotification({
+        message: errorMessage,
+        severity: 'error'
+      }));
     }
-    handleCloseDialog();
   };
 
-  const handleDelete = (id: number) => {
-    setParticipaciones(prev => prev.filter(part => part.id !== id));
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Está seguro de eliminar esta participación?')) {
+      return;
+    }
+
+    try {
+      // Eliminar participación - NO DISPONIBLE en ActividadesV2
+      dispatch(showNotification({
+        message: 'La eliminación de participaciones no está disponible aún.',
+        severity: 'warning'
+      }));
+    } catch (error) {
+      console.error('Error al eliminar participación:', error);
+      dispatch(showNotification({
+        message: error instanceof Error ? error.message : 'Error al eliminar participación',
+        severity: 'error'
+      }));
+    }
   };
 
-  const handleCambiarEstado = (id: number, nuevoEstado: Participacion['estado']) => {
-    setParticipaciones(prev => prev.map(part =>
-      part.id === id ? { ...part, estado: nuevoEstado } : part
-    ));
+  const handleCambiarEstado = async (id: number, nuevoEstado: Participacion['estado']) => {
+    try {
+      // Cambiar estado - NO DISPONIBLE en ActividadesV2
+      dispatch(showNotification({
+        message: 'El cambio de estado no está disponible aún.',
+        severity: 'warning'
+      }));
+    } catch (error) {
+      console.error('Error al cambiar estado:', error);
+      dispatch(showNotification({
+        message: error instanceof Error ? error.message : 'Error al cambiar estado',
+        severity: 'error'
+      }));
+    }
   };
 
   const getEstadoColor = (estado: string) => {
@@ -396,7 +424,7 @@ const ParticipacionPage: React.FC = () => {
 
   // Obtener nombre de la persona si hay filtro
   const personaFiltrada = personaIdParam
-    ? personas.find(p => p.id === parseInt(personaIdParam))
+    ? personasRedux.find(p => String(p.id) === personaIdParam)
     : null;
 
   return (
@@ -482,18 +510,24 @@ const ParticipacionPage: React.FC = () => {
 
       {/* Tabla de participaciones */}
       <Box sx={{ height: 600, width: '100%' }}>
-        <DataGrid
-          rows={filteredParticipaciones}
-          columns={columns}
-          pageSize={10}
-          rowsPerPageOptions={[10]}
-          disableSelectionOnClick
-          sx={{
-            '& .MuiDataGrid-cell': {
-              padding: '8px',
-            },
-          }}
-        />
+        {loadingParticipaciones ? (
+          <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+            <CircularProgress />
+          </Box>
+        ) : (
+          <DataGrid
+            rows={filteredParticipaciones}
+            columns={columns}
+            pageSize={10}
+            rowsPerPageOptions={[10]}
+            disableSelectionOnClick
+            sx={{
+              '& .MuiDataGrid-cell': {
+                padding: '8px',
+              },
+            }}
+          />
+        )}
       </Box>
 
       {/* Dialog para crear/editar participación */}
@@ -506,46 +540,60 @@ const ParticipacionPage: React.FC = () => {
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <Autocomplete
-                options={personas}
-                getOptionLabel={(option) => `${option.nombre} ${option.apellido} (${option.tipo})`}
-                value={personas.find(p => p.id === formData.personaId) || null}
+                options={personasRedux}
+                loading={loadingPersonas}
+                getOptionLabel={(option) => `${option.nombre} ${option.apellido} (${option.tipo.toUpperCase()})`}
+                value={personasRedux.find(p => String(p.id) === String(formData.personaId)) || null}
                 onChange={(_, newValue) => {
-                  setFormData({ ...formData, personaId: newValue?.id || 0 });
+                  setFormData({ ...formData, personaId: newValue?.id ? String(newValue.id) : '' });
                 }}
                 renderInput={(params) => (
-                  <TextField {...params} label="Persona" required />
+                  <TextField
+                    {...params}
+                    label="Persona"
+                    required
+                    helperText={`${personasRedux.length} personas disponibles`}
+                  />
                 )}
                 renderOption={(props, option) => {
                   const { key, ...otherProps } = props;
                   return (
                     <Box component="li" key={key} {...otherProps}>
                       <PersonIcon sx={{ mr: 1 }} />
-                      {option.nombre} {option.apellido} ({option.tipo})
+                      {option.nombre} {option.apellido} ({option.tipo.toUpperCase()})
                     </Box>
                   );
                 }}
+                noOptionsText={loadingPersonas ? "Cargando personas..." : "No hay personas disponibles"}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <Autocomplete
-                options={actividades}
-                getOptionLabel={(option) => `${option.nombre} (${option.tipo})`}
-                value={actividades.find(a => a.id === formData.actividadId) || null}
+                options={actividadesV2}
+                loading={loadingActividades}
+                getOptionLabel={(option) => `${option.nombre} - ${option.codigo}`}
+                value={actividadesV2.find(a => a.id === formData.actividadId) || null}
                 onChange={(_, newValue) => {
                   setFormData({ ...formData, actividadId: newValue?.id || 0 });
                 }}
                 renderInput={(params) => (
-                  <TextField {...params} label="Actividad" required />
+                  <TextField
+                    {...params}
+                    label="Actividad"
+                    required
+                    helperText={`${actividadesV2.length} actividades disponibles`}
+                  />
                 )}
                 renderOption={(props, option) => {
                   const { key, ...otherProps } = props;
                   return (
                     <Box component="li" key={key} {...otherProps}>
                       <ActivityIcon sx={{ mr: 1 }} />
-                      {option.nombre} ({option.tipo})
+                      {option.nombre} - {option.codigo}
                     </Box>
                   );
                 }}
+                noOptionsText={loadingActividades ? "Cargando actividades..." : "No hay actividades disponibles"}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
