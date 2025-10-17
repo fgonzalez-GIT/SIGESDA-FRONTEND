@@ -42,7 +42,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
-import seccionesApi from '../../services/seccionesApi';
+// import seccionesApi from '../../services/seccionesApi'; // REMOVED: Secciones module deleted
 
 interface Participacion {
   id: number;
