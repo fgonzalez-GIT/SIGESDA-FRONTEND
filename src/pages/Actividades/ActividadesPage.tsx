@@ -221,13 +221,30 @@ const ActividadesPage: React.FC = () => {
 
   const filteredActividades = actividades.filter((actividad) => {
     const tipoUpper = actividad.tipo.toUpperCase();
+
+    // Filtro por tabs
+    let matchesTab = false;
     switch (tabValue) {
-      case 1: return tipoUpper === 'CORO';
-      case 2: return tipoUpper === 'CLASE' || tipoUpper === 'CLASE_CANTO' || tipoUpper === 'CLASE_INSTRUMENTO';
-      case 3: return tipoUpper === 'TALLER';
-      case 4: return tipoUpper === 'EVENTO';
-      default: return true;
+      case 0: // Todas
+        matchesTab = true;
+        break;
+      case 1: // Coros
+        matchesTab = tipoUpper === 'CORO';
+        break;
+      case 2: // Clases
+        matchesTab = tipoUpper === 'CLASE' || tipoUpper === 'CLASE_CANTO' || tipoUpper === 'CLASE_INSTRUMENTO';
+        break;
+      case 3: // Talleres
+        matchesTab = tipoUpper === 'TALLER';
+        break;
+      case 4: // Eventos
+        matchesTab = tipoUpper === 'EVENTO';
+        break;
+      default:
+        matchesTab = true;
     }
+
+    return matchesTab;
   });
 
   return (
@@ -269,6 +286,7 @@ const ActividadesPage: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
+              {/* ID column removed - only used internally for key prop */}
               <TableCell>Nombre</TableCell>
               <TableCell>Tipo</TableCell>
               <TableCell>Categoría</TableCell>
