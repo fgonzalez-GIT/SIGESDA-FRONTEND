@@ -22,6 +22,12 @@ import {
   Tabs,
   Tab,
   Tooltip,
+  TextField,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -30,6 +36,8 @@ import {
   Visibility as ViewIcon,
   ContentCopy as CopyIcon,
   School as SchoolIcon,
+  Search as SearchIcon,
+  FilterList as FilterListIcon,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import {
@@ -54,6 +62,11 @@ const ActividadesPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actividadToDelete, setActividadToDelete] = useState<Actividad | null>(null);
   const [tabValue, setTabValue] = useState(0);
+
+  // Estados para búsqueda y filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterEstado, setFilterEstado] = useState<string>('');
+  const [filterCategoria, setFilterCategoria] = useState<string>('');
 
   // Mock data for now - in real app this would come from API
   const mockDocentes = [
@@ -219,10 +232,17 @@ const ActividadesPage: React.FC = () => {
     }
   };
 
+  // Función para limpiar filtros
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setFilterEstado('');
+    setFilterCategoria('');
+  };
+
   const filteredActividades = actividades.filter((actividad) => {
     const tipoUpper = actividad.tipo.toUpperCase();
 
-    // Filtro por tabs
+    // Filtro por tabs (tipo de actividad)
     let matchesTab = false;
     switch (tabValue) {
       case 0: // Todas
@@ -244,7 +264,20 @@ const ActividadesPage: React.FC = () => {
         matchesTab = true;
     }
 
-    return matchesTab;
+    // Filtro de búsqueda (nombre, descripción, docente)
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = searchTerm === '' ||
+      actividad.nombre.toLowerCase().includes(searchLower) ||
+      (actividad.descripcion && actividad.descripcion.toLowerCase().includes(searchLower)) ||
+      (actividad.docenteNombre && actividad.docenteNombre.toLowerCase().includes(searchLower));
+
+    // Filtro por estado
+    const matchesEstado = filterEstado === '' || actividad.estado === filterEstado;
+
+    // Filtro por categoría
+    const matchesCategoria = filterCategoria === '' || actividad.categoria === filterCategoria;
+
+    return matchesTab && matchesSearch && matchesEstado && matchesCategoria;
   });
 
   return (
@@ -280,6 +313,71 @@ const ActividadesPage: React.FC = () => {
           <Tab label="Talleres" />
           <Tab label="Eventos" />
         </Tabs>
+      </Paper>
+
+      {/* Sección de Búsqueda y Filtros */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+          <TextField
+            size="small"
+            placeholder="Buscar por nombre, descripción o docente..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 300, flexGrow: 1 }}
+          />
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Estado</InputLabel>
+            <Select
+              value={filterEstado}
+              onChange={(e) => setFilterEstado(e.target.value)}
+              label="Estado"
+            >
+              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="activo">Activo</MenuItem>
+              <MenuItem value="inactivo">Inactivo</MenuItem>
+              <MenuItem value="suspendido">Suspendido</MenuItem>
+              <MenuItem value="finalizado">Finalizado</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Categoría</InputLabel>
+            <Select
+              value={filterCategoria}
+              onChange={(e) => setFilterCategoria(e.target.value)}
+              label="Categoría"
+            >
+              <MenuItem value="">Todas</MenuItem>
+              <MenuItem value="infantil">Infantil</MenuItem>
+              <MenuItem value="juvenil">Juvenil</MenuItem>
+              <MenuItem value="adulto">Adulto</MenuItem>
+              <MenuItem value="general">General</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleClearFilters}
+            startIcon={<FilterListIcon />}
+          >
+            Limpiar Filtros
+          </Button>
+
+          <Box sx={{ ml: 'auto' }}>
+            <Typography variant="body2" color="text.secondary">
+              {filteredActividades.length} de {actividades.length} actividades
+            </Typography>
+          </Box>
+        </Box>
       </Paper>
 
       <TableContainer component={Paper}>
