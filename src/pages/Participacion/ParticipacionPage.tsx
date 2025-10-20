@@ -22,7 +22,9 @@ import {
   FormControlLabel,
   Switch,
   Tooltip,
-  CircularProgress
+  CircularProgress,
+  Paper,
+  InputAdornment
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -34,7 +36,9 @@ import {
   CheckCircle as ActiveIcon,
   Cancel as InactiveIcon,
   School as SchoolIcon,
-  Visibility as ViewIcon
+  Visibility as ViewIcon,
+  Search as SearchIcon,
+  FilterList as FilterListIcon
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -99,6 +103,10 @@ const ParticipacionPage: React.FC = () => {
     estado: 'Activo',
     observaciones: ''
   });
+
+  // Estados para búsqueda y filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterEstado, setFilterEstado] = useState<string>('');
 
   const estadosParticipacion = ['Activo', 'Inactivo', 'Suspendido'] as const;
 
@@ -417,10 +425,28 @@ const ParticipacionPage: React.FC = () => {
     }
   ];
 
-  // Filtrar participaciones si hay personaId en URL
-  const filteredParticipaciones = personaIdParam
-    ? participaciones.filter(p => p.personaId === parseInt(personaIdParam))
-    : participaciones;
+  // Función para limpiar filtros
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setFilterEstado('');
+  };
+
+  // Filtrar participaciones
+  const filteredParticipaciones = participaciones.filter((participacion) => {
+    // Filtro por personaId de URL
+    const matchesPersonaParam = !personaIdParam || participacion.personaId === parseInt(personaIdParam);
+
+    // Filtro de búsqueda (nombre persona, nombre actividad)
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = searchTerm === '' ||
+      participacion.personaNombre.toLowerCase().includes(searchLower) ||
+      participacion.actividadNombre.toLowerCase().includes(searchLower);
+
+    // Filtro por estado
+    const matchesEstado = filterEstado === '' || participacion.estado === filterEstado;
+
+    return matchesPersonaParam && matchesSearch && matchesEstado;
+  });
 
   // Obtener nombre de la persona si hay filtro
   const personaFiltrada = personaIdParam
@@ -507,6 +533,57 @@ const ParticipacionPage: React.FC = () => {
       <Alert severity="info" sx={{ mb: 3 }}>
         Gestiona las inscripciones de personas en las diferentes actividades del conservatorio.
       </Alert>
+
+      {/* Sección de Búsqueda y Filtros */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+          <TextField
+            size="small"
+            placeholder="Buscar por persona o actividad..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 300, flexGrow: 1 }}
+          />
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Estado</InputLabel>
+            <Select
+              value={filterEstado}
+              onChange={(e) => setFilterEstado(e.target.value)}
+              label="Estado"
+            >
+              <MenuItem value="">Todos</MenuItem>
+              {estadosParticipacion.map((estado) => (
+                <MenuItem key={estado} value={estado}>
+                  {estado}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleClearFilters}
+            startIcon={<FilterListIcon />}
+          >
+            Limpiar Filtros
+          </Button>
+
+          <Box sx={{ ml: 'auto' }}>
+            <Typography variant="body2" color="text.secondary">
+              {filteredParticipaciones.length} de {participaciones.length} participaciones
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
 
       {/* Tabla de participaciones */}
       <Box sx={{ height: 600, width: '100%' }}>

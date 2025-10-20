@@ -19,7 +19,9 @@ import {
   IconButton,
   Switch,
   FormControlLabel,
-  Alert
+  Alert,
+  Paper,
+  InputAdornment
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -27,7 +29,9 @@ import {
   Delete as DeleteIcon,
   Room as RoomIcon,
   EventAvailable as AvailableIcon,
-  EventBusy as BusyIcon
+  EventBusy as BusyIcon,
+  Search as SearchIcon,
+  FilterList as FilterListIcon
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
@@ -56,6 +60,11 @@ const AulasPage: React.FC = () => {
     estado: 'disponible',
     observaciones: ''
   });
+
+  // Estados para búsqueda y filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterTipo, setFilterTipo] = useState<string>('');
+  const [filterEstado, setFilterEstado] = useState<string>('');
 
   const tiposAula = [
     { value: 'salon', label: 'Salón' },
@@ -197,6 +206,30 @@ const AulasPage: React.FC = () => {
     const tipoObj = tiposAula.find(t => t.value === tipo);
     return tipoObj?.label || tipo;
   };
+
+  // Función para limpiar filtros
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setFilterTipo('');
+    setFilterEstado('');
+  };
+
+  // Aplicar filtros a las aulas
+  const filteredAulas = aulas.filter((aula) => {
+    // Filtro de búsqueda (nombre, ubicación)
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = searchTerm === '' ||
+      aula.nombre.toLowerCase().includes(searchLower) ||
+      (aula.ubicacion && aula.ubicacion.toLowerCase().includes(searchLower));
+
+    // Filtro por tipo
+    const matchesTipo = filterTipo === '' || aula.tipo === filterTipo;
+
+    // Filtro por estado
+    const matchesEstado = filterEstado === '' || aula.estado === filterEstado;
+
+    return matchesSearch && matchesTipo && matchesEstado;
+  });
 
   const columns: GridColDef[] = [
     {
@@ -348,10 +381,77 @@ const AulasPage: React.FC = () => {
         </Grid>
       </Grid>
 
+      {/* Sección de Búsqueda y Filtros */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+          <TextField
+            size="small"
+            placeholder="Buscar por nombre o ubicación..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 300, flexGrow: 1 }}
+          />
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Tipo</InputLabel>
+            <Select
+              value={filterTipo}
+              onChange={(e) => setFilterTipo(e.target.value)}
+              label="Tipo"
+            >
+              <MenuItem value="">Todos</MenuItem>
+              {tiposAula.map((tipo) => (
+                <MenuItem key={tipo.value} value={tipo.value}>
+                  {tipo.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Estado</InputLabel>
+            <Select
+              value={filterEstado}
+              onChange={(e) => setFilterEstado(e.target.value)}
+              label="Estado"
+            >
+              <MenuItem value="">Todos</MenuItem>
+              {estadosAula.map((estado) => (
+                <MenuItem key={estado.value} value={estado.value}>
+                  {estado.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleClearFilters}
+            startIcon={<FilterListIcon />}
+          >
+            Limpiar Filtros
+          </Button>
+
+          <Box sx={{ ml: 'auto' }}>
+            <Typography variant="body2" color="text.secondary">
+              {filteredAulas.length} de {aulas.length} aulas
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
+
       {/* Tabla de aulas */}
       <Box sx={{ height: 600, width: '100%' }}>
         <DataGrid
-          rows={aulas}
+          rows={filteredAulas}
           columns={columns}
           loading={loading}
           paginationModel={{ pageSize: 10, page: 0 }}
