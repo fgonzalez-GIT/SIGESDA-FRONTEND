@@ -22,6 +22,12 @@ import {
   Switch,
   FormControlLabel,
   Alert,
+  TextField,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -30,6 +36,8 @@ import {
   BarChart as StatsIcon,
   Visibility as ViewIcon,
   VisibilityOff as VisibilityOffIcon,
+  Search as SearchIcon,
+  FilterList as FilterListIcon,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
@@ -55,6 +63,9 @@ const CategoriasPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoriaToDelete, setCategoriaToDelete] = useState<CategoriaSocio | null>(null);
   const [includeInactive, setIncludeInactive] = useState(false);
+
+  // Estados para búsqueda y filtros
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Cargar categorías al montar el componente
   useEffect(() => {
@@ -175,10 +186,24 @@ const CategoriasPage: React.FC = () => {
     }).format(numero);
   };
 
+  // Función para limpiar filtros
+  const handleClearFilters = () => {
+    setSearchTerm('');
+  };
+
   // Filtrar y ordenar categorías
-  const categoriasFiltered = includeInactive
-    ? categorias
-    : categorias.filter((cat) => cat.activa);
+  const categoriasFiltered = categorias.filter((cat) => {
+    // Filtro por estado activo/inactivo
+    const matchesActive = includeInactive || cat.activa;
+
+    // Filtro de búsqueda (nombre, descripción)
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = searchTerm === '' ||
+      cat.nombre.toLowerCase().includes(searchLower) ||
+      (cat.descripcion && cat.descripcion.toLowerCase().includes(searchLower));
+
+    return matchesActive && matchesSearch;
+  });
 
   const categoriasOrdenadas = [...categoriasFiltered].sort((a, b) => a.orden - b.orden);
 
@@ -218,6 +243,41 @@ const CategoriasPage: React.FC = () => {
           Total: {categoriasOrdenadas.length} categoría(s)
         </Typography>
       </Box>
+
+      {/* Sección de Búsqueda */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+          <TextField
+            size="small"
+            placeholder="Buscar por nombre o descripción..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 300, flexGrow: 1 }}
+          />
+
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleClearFilters}
+            startIcon={<FilterListIcon />}
+          >
+            Limpiar Búsqueda
+          </Button>
+
+          <Box sx={{ ml: 'auto' }}>
+            <Typography variant="body2" color="text.secondary">
+              {categoriasOrdenadas.length} de {categorias.length} categorías
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
 
       {/* Información */}
       {categoriasOrdenadas.length === 0 && !loading && (
