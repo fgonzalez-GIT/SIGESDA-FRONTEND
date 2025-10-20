@@ -54,11 +54,16 @@ const PersonasPageSimple: React.FC = () => {
   const { personas, loading, error, selectedPersona } = useAppSelector((state) => state.personas);
   const { personasConFamiliares } = useAppSelector((state) => state.familiares);
 
+  // Debug: log personas state whenever it changes (disabled to reduce console noise)
+  // useEffect(() => {
+  //   console.log('[Component] Personas state updated:', personas);
+  // }, [personas]);
+
   const [formOpen, setFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [personaToDelete, setPersonaToDelete] = useState<Persona | null>(null);
   const [familiaresDialogOpen, setFamiliaresDialogOpen] = useState(false);
-  const [selectedPersonaFamiliares, setSelectedPersonaFamiliares] = useState<string | number | null>(null);
+  const [selectedPersonaFamiliares, setSelectedPersonaFamiliares] = useState<number | null>(null);
   // const [participacionesPorPersona, setParticipacionesPorPersona] = useState<{ [key: string | number]: number }>({}); // Unused - Secciones removed
   // const participacionesLoadedRef = useRef<Set<string | number>>(new Set()); // Unused - Secciones removed
   // const isLoadingParticipacionesRef = useRef(false); // Unused - Secciones removed
@@ -142,7 +147,7 @@ const PersonasPageSimple: React.FC = () => {
     setFamiliaresDialogOpen(true);
   };
 
-  const getPersonaFamiliares = (personaId: string | number) => {
+  const getPersonaFamiliares = (personaId: number) => {
     return personasConFamiliares.find(p => p.id === personaId);
   };
 
@@ -175,8 +180,7 @@ const PersonasPageSimple: React.FC = () => {
           message: 'Persona actualizada exitosamente',
           severity: 'success'
         }));
-        // Recargar personas para asegurar sincronización con backend
-        dispatch(fetchPersonas());
+        // No necesitamos fetchPersonas() - el reducer ya actualiza el estado
       } else {
         // Verificar si hay persona a reactivar
         if (personaToReactivate) {
@@ -195,8 +199,7 @@ const PersonasPageSimple: React.FC = () => {
           message: 'Persona creada exitosamente',
           severity: 'success'
         }));
-        // Recargar personas para asegurar sincronización con backend
-        dispatch(fetchPersonas());
+        // No necesitamos fetchPersonas() - el reducer ya actualiza el estado
       }
       setFormOpen(false);
     } catch (error: any) {
@@ -262,13 +265,17 @@ const PersonasPageSimple: React.FC = () => {
   const handleDeleteConfirm = async () => {
     if (personaToDelete) {
       try {
-        await dispatch(deletePersona(typeof personaToDelete.id === 'string' ? parseInt(personaToDelete.id) : personaToDelete.id)).unwrap();
+        await dispatch(deletePersona(personaToDelete.id)).unwrap();
+
         dispatch(showNotification({
           message: 'Persona eliminada exitosamente',
           severity: 'success'
         }));
         setDeleteDialogOpen(false);
         setPersonaToDelete(null);
+
+        // Refrescar familiares para actualizar las relaciones
+        dispatch(fetchPersonasConFamiliares());
       } catch (error) {
         dispatch(showNotification({
           message: 'Error al eliminar la persona',
@@ -317,7 +324,7 @@ const PersonasPageSimple: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>ID</TableCell>
+              {/* ID column removed - only used internally for key prop */}
               <TableCell>Nombre</TableCell>
               <TableCell>Apellido</TableCell>
               <TableCell>Email</TableCell>
@@ -334,21 +341,20 @@ const PersonasPageSimple: React.FC = () => {
           <TableBody>
             {loading && (
               <TableRow>
-                <TableCell colSpan={11} align="center">
+                <TableCell colSpan={10} align="center">
                   Cargando...
                 </TableCell>
               </TableRow>
             )}
             {!loading && personas.length === 0 && (
               <TableRow>
-                <TableCell colSpan={11} align="center">
+                <TableCell colSpan={10} align="center">
                   No hay personas registradas
                 </TableCell>
               </TableRow>
             )}
             {personas.map((persona) => (
               <TableRow key={persona.id} hover>
-                <TableCell>{persona.id}</TableCell>
                 <TableCell>{persona.nombre}</TableCell>
                 <TableCell>{persona.apellido}</TableCell>
                 <TableCell>{persona.email || '-'}</TableCell>
@@ -498,6 +504,9 @@ const PersonasPageSimple: React.FC = () => {
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
+        disableEscapeKeyDown={loading}
+        disableRestoreFocus
+        keepMounted={false}
       >
         <DialogTitle>Confirmar Eliminación</DialogTitle>
         <DialogContent>
@@ -507,11 +516,20 @@ const PersonasPageSimple: React.FC = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            disabled={loading}
+            autoFocus
+          >
             Cancelar
           </Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-            Eliminar
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+            disabled={loading}
+          >
+            {loading ? 'Eliminando...' : 'Eliminar'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -527,13 +545,7 @@ const PersonasPageSimple: React.FC = () => {
           setSelectedPersonaFamiliares(null);
           dispatch(fetchPersonasConFamiliares());
         }}
-        personaSeleccionada={
-          selectedPersonaFamiliares
-            ? (typeof selectedPersonaFamiliares === 'string'
-                ? parseInt(selectedPersonaFamiliares)
-                : selectedPersonaFamiliares)
-            : undefined
-        }
+        personaSeleccionada={selectedPersonaFamiliares ?? undefined}
       />
     </Box>
   );

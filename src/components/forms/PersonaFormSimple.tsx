@@ -36,6 +36,8 @@ interface PersonaFormData {
   estado: 'activo' | 'inactivo';
   categoriaId: string; // Ahora es ID de categoría
   observaciones: string;
+  especialidad: string; // Para docentes
+  honorariosPorHora: string; // Para docentes (como string para manejar el input)
 }
 
 interface PersonaFormErrors {
@@ -46,6 +48,8 @@ interface PersonaFormErrors {
   telefono?: string;
   tipo?: string;
   fechaNacimiento?: string;
+  especialidad?: string;
+  honorariosPorHora?: string;
 }
 
 interface PersonaFormProps {
@@ -70,6 +74,8 @@ const initialFormData: PersonaFormData = {
   estado: 'activo',
   categoriaId: '',
   observaciones: '',
+  especialidad: '',
+  honorariosPorHora: '',
 };
 
 const validateEmail = (email: string): boolean => {
@@ -107,10 +113,12 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
         telefono: persona.telefono || '',
         direccion: persona.direccion || '',
         fechaNacimiento: persona.fechaNacimiento ? new Date(persona.fechaNacimiento) : null,
-        tipo: persona.tipo || '',
+        tipo: (persona.tipo?.toUpperCase() as PersonaFormData['tipo']) || '',
         estado: persona.estado || 'activo',
-        categoriaId: persona.categoriaId || '', // Usar categoriaId
+        categoriaId: persona.categoriaId ? String(persona.categoriaId) : '', // Convertir a string
         observaciones: persona.observaciones || '',
+        especialidad: persona.especialidad || '',
+        honorariosPorHora: persona.honorariosPorHora !== null && persona.honorariosPorHora !== undefined ? String(persona.honorariosPorHora) : '',
       });
     } else {
       setFormData(initialFormData);
@@ -160,6 +168,14 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
       newErrors.tipo = 'La categoría es requerida para socios';
     }
 
+    if (formData.tipo === 'DOCENTE' && !formData.especialidad.trim()) {
+      newErrors.especialidad = 'La especialidad es requerida para docentes';
+    }
+
+    if (formData.honorariosPorHora && parseFloat(formData.honorariosPorHora) <= 0) {
+      newErrors.honorariosPorHora = 'Los honorarios deben ser un número positivo';
+    }
+
     if (formData.email && !validateEmail(formData.email)) {
       newErrors.email = 'El formato del email no es válido';
     }
@@ -191,8 +207,10 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
       fechaNacimiento: formData.fechaNacimiento?.toISOString() || undefined,
       tipo: formData.tipo as Persona['tipo'],
       estado: formData.estado,
-      categoriaId: formData.categoriaId || undefined, // Enviar categoriaId
+      categoriaId: formData.categoriaId ? parseInt(formData.categoriaId) : undefined, // Convertir a number
       observaciones: formData.observaciones.trim() || undefined,
+      especialidad: formData.especialidad.trim() || undefined,
+      honorariosPorHora: formData.honorariosPorHora ? parseFloat(formData.honorariosPorHora) : undefined,
     };
 
     onSubmit(submitData);
@@ -305,13 +323,18 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
               label="Fecha de Nacimiento"
               value={formData.fechaNacimiento}
               onChange={handleChange('fechaNacimiento')}
+              format="dd/MM/yyyy"
               slotProps={{
                 textField: {
                   fullWidth: true,
                   error: !!errors.fechaNacimiento,
-                  helperText: errors.fechaNacimiento,
+                  helperText: errors.fechaNacimiento || 'Puede escribir la fecha manualmente (dd/mm/aaaa)',
                   disabled: loading,
+                  placeholder: 'dd/mm/aaaa',
                 },
+                field: {
+                  clearable: true,
+                }
               }}
               maxDate={new Date()}
             />
@@ -364,6 +387,32 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
                 disabled={loading}
                 includeInactive={false}
               />
+            )}
+
+            {formData.tipo === 'DOCENTE' && (
+              <Box display="flex" gap={2}>
+                <TextField
+                  fullWidth
+                  label="Especialidad *"
+                  value={formData.especialidad}
+                  onChange={handleChange('especialidad')}
+                  error={!!errors.especialidad}
+                  helperText={errors.especialidad}
+                  disabled={loading}
+                  placeholder="ej: Piano, Guitarra, Canto, etc."
+                />
+                <TextField
+                  fullWidth
+                  label="Honorarios por Hora"
+                  type="number"
+                  value={formData.honorariosPorHora}
+                  onChange={handleChange('honorariosPorHora')}
+                  error={!!errors.honorariosPorHora}
+                  helperText={errors.honorariosPorHora}
+                  disabled={loading}
+                  inputProps={{ min: 0, step: 0.01 }}
+                />
+              </Box>
             )}
 
             <TextField

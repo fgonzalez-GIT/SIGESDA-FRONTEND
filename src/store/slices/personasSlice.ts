@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { CategoriaSocio } from '../../types/categoria.types';
 
 export interface Persona {
-  id: string | number;
+  id: number;
   nombre: string;
   apellido: string;
   dni?: string;
@@ -10,16 +10,16 @@ export interface Persona {
   telefono?: string;
   direccion?: string;
   fechaNacimiento?: string | null;
-  tipo: 'SOCIO' | 'DOCENTE' | 'ESTUDIANTE' | 'socio' | 'docente' | 'estudiante';
+  tipo: 'SOCIO' | 'DOCENTE' | 'ESTUDIANTE' | 'NO_SOCIO' | 'PROVEEDOR' | 'socio' | 'docente' | 'estudiante' | 'no_socio' | 'proveedor';
   estado?: 'activo' | 'inactivo';
   fechaIngreso?: string | null;
   numeroSocio?: number | null;
-  categoriaId?: string | null; // FK a CategoriaSocio
+  categoriaId?: number | null; // FK a CategoriaSocio
   categoria?: CategoriaSocio | null; // Relación populada (cuando se incluye en la query)
   fechaBaja?: string | null;
   motivoBaja?: string | null;
   especialidad?: string | null;
-  honorariosPorHora?: string | null;
+  honorariosPorHora?: number | null;
   cuit?: string | null;
   razonSocial?: string | null;
   observaciones?: string;
@@ -146,10 +146,13 @@ export const deletePersona = createAsyncThunk(
       const response = await fetch(`${import.meta.env.VITE_API_URL}/personas/${id}`, {
         method: 'DELETE',
       });
+
       if (!response.ok) {
         throw new Error('Error al eliminar persona');
       }
-      return id;
+
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -158,7 +161,7 @@ export const deletePersona = createAsyncThunk(
 
 export const reactivatePersona = createAsyncThunk(
   'personas/reactivatePersona',
-  async ({ id, data }: { id: number | string; data: Partial<Persona> }, { rejectWithValue }) => {
+  async ({ id, data }: { id: number; data: Partial<Persona> }, { rejectWithValue }) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/personas/${id}/reactivate`, {
         method: 'PATCH',
@@ -240,7 +243,17 @@ const personasSlice = createSlice({
       })
       .addCase(deletePersona.fulfilled, (state, action) => {
         state.loading = false;
-        state.personas = state.personas.filter(p => p.id !== action.payload);
+
+        // El backend hace soft delete, así que actualizamos la persona con fechaBaja
+        const index = state.personas.findIndex(p => p.id === action.payload.id);
+
+        if (index !== -1) {
+          // Immer permite mutación directa - actualizar todas las propiedades
+          state.personas[index] = {
+            ...state.personas[index],
+            ...action.payload
+          };
+        }
       })
       .addCase(deletePersona.rejected, (state, action) => {
         state.loading = false;
