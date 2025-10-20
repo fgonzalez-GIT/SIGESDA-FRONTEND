@@ -19,6 +19,12 @@ import {
   DialogActions,
   DialogContentText,
   Stack,
+  TextField,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   // Tooltip, // Unused - Secciones module removed
   // CircularProgress, // Unused - Secciones module removed
 } from '@mui/material';
@@ -28,6 +34,8 @@ import {
   Add as AddIcon,
   Visibility as ViewIcon,
   FamilyRestroom as FamilyIcon,
+  Search as SearchIcon,
+  FilterList as FilterListIcon,
   // School as SchoolIcon, // Unused - Secciones module removed
 } from '@mui/icons-material';
 // import seccionesApi from '../../services/seccionesApi'; // REMOVED: Secciones module deleted
@@ -70,6 +78,12 @@ const PersonasPageSimple: React.FC = () => {
   const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
   const [personaToReactivate, setPersonaToReactivate] = useState<Persona | null>(null);
   const [pendingFormData, setPendingFormData] = useState<Omit<Persona, 'id' | 'fechaIngreso'> | null>(null);
+
+  // Estados para búsqueda y filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterTipo, setFilterTipo] = useState<string>('');
+  const [filterEstado, setFilterEstado] = useState<string>('');
+  const [filterCategoria, setFilterCategoria] = useState<string>('');
 
   useEffect(() => {
     dispatch(fetchPersonas());
@@ -299,6 +313,37 @@ const PersonasPageSimple: React.FC = () => {
     return labels[tipo as keyof typeof labels] || tipo;
   };
 
+  // Función para limpiar filtros
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setFilterTipo('');
+    setFilterEstado('');
+    setFilterCategoria('');
+  };
+
+  // Aplicar filtros a las personas
+  const filteredPersonas = personas.filter((persona) => {
+    // Filtro de búsqueda (nombre, apellido, DNI, email)
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = searchTerm === '' ||
+      persona.nombre.toLowerCase().includes(searchLower) ||
+      persona.apellido.toLowerCase().includes(searchLower) ||
+      (persona.dni && persona.dni.toLowerCase().includes(searchLower)) ||
+      (persona.email && persona.email.toLowerCase().includes(searchLower));
+
+    // Filtro por tipo
+    const matchesTipo = filterTipo === '' || persona.tipo.toUpperCase() === filterTipo.toUpperCase();
+
+    // Filtro por estado
+    const matchesEstado = filterEstado === '' || persona.estado === filterEstado;
+
+    // Filtro por categoría (solo para socios)
+    const matchesCategoria = filterCategoria === '' ||
+      (persona.categoriaId && persona.categoriaId.toString() === filterCategoria);
+
+    return matchesSearch && matchesTipo && matchesEstado && matchesCategoria;
+  });
+
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -319,6 +364,70 @@ const PersonasPageSimple: React.FC = () => {
           Nueva Persona
         </Button>
       </Box>
+
+      {/* Sección de Búsqueda y Filtros */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+          <TextField
+            size="small"
+            placeholder="Buscar por nombre, apellido, DNI o email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 300, flexGrow: 1 }}
+          />
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Tipo</InputLabel>
+            <Select
+              value={filterTipo}
+              onChange={(e) => setFilterTipo(e.target.value)}
+              label="Tipo"
+            >
+              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="SOCIO">Socio</MenuItem>
+              <MenuItem value="NO_SOCIO">No Socio</MenuItem>
+              <MenuItem value="ESTUDIANTE">Estudiante</MenuItem>
+              <MenuItem value="DOCENTE">Docente</MenuItem>
+              <MenuItem value="PROVEEDOR">Proveedor</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Estado</InputLabel>
+            <Select
+              value={filterEstado}
+              onChange={(e) => setFilterEstado(e.target.value)}
+              label="Estado"
+            >
+              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="activo">Activo</MenuItem>
+              <MenuItem value="inactivo">Inactivo</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleClearFilters}
+            startIcon={<FilterListIcon />}
+          >
+            Limpiar Filtros
+          </Button>
+
+          <Box sx={{ ml: 'auto' }}>
+            <Typography variant="body2" color="text.secondary">
+              {filteredPersonas.length} de {personas.length} personas
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
 
       <TableContainer component={Paper}>
         <Table>
@@ -346,14 +455,14 @@ const PersonasPageSimple: React.FC = () => {
                 </TableCell>
               </TableRow>
             )}
-            {!loading && personas.length === 0 && (
+            {!loading && filteredPersonas.length === 0 && (
               <TableRow>
                 <TableCell colSpan={10} align="center">
-                  No hay personas registradas
+                  {personas.length === 0 ? 'No hay personas registradas' : 'No se encontraron personas con los filtros aplicados'}
                 </TableCell>
               </TableRow>
             )}
-            {personas.map((persona) => (
+            {filteredPersonas.map((persona) => (
               <TableRow key={persona.id} hover>
                 <TableCell>{persona.nombre}</TableCell>
                 <TableCell>{persona.apellido}</TableCell>
