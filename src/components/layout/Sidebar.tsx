@@ -66,18 +66,12 @@ const menuItems = [
     path: '/familiares',
     color: '#f57c00',
   },
-  // OCULTAR TEMPORALMENTE - Inicio
-  /*
   {
     title: 'Reservas',
     icon: <CalendarToday />,
     path: '/reservas',
     color: '#303f9f',
   },
-  */
-  // OCULTAR TEMPORALMENTE - Fin
-  // OCULTAR TEMPORALMENTE - Inicio
-  /*
   {
     title: 'Recibos',
     icon: <Receipt />,
@@ -90,34 +84,24 @@ const menuItems = [
     path: '/cuotas',
     color: '#1976d2',
   },
-  */
-  // OCULTAR TEMPORALMENTE - Fin
   {
     title: 'Categorías',
     icon: <Category />,
     path: '/categorias',
     color: '#e91e63',
   },
-  // OCULTAR TEMPORALMENTE - Inicio
-  /*
   {
     title: 'Medios de Pago',
     icon: <Payment />,
     path: '/medios-pago',
     color: '#7b1fa2',
   },
-  */
-  // OCULTAR TEMPORALMENTE - Fin
-  // OCULTAR TEMPORALMENTE - Inicio
-  /*
   {
     title: 'Configuración',
     icon: <Settings />,
     path: '/configuracion',
     color: '#616161',
-  },
-  */
-  // OCULTAR TEMPORALMENTE - Fin
+  }
 ];
 
 interface SidebarProps {

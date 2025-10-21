@@ -17,7 +17,9 @@ import {
   Card,
   CardContent,
   Alert,
-  Autocomplete
+  Autocomplete,
+  Paper,
+  InputAdornment
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -27,7 +29,9 @@ import {
   Room as AulaIcon,
   Person as PersonIcon,
   Schedule as TimeIcon,
-  Warning as ConflictIcon
+  Warning as ConflictIcon,
+  Search as SearchIcon,
+  FilterList as FilterListIcon
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
@@ -71,6 +75,10 @@ const ReservasPage: React.FC = () => {
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedReserva, setSelectedReserva] = useState<Reserva | null>(null);
+  // Estados para búsqueda y filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterEstado, setFilterEstado] = useState<string>('');
+
   const [formData, setFormData] = useState<Partial<Reserva>>({
     aulaId: 0,
     personaId: 0,
@@ -265,6 +273,27 @@ const ReservasPage: React.FC = () => {
     });
   };
 
+  // Función para limpiar filtros
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setFilterEstado('');
+  };
+
+  // Aplicar filtros a las reservas
+  const filteredReservas = reservas.filter((reserva) => {
+    // Filtro de búsqueda (aula, persona, motivo)
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = searchTerm === '' ||
+      reserva.aulaNombre.toLowerCase().includes(searchLower) ||
+      reserva.personaNombre.toLowerCase().includes(searchLower) ||
+      reserva.motivo.toLowerCase().includes(searchLower);
+
+    // Filtro por estado
+    const matchesEstado = filterEstado === '' || reserva.estado === filterEstado;
+
+    return matchesSearch && matchesEstado;
+  });
+
   const columns: GridColDef[] = [
     {
       field: 'aulaNombre',
@@ -422,10 +451,59 @@ const ReservasPage: React.FC = () => {
         Gestiona las reservas de aulas del conservatorio. El sistema detecta automáticamente conflictos de horarios.
       </Alert>
 
+      {/* Sección de Búsqueda y Filtros */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+          <TextField
+            size="small"
+            placeholder="Buscar por aula, persona o motivo..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 300, flexGrow: 1 }}
+          />
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Estado</InputLabel>
+            <Select
+              value={filterEstado}
+              onChange={(e) => setFilterEstado(e.target.value)}
+              label="Estado"
+            >
+              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="Confirmada">Confirmada</MenuItem>
+              <MenuItem value="Pendiente">Pendiente</MenuItem>
+              <MenuItem value="Cancelada">Cancelada</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleClearFilters}
+            startIcon={<FilterListIcon />}
+          >
+            Limpiar Filtros
+          </Button>
+
+          <Box sx={{ ml: 'auto' }}>
+            <Typography variant="body2" color="text.secondary">
+              {filteredReservas.length} de {reservas.length} reservas
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
+
       {/* Tabla de reservas */}
       <Box sx={{ height: 600, width: '100%' }}>
         <DataGrid
-          rows={reservas}
+          rows={filteredReservas}
           columns={columns}
           pageSize={10}
           rowsPerPageOptions={[10]}
