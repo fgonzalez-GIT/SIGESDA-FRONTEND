@@ -21,18 +21,18 @@ const API_URL = import.meta.env.VITE_API_URL;
 /**
  * Los siguientes endpoints deben ser implementados en el backend:
  *
- * Ruta base: /api/actividades-v2/tipos-actividad
+ * Ruta base: /api/actividades/tipos-actividad
  *
- * 1. GET    /api/actividades-v2/tipos-actividad
+ * 1. GET    /api/actividades/tipos-actividad
  *    Query params:
  *    - includeInactive: boolean (default: false)
  *    - search: string (opcional, busca en código y nombre)
  *    Response: { success: true, data: TipoActividad[], total: number }
  *
- * 2. GET    /api/actividades-v2/tipos-actividad/:id
+ * 2. GET    /api/actividades/tipos-actividad/:id
  *    Response: { success: true, data: TipoActividad (con _count.actividades) }
  *
- * 3. POST   /api/actividades-v2/tipos-actividad
+ * 3. POST   /api/actividades/tipos-actividad
  *    Body: { codigo: string, nombre: string, descripcion?: string, orden?: number }
  *    Validaciones:
  *    - codigo debe ser único
@@ -40,20 +40,20 @@ const API_URL = import.meta.env.VITE_API_URL;
  *    - orden se autoasigna si no se proporciona (max + 1)
  *    Response: { success: true, data: TipoActividad, message: "Tipo creado exitosamente" }
  *
- * 4. PUT    /api/actividades-v2/tipos-actividad/:id
+ * 4. PUT    /api/actividades/tipos-actividad/:id
  *    Body: { codigo?, nombre?, descripcion?, activo?, orden? }
  *    Validaciones:
  *    - codigo único (si cambia)
  *    - no permitir desactivar si hay actividades activas usando este tipo
  *    Response: { success: true, data: TipoActividad, message: "Tipo actualizado exitosamente" }
  *
- * 5. DELETE /api/actividades-v2/tipos-actividad/:id
+ * 5. DELETE /api/actividades/tipos-actividad/:id
  *    Soft delete: activo = false
  *    Validaciones:
  *    - no permitir si hay actividades activas usando este tipo
  *    Response: { success: true, message: "Tipo desactivado exitosamente" }
  *
- * 6. PATCH  /api/actividades-v2/tipos-actividad/reorder
+ * 6. PATCH  /api/actividades/tipos-actividad/reorder
  *    Body: { tipoIds: number[] } // Array ordenado de IDs
  *    Actualiza campo `orden` según índice en el array
  *    Response: { success: true, message: "Orden actualizado exitosamente" }
@@ -81,7 +81,7 @@ export const tiposActividadApi = {
         queryParams.append('search', params.search);
       }
 
-      const url = `${API_URL}/actividades-v2/tipos-actividad${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const url = `${API_URL}/actividades/tipos-actividad${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -108,7 +108,7 @@ export const tiposActividadApi = {
    */
   obtenerPorId: async (id: number): Promise<TipoActividad> => {
     try {
-      const response = await fetch(`${API_URL}/actividades-v2/tipos-actividad/${id}`, {
+      const response = await fetch(`${API_URL}/actividades/tipos-actividad/${id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export const tiposActividadApi = {
    */
   crear: async (data: CreateTipoActividadDto): Promise<TipoActividad> => {
     try {
-      const response = await fetch(`${API_URL}/actividades-v2/tipos-actividad`, {
+      const response = await fetch(`${API_URL}/actividades/tipos-actividad`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +159,7 @@ export const tiposActividadApi = {
    */
   actualizar: async (id: number, data: UpdateTipoActividadDto): Promise<TipoActividad> => {
     try {
-      const response = await fetch(`${API_URL}/actividades-v2/tipos-actividad/${id}`, {
+      const response = await fetch(`${API_URL}/actividades/tipos-actividad/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -186,7 +186,7 @@ export const tiposActividadApi = {
    */
   eliminar: async (id: number): Promise<void> => {
     try {
-      const response = await fetch(`${API_URL}/actividades-v2/tipos-actividad/${id}`, {
+      const response = await fetch(`${API_URL}/actividades/tipos-actividad/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +208,7 @@ export const tiposActividadApi = {
    */
   reordenar: async (data: ReorderTiposActividadDto): Promise<void> => {
     try {
-      const response = await fetch(`${API_URL}/actividades-v2/tipos-actividad/reorder`, {
+      const response = await fetch(`${API_URL}/actividades/tipos-actividad/reorder`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
