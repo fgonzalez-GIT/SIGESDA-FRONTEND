@@ -18,7 +18,9 @@ import {
   CardContent,
   Alert,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Paper,
+  InputAdornment
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -27,7 +29,9 @@ import {
   Payment as PaymentIcon,
   AccountBalance as BankIcon,
   CreditCard as CardIcon,
-  LocalAtm as CashIcon
+  LocalAtm as CashIcon,
+  Search as SearchIcon,
+  FilterList as FilterListIcon
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
@@ -48,6 +52,11 @@ const MediosPagoPage: React.FC = () => {
   const [mediosPago, setMediosPago] = useState<MedioPago[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedMedio, setSelectedMedio] = useState<MedioPago | null>(null);
+  // Estados para búsqueda y filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterTipo, setFilterTipo] = useState<string>('');
+  const [filterActivo, setFilterActivo] = useState<string>('');
+
   const [formData, setFormData] = useState<Partial<MedioPago>>({
     nombre: '',
     tipo: 'Efectivo',
@@ -248,6 +257,32 @@ const MediosPagoPage: React.FC = () => {
     }
   ];
 
+  // Función para limpiar filtros
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setFilterTipo('');
+    setFilterActivo('');
+  };
+
+  // Aplicar filtros
+  const filteredMediosPago = mediosPago.filter((medio) => {
+    // Filtro de búsqueda (nombre, descripción)
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = searchTerm === '' ||
+      medio.nombre.toLowerCase().includes(searchLower) ||
+      (medio.descripcion && medio.descripcion.toLowerCase().includes(searchLower));
+
+    // Filtro por tipo
+    const matchesTipo = filterTipo === '' || medio.tipo === filterTipo;
+
+    // Filtro por activo
+    const matchesActivo = filterActivo === '' ||
+      (filterActivo === 'activo' && medio.activo) ||
+      (filterActivo === 'inactivo' && !medio.activo);
+
+    return matchesSearch && matchesTipo && matchesActivo;
+  });
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -319,10 +354,74 @@ const MediosPagoPage: React.FC = () => {
         Los medios de pago configurados aquí estarán disponibles al registrar pagos de cuotas y recibos.
       </Alert>
 
+      {/* Sección de Búsqueda y Filtros */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+          <TextField
+            size="small"
+            placeholder="Buscar por nombre o descripción..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 300, flexGrow: 1 }}
+          />
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Tipo</InputLabel>
+            <Select
+              value={filterTipo}
+              onChange={(e) => setFilterTipo(e.target.value)}
+              label="Tipo"
+            >
+              <MenuItem value="">Todos</MenuItem>
+              {tiposMedioPago.map((tipo) => (
+                <MenuItem key={tipo} value={tipo}>
+                  {tipo}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Estado</InputLabel>
+            <Select
+              value={filterActivo}
+              onChange={(e) => setFilterActivo(e.target.value)}
+              label="Estado"
+            >
+              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="activo">Activos</MenuItem>
+              <MenuItem value="inactivo">Inactivos</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleClearFilters}
+            startIcon={<FilterListIcon />}
+          >
+            Limpiar Filtros
+          </Button>
+
+          <Box sx={{ ml: 'auto' }}>
+            <Typography variant="body2" color="text.secondary">
+              {filteredMediosPago.length} de {mediosPago.length} medios de pago
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
+
       {/* Tabla de medios de pago */}
       <Box sx={{ height: 600, width: '100%' }}>
         <DataGrid
-          rows={mediosPago}
+          rows={filteredMediosPago}
           columns={columns}
           pageSize={10}
           rowsPerPageOptions={[10]}

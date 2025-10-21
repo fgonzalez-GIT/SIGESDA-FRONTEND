@@ -9,7 +9,7 @@ import { CatalogosProvider } from './providers/CatalogosProvider';
 // Pages
 import Dashboard from './pages/Dashboard/Dashboard';
 import PersonasPage from './pages/Personas/PersonasPageSimple';
-import ActividadesPage from './pages/Actividades/ActividadesPage';
+// import ActividadesPage from './pages/Actividades/ActividadesPage'; // DEPRECADO - Reemplazado por ActividadesV2
 import AulasPage from './pages/Aulas/AulasPage';
 import CuotasPage from './pages/Cuotas/CuotasPage';
 import MediosPagoPage from './pages/MediosPago/MediosPagoPage';
@@ -37,10 +37,7 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/personas" element={<PersonasPage />} />
 
-                {/* Actividades V1 (Legacy) - Mantener temporalmente */}
-                {/* <Route path="/actividades-v1" element={<ActividadesPage />} /> */}
-
-                {/* Actividades V2 (Nueva implementación) */}
+                {/* Actividades V2 */}
                 <Route path="/actividades" element={<ActividadesV2Page />} />
                 <Route path="/actividades/nueva" element={<ActividadFormV2Page />} />
                 <Route path="/actividades/:id" element={<ActividadDetalleV2Page />} />
