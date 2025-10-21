@@ -1,175 +1,453 @@
-import { api, ApiResponse, PaginatedResponse } from './api';
-import { Actividad } from '../store/slices/actividadesSlice';
+/**
+ * Servicio API para Actividades V2.0
+ * Basado en la documentación oficial del backend
+ * @see /docs/API_ACTIVIDADES_V2.md
+ */
 
-export interface ActividadesFilters {
-  tipo?: 'coro' | 'clase' | 'taller' | 'evento';
-  categoria?: 'infantil' | 'juvenil' | 'adulto' | 'general';
-  estado?: 'activo' | 'inactivo' | 'suspendido' | 'finalizado';
-  docenteId?: number;
-  aulaId?: number;
-  diaSemana?: string;
-  search?: string;
-}
+import { api } from './api';
+import type {
+  Actividad,
+  ActividadesQueryParams,
+  ApiResponse,
+  PaginatedResponse,
+  CatalogosCompletos,
+  CreateActividadDTO,
+  UpdateActividadDTO,
+  CreateHorarioDTO,
+  UpdateHorarioDTO,
+  AsignarDocenteDTO,
+  CambiarEstadoDTO,
+  DuplicarActividadDTO,
+  HorarioActividad,
+  DocenteActividad,
+  ParticipacionActividad,
+  EstadisticasActividad,
+  ResumenPorTipo,
+  HorarioSemanal,
+  DocenteDisponible,
+  TipoActividad,
+  CategoriaActividad,
+  EstadoActividad,
+  DiaSemana,
+  RolDocente,
+} from '../types/actividad.types';
 
-export interface ActividadesQueryParams extends ActividadesFilters {
-  page?: number;
-  limit?: number;
-  sortBy?: keyof Actividad;
-  sortOrder?: 'asc' | 'desc';
-}
+const BASE_URL = '/actividades';
 
-export interface HorarioConflicto {
-  actividadId: number;
-  actividadNombre: string;
-  diaSemana: string;
-  horaInicio: string;
-  horaFin: string;
-  tipo: 'aula' | 'docente';
-}
+// ============================================
+// CATÁLOGOS
+// ============================================
+
+/**
+ * Obtiene todos los catálogos en una sola petición (optimizado)
+ */
+export const obtenerTodosCatalogos = async (): Promise<CatalogosCompletos> => {
+  const response = await api.get<ApiResponse<CatalogosCompletos>>(`${BASE_URL}/catalogos/todos`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener catálogos');
+  }
+  return response.data.data;
+};
+
+/**
+ * Obtiene los tipos de actividades
+ */
+export const obtenerTiposActividades = async (): Promise<TipoActividad[]> => {
+  const response = await api.get<ApiResponse<TipoActividad[]>>(`${BASE_URL}/catalogos/tipos`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener tipos');
+  }
+  return response.data.data;
+};
+
+/**
+ * Obtiene las categorías de actividades
+ */
+export const obtenerCategoriasActividades = async (): Promise<CategoriaActividad[]> => {
+  const response = await api.get<ApiResponse<CategoriaActividad[]>>(`${BASE_URL}/catalogos/categorias`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener categorías');
+  }
+  return response.data.data;
+};
+
+/**
+ * Obtiene los estados de actividades
+ */
+export const obtenerEstadosActividades = async (): Promise<EstadoActividad[]> => {
+  const response = await api.get<ApiResponse<EstadoActividad[]>>(`${BASE_URL}/catalogos/estados`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener estados');
+  }
+  return response.data.data;
+};
+
+/**
+ * Obtiene los días de la semana
+ */
+export const obtenerDiasSemana = async (): Promise<DiaSemana[]> => {
+  const response = await api.get<ApiResponse<DiaSemana[]>>(`${BASE_URL}/catalogos/dias-semana`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener días de semana');
+  }
+  return response.data.data;
+};
+
+/**
+ * Obtiene los roles de docentes
+ */
+export const obtenerRolesDocentes = async (): Promise<RolDocente[]> => {
+  const response = await api.get<ApiResponse<RolDocente[]>>(`${BASE_URL}/catalogos/roles-docentes`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener roles de docentes');
+  }
+  return response.data.data;
+};
+
+// ============================================
+// CRUD DE ACTIVIDADES
+// ============================================
+
+/**
+ * Crea una nueva actividad con horarios, docentes y reservas opcionales
+ */
+export const crearActividad = async (data: CreateActividadDTO): Promise<Actividad> => {
+  const response = await api.post<ApiResponse<Actividad>>(BASE_URL, data);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al crear actividad');
+  }
+  return response.data.data;
+};
+
+/**
+ * Lista actividades con filtros y paginación
+ */
+export const listarActividades = async (
+  params?: ActividadesQueryParams
+): Promise<PaginatedResponse<Actividad>> => {
+  const response = await api.get<ApiResponse<PaginatedResponse<Actividad>>>(BASE_URL, { params });
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al listar actividades');
+  }
+  return response.data.data;
+};
+
+/**
+ * Obtiene una actividad por ID
+ */
+export const obtenerActividadPorId = async (id: number): Promise<Actividad> => {
+  const response = await api.get<ApiResponse<Actividad>>(`${BASE_URL}/${id}`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener actividad');
+  }
+  return response.data.data;
+};
+
+/**
+ * Obtiene una actividad por código
+ */
+export const obtenerActividadPorCodigo = async (codigo: string): Promise<Actividad> => {
+  const response = await api.get<ApiResponse<Actividad>>(`${BASE_URL}/codigo/${codigo}`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener actividad');
+  }
+  return response.data.data;
+};
+
+/**
+ * Actualiza una actividad existente (campos opcionales)
+ */
+export const actualizarActividad = async (
+  id: number,
+  data: UpdateActividadDTO
+): Promise<Actividad> => {
+  const response = await api.patch<ApiResponse<Actividad>>(`${BASE_URL}/${id}`, data);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al actualizar actividad');
+  }
+  return response.data.data;
+};
+
+/**
+ * Elimina una actividad
+ * No se puede eliminar si tiene participantes activos
+ */
+export const eliminarActividad = async (id: number): Promise<void> => {
+  const response = await api.delete<ApiResponse<void>>(`${BASE_URL}/${id}`);
+  if (!response.data.success) {
+    throw new Error(response.data.error || 'Error al eliminar actividad');
+  }
+};
+
+// ============================================
+// GESTIÓN DE HORARIOS
+// ============================================
+
+/**
+ * Obtiene los horarios de una actividad
+ */
+export const obtenerHorariosActividad = async (actividadId: number): Promise<HorarioActividad[]> => {
+  const response = await api.get<ApiResponse<HorarioActividad[]>>(`${BASE_URL}/${actividadId}/horarios`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener horarios');
+  }
+  return response.data.data;
+};
+
+/**
+ * Agrega un horario a una actividad
+ */
+export const agregarHorario = async (
+  actividadId: number,
+  data: CreateHorarioDTO
+): Promise<HorarioActividad> => {
+  const response = await api.post<ApiResponse<HorarioActividad>>(
+    `${BASE_URL}/${actividadId}/horarios`,
+    data
+  );
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al agregar horario');
+  }
+  return response.data.data;
+};
+
+/**
+ * Actualiza un horario existente
+ */
+export const actualizarHorario = async (
+  horarioId: number,
+  data: UpdateHorarioDTO
+): Promise<HorarioActividad> => {
+  const response = await api.patch<ApiResponse<HorarioActividad>>(
+    `${BASE_URL}/horarios/${horarioId}`,
+    data
+  );
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al actualizar horario');
+  }
+  return response.data.data;
+};
+
+/**
+ * Elimina un horario
+ */
+export const eliminarHorario = async (horarioId: number): Promise<void> => {
+  const response = await api.delete<ApiResponse<void>>(`${BASE_URL}/horarios/${horarioId}`);
+  if (!response.data.success) {
+    throw new Error(response.data.error || 'Error al eliminar horario');
+  }
+};
+
+// ============================================
+// GESTIÓN DE DOCENTES
+// ============================================
+
+/**
+ * Obtiene los docentes asignados a una actividad
+ */
+export const obtenerDocentesActividad = async (actividadId: number): Promise<DocenteActividad[]> => {
+  const response = await api.get<ApiResponse<DocenteActividad[]>>(`${BASE_URL}/${actividadId}/docentes`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener docentes');
+  }
+  return response.data.data;
+};
+
+/**
+ * Asigna un docente a una actividad
+ */
+export const asignarDocente = async (
+  actividadId: number,
+  data: AsignarDocenteDTO
+): Promise<DocenteActividad> => {
+  const response = await api.post<ApiResponse<DocenteActividad>>(
+    `${BASE_URL}/${actividadId}/docentes`,
+    data
+  );
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al asignar docente');
+  }
+  return response.data.data;
+};
+
+/**
+ * Desasigna un docente de una actividad (soft delete)
+ */
+export const desasignarDocente = async (
+  actividadId: number,
+  docenteId: string,
+  rolDocenteId: number
+): Promise<DocenteActividad> => {
+  const response = await api.delete<ApiResponse<DocenteActividad>>(
+    `${BASE_URL}/${actividadId}/docentes/${docenteId}/rol/${rolDocenteId}`
+  );
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al desasignar docente');
+  }
+  return response.data.data;
+};
+
+/**
+ * Obtiene docentes disponibles para asignar
+ */
+export const obtenerDocentesDisponibles = async (): Promise<DocenteDisponible[]> => {
+  const response = await api.get<ApiResponse<DocenteDisponible[]>>(`${BASE_URL}/docentes/disponibles`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener docentes disponibles');
+  }
+  return response.data.data;
+};
+
+// ============================================
+// PARTICIPANTES
+// ============================================
+
+/**
+ * Obtiene los participantes de una actividad
+ */
+export const obtenerParticipantes = async (actividadId: number): Promise<ParticipacionActividad[]> => {
+  const response = await api.get<ApiResponse<ParticipacionActividad[]>>(
+    `${BASE_URL}/${actividadId}/participantes`
+  );
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener participantes');
+  }
+  return response.data.data;
+};
+
+// ============================================
+// ESTADÍSTICAS
+// ============================================
+
+/**
+ * Obtiene estadísticas de una actividad específica
+ */
+export const obtenerEstadisticasActividad = async (actividadId: number): Promise<EstadisticasActividad> => {
+  const response = await api.get<ApiResponse<EstadisticasActividad>>(
+    `${BASE_URL}/${actividadId}/estadisticas`
+  );
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener estadísticas');
+  }
+  return response.data.data;
+};
+
+// ============================================
+// REPORTES
+// ============================================
+
+/**
+ * Obtiene resumen de actividades agrupadas por tipo
+ */
+export const obtenerResumenPorTipo = async (): Promise<ResumenPorTipo[]> => {
+  const response = await api.get<ApiResponse<ResumenPorTipo[]>>(`${BASE_URL}/reportes/por-tipo`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener resumen');
+  }
+  return response.data.data;
+};
+
+/**
+ * Genera horario semanal completo con todas las actividades
+ */
+export const obtenerHorarioSemanal = async (): Promise<{
+  horarioSemanal: HorarioSemanal[];
+  generadoEn: string;
+}> => {
+  const response = await api.get<ApiResponse<{
+    horarioSemanal: HorarioSemanal[];
+    generadoEn: string;
+  }>>(`${BASE_URL}/reportes/horario-semanal`);
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al obtener horario semanal');
+  }
+  return response.data.data;
+};
+
+// ============================================
+// OPERACIONES ESPECIALES
+// ============================================
+
+/**
+ * Cambia el estado de una actividad
+ */
+export const cambiarEstadoActividad = async (
+  actividadId: number,
+  data: CambiarEstadoDTO
+): Promise<Actividad> => {
+  const response = await api.patch<ApiResponse<Actividad>>(
+    `${BASE_URL}/${actividadId}/estado`,
+    data
+  );
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al cambiar estado');
+  }
+  return response.data.data;
+};
+
+/**
+ * Duplica una actividad existente con nuevo código y fechas
+ */
+export const duplicarActividad = async (
+  actividadId: number,
+  data: DuplicarActividadDTO
+): Promise<Actividad> => {
+  const response = await api.post<ApiResponse<Actividad>>(
+    `${BASE_URL}/${actividadId}/duplicar`,
+    data
+  );
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al duplicar actividad');
+  }
+  return response.data.data;
+};
+
+// ============================================
+// EXPORTAR TODO
+// ============================================
 
 export const actividadesApi = {
-  getAll: async (params?: ActividadesQueryParams): Promise<PaginatedResponse<Actividad>> => {
-    const response = await api.get('/actividades', { params });
-    return response.data;
-  },
+  // Catálogos
+  obtenerTodosCatalogos,
+  obtenerTiposActividades,
+  obtenerCategoriasActividades,
+  obtenerEstadosActividades,
+  obtenerDiasSemana,
+  obtenerRolesDocentes,
 
-  getById: async (id: number): Promise<ApiResponse<Actividad>> => {
-    const response = await api.get(`/actividades/${id}`);
-    return response.data;
-  },
+  // CRUD Actividades
+  crearActividad,
+  listarActividades,
+  obtenerActividadPorId,
+  obtenerActividadPorCodigo,
+  actualizarActividad,
+  eliminarActividad,
 
-  create: async (actividad: Omit<Actividad, 'id' | 'cupoActual' | 'fechaCreacion'>): Promise<ApiResponse<Actividad>> => {
-    const response = await api.post('/actividades', actividad);
-    return response.data;
-  },
+  // Horarios
+  obtenerHorariosActividad,
+  agregarHorario,
+  actualizarHorario,
+  eliminarHorario,
 
-  update: async (id: number, actividad: Partial<Actividad>): Promise<ApiResponse<Actividad>> => {
-    const response = await api.put(`/actividades/${id}`, actividad);
-    return response.data;
-  },
+  // Docentes
+  obtenerDocentesActividad,
+  asignarDocente,
+  desasignarDocente,
+  obtenerDocentesDisponibles,
 
-  delete: async (id: number): Promise<ApiResponse<null>> => {
-    const response = await api.delete(`/actividades/${id}`);
-    return response.data;
-  },
+  // Participantes
+  obtenerParticipantes,
 
-  duplicate: async (id: number): Promise<ApiResponse<Actividad>> => {
-    const response = await api.post(`/actividades/${id}/duplicate`);
-    return response.data;
-  },
+  // Estadísticas
+  obtenerEstadisticasActividad,
 
-  bulkDelete: async (ids: number[]): Promise<ApiResponse<null>> => {
-    const response = await api.delete('/actividades/bulk', { data: { ids } });
-    return response.data;
-  },
+  // Reportes
+  obtenerResumenPorTipo,
+  obtenerHorarioSemanal,
 
-  search: async (query: string): Promise<ApiResponse<Actividad[]>> => {
-    const response = await api.get('/actividades/search', {
-      params: { q: query }
-    });
-    return response.data;
-  },
-
-  getByTipo: async (tipo: 'coro' | 'clase' | 'taller' | 'evento'): Promise<ApiResponse<Actividad[]>> => {
-    const response = await api.get(`/actividades/tipo/${tipo}`);
-    return response.data;
-  },
-
-  getByDocente: async (docenteId: number): Promise<ApiResponse<Actividad[]>> => {
-    const response = await api.get(`/actividades/docente/${docenteId}`);
-    return response.data;
-  },
-
-  getByAula: async (aulaId: number): Promise<ApiResponse<Actividad[]>> => {
-    const response = await api.get(`/actividades/aula/${aulaId}`);
-    return response.data;
-  },
-
-  updateEstado: async (id: number, estado: 'activo' | 'inactivo' | 'suspendido' | 'finalizado'): Promise<ApiResponse<Actividad>> => {
-    const response = await api.patch(`/actividades/${id}/estado`, { estado });
-    return response.data;
-  },
-
-  checkHorarioConflictos: async (actividad: {
-    diaSemana: string;
-    horaInicio: string;
-    horaFin: string;
-    docenteId?: number;
-    aulaId?: number;
-    excludeId?: number;
-  }): Promise<ApiResponse<HorarioConflicto[]>> => {
-    const response = await api.post('/actividades/check-conflictos', actividad);
-    return response.data;
-  },
-
-  getHorarioSemanal: async (filters?: {
-    docenteId?: number;
-    aulaId?: number;
-    categoria?: string;
-  }): Promise<ApiResponse<{
-    [diaSemana: string]: Actividad[];
-  }>> => {
-    const response = await api.get('/actividades/horario-semanal', { params: filters });
-    return response.data;
-  },
-
-  getEstadisticas: async (): Promise<ApiResponse<{
-    totalActividades: number;
-    actividadesPorTipo: { [tipo: string]: number };
-    actividadesPorCategoria: { [categoria: string]: number };
-    actividadesPorEstado: { [estado: string]: number };
-    ocupacionPromedio: number;
-    actividadesConCupoCompleto: number;
-  }>> => {
-    const response = await api.get('/actividades/estadisticas');
-    return response.data;
-  },
-
-  inscribirPersona: async (actividadId: number, personaId: number, observaciones?: string): Promise<ApiResponse<null>> => {
-    const response = await api.post(`/actividades/${actividadId}/inscripciones`, {
-      personaId,
-      observaciones
-    });
-    return response.data;
-  },
-
-  desinscribirPersona: async (actividadId: number, personaId: number, motivo?: string): Promise<ApiResponse<null>> => {
-    const response = await api.delete(`/actividades/${actividadId}/inscripciones/${personaId}`, {
-      data: { motivo }
-    });
-    return response.data;
-  },
-
-  getInscripciones: async (actividadId: number): Promise<ApiResponse<{
-    personaId: number;
-    personaNombre: string;
-    personaApellido: string;
-    fechaInscripcion: string;
-    observaciones?: string;
-  }[]>> => {
-    const response = await api.get(`/actividades/${actividadId}/inscripciones`);
-    return response.data;
-  },
-
-  export: async (format: 'csv' | 'excel', filters?: ActividadesFilters): Promise<Blob> => {
-    const response = await api.get('/actividades/export', {
-      params: { format, ...filters },
-      responseType: 'blob'
-    });
-    return response.data;
-  },
-
-  exportHorario: async (format: 'pdf' | 'excel', filters?: {
-    docenteId?: number;
-    aulaId?: number;
-    categoria?: string;
-  }): Promise<Blob> => {
-    const response = await api.get('/actividades/export-horario', {
-      params: { format, ...filters },
-      responseType: 'blob'
-    });
-    return response.data;
-  }
+  // Operaciones especiales
+  cambiarEstadoActividad,
+  duplicarActividad,
 };
 
 export default actividadesApi;

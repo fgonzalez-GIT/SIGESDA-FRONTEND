@@ -5,8 +5,8 @@
 
 import React, { createContext, useContext } from 'react';
 import { Box, CircularProgress, Alert } from '@mui/material';
-import { useCatalogos } from '../hooks/useActividadesV2';
-import type { CatalogosCompletos } from '../types/actividadV2.types';
+import { useCatalogos } from '../hooks/useActividades';
+import type { CatalogosCompletos } from '../types/actividad.types';
 
 interface CatalogosContextType {
   catalogos: CatalogosCompletos | null;
@@ -27,6 +27,13 @@ interface CatalogosProviderProps {
  */
 export const CatalogosProvider: React.FC<CatalogosProviderProps> = ({ children }) => {
   const { catalogos, loading, error, refetch } = useCatalogos();
+
+  // Filtrar diasSemana para solo incluir IDs válidos (1-7)
+  // El backend tiene duplicados con IDs 8-14 que deben ser ignorados
+  const catalogosFiltrados = catalogos ? {
+    ...catalogos,
+    diasSemana: catalogos.diasSemana.filter(dia => dia.id >= 1 && dia.id <= 7)
+  } : null;
 
   // Mostrar loading mientras carga
   if (loading) {
@@ -70,7 +77,7 @@ export const CatalogosProvider: React.FC<CatalogosProviderProps> = ({ children }
   }
 
   return (
-    <CatalogosContext.Provider value={{ catalogos, loading, error, refetch }}>
+    <CatalogosContext.Provider value={{ catalogos: catalogosFiltrados, loading, error, refetch }}>
       {children}
     </CatalogosContext.Provider>
   );

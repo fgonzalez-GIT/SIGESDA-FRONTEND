@@ -1,5 +1,5 @@
 /**
- * Componente Card para mostrar información resumida de una actividad V2
+ * Componente Card para mostrar información resumida de una actividad
  */
 
 import React from 'react';
@@ -22,20 +22,20 @@ import {
   People as PeopleIcon,
   AttachMoney as MoneyIcon,
 } from '@mui/icons-material';
-import type { ActividadV2 } from '../../types/actividadV2.types';
-import { formatTime, getCupoDisponible, hasCupoDisponible } from '../../types/actividadV2.types';
+import type { Actividad } from '../../types/actividad.types';
+import { formatTime, getCupoDisponible, hasCupoDisponible } from '../../types/actividad.types';
 import { EstadoBadge } from './EstadoBadge';
 
-interface ActividadCardV2Props {
-  actividad: ActividadV2;
-  onView?: (actividad: ActividadV2) => void;
-  onEdit?: (actividad: ActividadV2) => void;
-  onDelete?: (actividad: ActividadV2) => void;
-  onDuplicate?: (actividad: ActividadV2) => void;
+interface ActividadCardProps {
+  actividad: Actividad;
+  onView?: (actividad: Actividad) => void;
+  onEdit?: (actividad: Actividad) => void;
+  onDelete?: (actividad: Actividad) => void;
+  onDuplicate?: (actividad: Actividad) => void;
   showActions?: boolean;
 }
 
-export const ActividadCardV2: React.FC<ActividadCardV2Props> = ({
+export const ActividadCard: React.FC<ActividadCardProps> = ({
   actividad,
   onView,
   onEdit,
@@ -173,4 +173,4 @@ export const ActividadCardV2: React.FC<ActividadCardV2Props> = ({
   );
 };
 
-export default ActividadCardV2;
+export default ActividadCard;

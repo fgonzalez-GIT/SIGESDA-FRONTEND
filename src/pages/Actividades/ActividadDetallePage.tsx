@@ -50,8 +50,8 @@ import {
   useDocentesActividad,
   useParticipantesActividad,
   useEstadisticasActividad,
-} from '../../hooks/useActividadesV2';
-import { formatTime, formatDate } from '../../types/actividadV2.types';
+} from '../../hooks/useActividades';
+import { formatTime, formatDate } from '../../types/actividad.types';
 import { EstadoBadge } from '../../components/actividades/EstadoBadge';
 import { HorariosListaV2 } from '../../components/actividades/HorariosListaV2';
 

@@ -13,8 +13,8 @@ import {
   Stack,
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
-import type { HorarioActividad } from '../../types/actividadV2.types';
-import { formatTime } from '../../types/actividadV2.types';
+import type { HorarioActividad } from '../../types/actividad.types';
+import { formatTime } from '../../types/actividad.types';
 
 interface HorariosListaV2Props {
   horarios: HorarioActividad[];

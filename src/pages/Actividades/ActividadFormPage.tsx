@@ -40,9 +40,10 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
 
-import { useActividad, useCatalogos, useActividadMutations } from '../../hooks/useActividadesV2';
+import { useActividad, useActividadMutations } from '../../hooks/useActividades';
+import { useCatalogosContext } from '../../providers/CatalogosProvider';
 import { HorarioSelector } from '../../components/actividades/HorarioSelector';
-import type { CreateActividadDTO, CreateHorarioDTO } from '../../types/actividadV2.types';
+import type { CreateActividadDTO, CreateHorarioDTO } from '../../types/actividad.types';
 
 interface FormErrors {
   codigoActividad?: string;
@@ -57,13 +58,13 @@ interface FormErrors {
   general?: string;
 }
 
-export const ActividadFormV2Page: React.FC = () => {
+export const ActividadFormPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEditing = Boolean(id);
 
   // Hooks
-  const { catalogos, loading: catalogosLoading } = useCatalogos();
+  const { catalogos, loading: catalogosLoading } = useCatalogosContext();
   const { actividad, loading: actividadLoading } = useActividad(isEditing ? Number(id) : null);
   const { crear, actualizar, loading: mutationLoading, error: mutationError } = useActividadMutations();
 
@@ -624,4 +625,4 @@ export const ActividadFormV2Page: React.FC = () => {
   );
 };
 
-export default ActividadFormV2Page;
+export default ActividadFormPage;

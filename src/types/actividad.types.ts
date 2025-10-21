@@ -1,5 +1,5 @@
 /**
- * Tipos TypeScript para API de Actividades V2.0
+ * Tipos TypeScript para API de Actividades 
  * Basados en la documentación oficial del backend
  * @see /docs/API_ACTIVIDADES_V2.md
  */
@@ -135,7 +135,7 @@ export interface Persona {
   tipo_persona?: string;
 }
 
-export interface ActividadV2 {
+export interface Actividad {
   id: number;
   codigo_actividad: string;
   nombre: string;
@@ -273,14 +273,14 @@ export interface ActividadesQueryParams {
 // RESPUESTAS DE API
 // ============================================
 
-export interface ApiResponseV2<T> {
+export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
   message?: string;
 }
 
-export interface PaginatedResponseV2<T> {
+export interface PaginatedResponse<T> {
   data: T[];
   total: number;
   page: number;
@@ -288,11 +288,11 @@ export interface PaginatedResponseV2<T> {
   pages: number;
 }
 
-export interface ActividadesListResponse extends ApiResponseV2<PaginatedResponseV2<ActividadV2>> {}
+export interface ActividadesListResponse extends ApiResponse<PaginatedResponse<Actividad>> {}
 
-export interface ActividadResponse extends ApiResponseV2<ActividadV2> {}
+export interface ActividadResponse extends ApiResponse<Actividad> {}
 
-export interface CatalogosResponse extends ApiResponseV2<CatalogosCompletos> {}
+export interface CatalogosResponse extends ApiResponse<CatalogosCompletos> {}
 
 // ============================================
 // ESTADÍSTICAS Y REPORTES
@@ -348,7 +348,7 @@ export interface HorarioSemanal {
   actividades: HorarioSemanalActividad[];
 }
 
-export interface HorarioSemanalResponse extends ApiResponseV2<{
+export interface HorarioSemanalResponse extends ApiResponse<{
   horarioSemanal: HorarioSemanal[];
   generadoEn: string;
 }> {}
@@ -389,7 +389,7 @@ export const formatDate = (date: string | null | undefined): string => {
 /**
  * Verifica si una actividad está vigente según sus fechas
  */
-export const isActividadVigente = (actividad: ActividadV2): boolean => {
+export const isActividadVigente = (actividad: Actividad): boolean => {
   const now = new Date();
   const desde = new Date(actividad.fecha_desde);
   const hasta = actividad.fecha_hasta ? new Date(actividad.fecha_hasta) : null;
@@ -400,7 +400,7 @@ export const isActividadVigente = (actividad: ActividadV2): boolean => {
 /**
  * Calcula el cupo disponible de una actividad
  */
-export const getCupoDisponible = (actividad: ActividadV2): number | null => {
+export const getCupoDisponible = (actividad: Actividad): number | null => {
   if (!actividad.cupo_maximo) return null;
   const participantes = actividad._count_participantes || 0;
   return Math.max(0, actividad.cupo_maximo - participantes);
@@ -409,7 +409,7 @@ export const getCupoDisponible = (actividad: ActividadV2): number | null => {
 /**
  * Verifica si una actividad tiene cupo disponible
  */
-export const hasCupoDisponible = (actividad: ActividadV2): boolean => {
+export const hasCupoDisponible = (actividad: Actividad): boolean => {
   const cupoDisponible = getCupoDisponible(actividad);
   return cupoDisponible === null || cupoDisponible > 0;
 };
