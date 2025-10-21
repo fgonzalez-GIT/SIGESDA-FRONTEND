@@ -19,6 +19,8 @@ import FamiliaresPage from './pages/Familiares/FamiliaresPage';
 import ReservasPage from './pages/Reservas/ReservasPage';
 import ConfiguracionPage from './pages/Configuracion/ConfiguracionPage';
 import CategoriasPage from './pages/Categorias/CategoriasPage';
+import TiposActividadPage from './pages/TiposActividad/TiposActividadPage';
+import CategoriasActividadPage from './pages/CategoriasActividad/CategoriasActividadPage';
 
 // Actividades V2
 import ActividadesV2Page from './pages/Actividades/ActividadesV2Page';
@@ -46,6 +48,8 @@ function App() {
                 <Route path="/aulas" element={<AulasPage />} />
                 <Route path="/cuotas" element={<CuotasPage />} />
                 <Route path="/categorias" element={<CategoriasPage />} />
+                <Route path="/tipos-actividad" element={<TiposActividadPage />} />
+                <Route path="/categorias-actividad" element={<CategoriasActividadPage />} />
                 <Route path="/medios-pago" element={<MediosPagoPage />} />
                 <Route path="/recibos" element={<RecibosPage />} />
                 <Route path="/participacion" element={<ParticipacionPage />} />

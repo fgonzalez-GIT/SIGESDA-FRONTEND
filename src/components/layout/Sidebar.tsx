@@ -91,6 +91,18 @@ const menuItems = [
     color: '#e91e63',
   },
   {
+    title: 'Tipos de Actividad',
+    icon: <Category />,
+    path: '/tipos-actividad',
+    color: '#00897b',
+  },
+  {
+    title: 'Categorías de Actividad',
+    icon: <Category />,
+    path: '/categorias-actividad',
+    color: '#6a1b9a',
+  },
+  {
     title: 'Medios de Pago',
     icon: <Payment />,
     path: '/medios-pago',
