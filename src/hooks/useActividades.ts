@@ -1,13 +1,13 @@
 /**
- * Hooks personalizados para gestión de Actividades V2
+ * Hooks personalizados para gestión de Actividades
  * Basados en la documentación y guía rápida del backend
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import type {
-  ActividadV2,
+  Actividad,
   ActividadesQueryParams,
-  PaginatedResponseV2,
+  PaginatedResponse,
   CatalogosCompletos,
   CreateActividadDTO,
   UpdateActividadDTO,
@@ -15,15 +15,15 @@ import type {
   DocenteActividad,
   ParticipacionActividad,
   EstadisticasActividad,
-} from '../types/actividadV2.types';
+} from '../types/actividad.types';
 import {
-  actividadesV2Api,
+  actividadesApi,
   listarActividades,
   obtenerActividadPorId,
   crearActividad,
   actualizarActividad,
   eliminarActividad,
-} from '../services/actividadesV2Api';
+} from '../services/actividadesApi';
 
 // ============================================
 // HOOK: useCatalogos
@@ -59,7 +59,7 @@ export const useCatalogos = (): UseCatalogosResult => {
     try {
       setLoading(true);
       setError(null);
-      const data = await actividadesV2Api.obtenerTodosCatalogos();
+      const data = await actividadesApi.obtenerTodosCatalogos();
       setCatalogos(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar catálogos');
@@ -81,7 +81,7 @@ export const useCatalogos = (): UseCatalogosResult => {
 // ============================================
 
 interface UseActividadesResult {
-  actividades: ActividadV2[];
+  actividades: Actividad[];
   pagination: {
     page: number;
     limit: number;
@@ -112,7 +112,7 @@ interface UseActividadesResult {
  * ```
  */
 export const useActividades = (initialParams?: ActividadesQueryParams): UseActividadesResult => {
-  const [actividades, setActividades] = useState<ActividadV2[]>([]);
+  const [actividades, setActividades] = useState<Actividad[]>([]);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -167,7 +167,7 @@ export const useActividades = (initialParams?: ActividadesQueryParams): UseActiv
 // ============================================
 
 interface UseActividadResult {
-  actividad: ActividadV2 | null;
+  actividad: Actividad | null;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -187,7 +187,7 @@ interface UseActividadResult {
  * ```
  */
 export const useActividad = (actividadId: number | null): UseActividadResult => {
-  const [actividad, setActividad] = useState<ActividadV2 | null>(null);
+  const [actividad, setActividad] = useState<Actividad | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -222,8 +222,8 @@ export const useActividad = (actividadId: number | null): UseActividadResult => 
 // ============================================
 
 interface UseActividadMutationsResult {
-  crear: (data: CreateActividadDTO) => Promise<ActividadV2>;
-  actualizar: (id: number, data: UpdateActividadDTO) => Promise<ActividadV2>;
+  crear: (data: CreateActividadDTO) => Promise<Actividad>;
+  actualizar: (id: number, data: UpdateActividadDTO) => Promise<Actividad>;
   eliminar: (id: number) => Promise<void>;
   loading: boolean;
   error: string | null;
@@ -257,7 +257,7 @@ export const useActividadMutations = (): UseActividadMutationsResult => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const crear = useCallback(async (data: CreateActividadDTO): Promise<ActividadV2> => {
+  const crear = useCallback(async (data: CreateActividadDTO): Promise<Actividad> => {
     try {
       setLoading(true);
       setError(null);
@@ -272,7 +272,7 @@ export const useActividadMutations = (): UseActividadMutationsResult => {
     }
   }, []);
 
-  const actualizar = useCallback(async (id: number, data: UpdateActividadDTO): Promise<ActividadV2> => {
+  const actualizar = useCallback(async (id: number, data: UpdateActividadDTO): Promise<Actividad> => {
     try {
       setLoading(true);
       setError(null);
@@ -332,7 +332,7 @@ export const useHorariosActividad = (actividadId: number | null): UseHorariosAct
     try {
       setLoading(true);
       setError(null);
-      const data = await actividadesV2Api.obtenerHorariosActividad(actividadId);
+      const data = await actividadesApi.obtenerHorariosActividad(actividadId);
       setHorarios(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar horarios');
@@ -377,7 +377,7 @@ export const useDocentesActividad = (actividadId: number | null): UseDocentesAct
     try {
       setLoading(true);
       setError(null);
-      const data = await actividadesV2Api.obtenerDocentesActividad(actividadId);
+      const data = await actividadesApi.obtenerDocentesActividad(actividadId);
       setDocentes(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar docentes');
@@ -422,7 +422,7 @@ export const useParticipantesActividad = (actividadId: number | null): UsePartic
     try {
       setLoading(true);
       setError(null);
-      const data = await actividadesV2Api.obtenerParticipantes(actividadId);
+      const data = await actividadesApi.obtenerParticipantes(actividadId);
       setParticipantes(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar participantes');
@@ -467,7 +467,7 @@ export const useEstadisticasActividad = (actividadId: number | null): UseEstadis
     try {
       setLoading(true);
       setError(null);
-      const data = await actividadesV2Api.obtenerEstadisticasActividad(actividadId);
+      const data = await actividadesApi.obtenerEstadisticasActividad(actividadId);
       setEstadisticas(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar estadísticas');

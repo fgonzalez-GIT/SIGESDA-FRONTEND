@@ -9,7 +9,7 @@ import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
-import type { DiaSemana, CreateHorarioDTO } from '../../types/actividadV2.types';
+import type { DiaSemana, CreateHorarioDTO } from '../../types/actividad.types';
 
 interface HorarioSelectorProps {
   value: Partial<CreateHorarioDTO>;

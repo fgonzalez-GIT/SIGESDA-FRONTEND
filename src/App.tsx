@@ -9,7 +9,6 @@ import { CatalogosProvider } from './providers/CatalogosProvider';
 // Pages
 import Dashboard from './pages/Dashboard/Dashboard';
 import PersonasPage from './pages/Personas/PersonasPageSimple';
-// import ActividadesPage from './pages/Actividades/ActividadesPage'; // DEPRECADO - Reemplazado por ActividadesV2
 import AulasPage from './pages/Aulas/AulasPage';
 import CuotasPage from './pages/Cuotas/CuotasPage';
 import MediosPagoPage from './pages/MediosPago/MediosPagoPage';
@@ -22,10 +21,10 @@ import CategoriasPage from './pages/Categorias/CategoriasPage';
 import TiposActividadPage from './pages/TiposActividad/TiposActividadPage';
 import CategoriasActividadPage from './pages/CategoriasActividad/CategoriasActividadPage';
 
-// Actividades V2
-import ActividadesV2Page from './pages/Actividades/ActividadesV2Page';
-import ActividadDetalleV2Page from './pages/Actividades/ActividadDetalleV2Page';
-import ActividadFormV2Page from './pages/Actividades/ActividadFormV2Page';
+// Actividades
+import ActividadesPage from './pages/Actividades/ActividadesPage';
+import ActividadDetallePage from './pages/Actividades/ActividadDetallePage';
+import ActividadFormPage from './pages/Actividades/ActividadFormPage';
 
 function App() {
   return (
@@ -39,11 +38,11 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/personas" element={<PersonasPage />} />
 
-                {/* Actividades V2 */}
-                <Route path="/actividades" element={<ActividadesV2Page />} />
-                <Route path="/actividades/nueva" element={<ActividadFormV2Page />} />
-                <Route path="/actividades/:id" element={<ActividadDetalleV2Page />} />
-                <Route path="/actividades/:id/editar" element={<ActividadFormV2Page />} />
+                {/* Actividades */}
+                <Route path="/actividades" element={<ActividadesPage />} />
+                <Route path="/actividades/nueva" element={<ActividadFormPage />} />
+                <Route path="/actividades/:id" element={<ActividadDetallePage />} />
+                <Route path="/actividades/:id/editar" element={<ActividadFormPage />} />
 
                 <Route path="/aulas" element={<AulasPage />} />
                 <Route path="/cuotas" element={<CuotasPage />} />

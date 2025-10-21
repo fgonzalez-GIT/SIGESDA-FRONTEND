@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Chip } from '@mui/material';
-import type { EstadoActividad } from '../../types/actividadV2.types';
+import type { EstadoActividad } from '../../types/actividad.types';
 
 interface EstadoBadgeProps {
   estado: EstadoActividad;

@@ -47,7 +47,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { fetchPersonas } from '../../store/slices/personasSlice';
-import { useActividades } from '../../hooks/useActividadesV2';
+import { useActividades } from '../../hooks/useActividades';
 import {
   participacionApi,
   type Participacion as ParticipacionAPI,
@@ -72,7 +72,7 @@ interface Participacion {
 
 // Usar tipos de Redux para Persona
 import type { Persona as PersonaRedux } from '../../store/slices/personasSlice';
-import type { ActividadV2 } from '../../types/actividadV2.types';
+import type { Actividad } from '../../types/actividad.types';
 
 const ParticipacionPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -84,7 +84,7 @@ const ParticipacionPage: React.FC = () => {
   const { personas: personasRedux, loading: loadingPersonas } = useAppSelector((state) => state.personas);
 
   // Obtener actividades desde el hook useActividades
-  const { actividades: actividadesV2, loading: loadingActividades } = useActividades({
+  const { actividades: actividades, loading: loadingActividades } = useActividades({
     page: 1,
     limit: 100, // Obtener todas las actividades disponibles
     incluirRelaciones: false
@@ -207,7 +207,7 @@ const ParticipacionPage: React.FC = () => {
 
   const handleSave = async () => {
     const persona = personasRedux.find(p => String(p.id) === String(formData.personaId));
-    const actividad = actividadesV2.find(a => a.id === formData.actividadId);
+    const actividad = actividades.find(a => a.id === formData.actividadId);
 
     if (!persona || !actividad) {
       dispatch(showNotification({
@@ -219,14 +219,14 @@ const ParticipacionPage: React.FC = () => {
 
     try {
       if (selectedParticipacion) {
-        // Actualizar participación existente - NO DISPONIBLE en ActividadesV2
+        // Actualizar participación existente - NO DISPONIBLE en Actividades
         dispatch(showNotification({
           message: 'La edición de participaciones no está disponible aún. Por favor, elimine y cree una nueva.',
           severity: 'warning'
         }));
         return;
       } else {
-        // Crear nueva participación usando endpoint de ActividadesV2
+        // Crear nueva participación usando endpoint de Actividades
         const createData: CreateParticipacionDTO = {
           persona_id: String(persona.id),
           actividad_id: actividad.id,
@@ -261,7 +261,7 @@ const ParticipacionPage: React.FC = () => {
     }
 
     try {
-      // Eliminar participación - NO DISPONIBLE en ActividadesV2
+      // Eliminar participación - NO DISPONIBLE en Actividades
       dispatch(showNotification({
         message: 'La eliminación de participaciones no está disponible aún.',
         severity: 'warning'
@@ -277,7 +277,7 @@ const ParticipacionPage: React.FC = () => {
 
   const handleCambiarEstado = async (id: number, nuevoEstado: Participacion['estado']) => {
     try {
-      // Cambiar estado - NO DISPONIBLE en ActividadesV2
+      // Cambiar estado - NO DISPONIBLE en Actividades
       dispatch(showNotification({
         message: 'El cambio de estado no está disponible aún.',
         severity: 'warning'
@@ -646,10 +646,10 @@ const ParticipacionPage: React.FC = () => {
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <Autocomplete
-                options={actividadesV2}
+                options={actividades}
                 loading={loadingActividades}
-                getOptionLabel={(option) => `${option.nombre} - ${option.codigo}`}
-                value={actividadesV2.find(a => a.id === formData.actividadId) || null}
+                getOptionLabel={(option) => `${option.nombre} - ${option.codigo_actividad}`}
+                value={actividades.find(a => a.id === formData.actividadId) || null}
                 onChange={(_, newValue) => {
                   setFormData({ ...formData, actividadId: newValue?.id || 0 });
                 }}
@@ -658,7 +658,7 @@ const ParticipacionPage: React.FC = () => {
                     {...params}
                     label="Actividad"
                     required
-                    helperText={`${actividadesV2.length} actividades disponibles`}
+                    helperText={`${actividades.length} actividades disponibles`}
                   />
                 )}
                 renderOption={(props, option) => {
@@ -666,7 +666,7 @@ const ParticipacionPage: React.FC = () => {
                   return (
                     <Box component="li" key={key} {...otherProps}>
                       <ActivityIcon sx={{ mr: 1 }} />
-                      {option.nombre} - {option.codigo}
+                      {option.nombre} - {option.codigo_actividad}
                     </Box>
                   );
                 }}

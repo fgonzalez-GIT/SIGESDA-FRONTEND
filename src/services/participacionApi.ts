@@ -4,13 +4,13 @@
  */
 
 import { api } from './api';
-import type { ParticipacionActividad } from '../types/actividadV2.types';
+import type { ParticipacionActividad } from '../types/actividad.types';
 
 // ============================================
 // TIPOS
 // ============================================
 
-// Reusar el tipo de ActividadesV2
+// Reusar el tipo de Actividades
 export type Participacion = ParticipacionActividad;
 
 // Interfaz extendida para listados
@@ -142,21 +142,21 @@ export const obtenerParticipacionPorId = async (id: number): Promise<Participaci
 
 /**
  * Actualiza una participación existente
- * Por ahora no está implementado en ActividadesV2
+ * Por ahora no está implementado en Actividades
  */
 export const actualizarParticipacion = async (
   id: number,
   data: UpdateParticipacionDTO
 ): Promise<Participacion> => {
-  throw new Error('Método no implementado en ActividadesV2');
+  throw new Error('Método no implementado en Actividades');
 };
 
 /**
  * Elimina una participación (dar de baja)
- * Por ahora no está implementado en ActividadesV2
+ * Por ahora no está implementado en Actividades
  */
 export const eliminarParticipacion = async (id: number): Promise<void> => {
-  throw new Error('Método no implementado en ActividadesV2');
+  throw new Error('Método no implementado en Actividades');
 };
 
 // ============================================
