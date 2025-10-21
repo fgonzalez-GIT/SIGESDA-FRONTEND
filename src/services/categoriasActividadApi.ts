@@ -21,18 +21,18 @@ const API_URL = import.meta.env.VITE_API_URL;
 /**
  * Los siguientes endpoints deben ser implementados en el backend:
  *
- * Ruta base: /api/actividades-v2/categorias-actividad
+ * Ruta base: /api/actividades/categorias-actividad
  *
- * 1. GET    /api/actividades-v2/categorias-actividad
+ * 1. GET    /api/actividades/categorias-actividad
  *    Query params:
  *    - includeInactive: boolean (default: false)
  *    - search: string (opcional, busca en código y nombre)
  *    Response: { success: true, data: CategoriaActividad[], total: number }
  *
- * 2. GET    /api/actividades-v2/categorias-actividad/:id
+ * 2. GET    /api/actividades/categorias-actividad/:id
  *    Response: { success: true, data: CategoriaActividad (con _count.actividades) }
  *
- * 3. POST   /api/actividades-v2/categorias-actividad
+ * 3. POST   /api/actividades/categorias-actividad
  *    Body: { codigo: string, nombre: string, descripcion?: string, orden?: number }
  *    Validaciones:
  *    - codigo debe ser único
@@ -40,20 +40,20 @@ const API_URL = import.meta.env.VITE_API_URL;
  *    - orden se autoasigna si no se proporciona (max + 1)
  *    Response: { success: true, data: CategoriaActividad, message: "Categoría creada exitosamente" }
  *
- * 4. PUT    /api/actividades-v2/categorias-actividad/:id
+ * 4. PUT    /api/actividades/categorias-actividad/:id
  *    Body: { codigo?, nombre?, descripcion?, activo?, orden? }
  *    Validaciones:
  *    - codigo único (si cambia)
  *    - no permitir desactivar si hay actividades activas usando esta categoría
  *    Response: { success: true, data: CategoriaActividad, message: "Categoría actualizada exitosamente" }
  *
- * 5. DELETE /api/actividades-v2/categorias-actividad/:id
+ * 5. DELETE /api/actividades/categorias-actividad/:id
  *    Soft delete: activo = false
  *    Validaciones:
  *    - no permitir si hay actividades activas usando esta categoría
  *    Response: { success: true, message: "Categoría desactivada exitosamente" }
  *
- * 6. PATCH  /api/actividades-v2/categorias-actividad/reorder
+ * 6. PATCH  /api/actividades/categorias-actividad/reorder
  *    Body: { categoriaIds: number[] } // Array ordenado de IDs
  *    Actualiza campo `orden` según índice en el array
  *    Response: { success: true, message: "Orden actualizado exitosamente" }
@@ -81,7 +81,7 @@ export const categoriasActividadApi = {
         queryParams.append('search', params.search);
       }
 
-      const url = `${API_URL}/actividades-v2/categorias-actividad${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const url = `${API_URL}/actividades/categorias-actividad${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -108,7 +108,7 @@ export const categoriasActividadApi = {
    */
   obtenerPorId: async (id: number): Promise<CategoriaActividad> => {
     try {
-      const response = await fetch(`${API_URL}/actividades-v2/categorias-actividad/${id}`, {
+      const response = await fetch(`${API_URL}/actividades/categorias-actividad/${id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export const categoriasActividadApi = {
    */
   crear: async (data: CreateCategoriaActividadDto): Promise<CategoriaActividad> => {
     try {
-      const response = await fetch(`${API_URL}/actividades-v2/categorias-actividad`, {
+      const response = await fetch(`${API_URL}/actividades/categorias-actividad`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +159,7 @@ export const categoriasActividadApi = {
    */
   actualizar: async (id: number, data: UpdateCategoriaActividadDto): Promise<CategoriaActividad> => {
     try {
-      const response = await fetch(`${API_URL}/actividades-v2/categorias-actividad/${id}`, {
+      const response = await fetch(`${API_URL}/actividades/categorias-actividad/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -186,7 +186,7 @@ export const categoriasActividadApi = {
    */
   eliminar: async (id: number): Promise<void> => {
     try {
-      const response = await fetch(`${API_URL}/actividades-v2/categorias-actividad/${id}`, {
+      const response = await fetch(`${API_URL}/actividades/categorias-actividad/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +208,7 @@ export const categoriasActividadApi = {
    */
   reordenar: async (data: ReorderCategoriasActividadDto): Promise<void> => {
     try {
-      const response = await fetch(`${API_URL}/actividades-v2/categorias-actividad/reorder`, {
+      const response = await fetch(`${API_URL}/actividades/categorias-actividad/reorder`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

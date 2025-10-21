@@ -157,7 +157,9 @@ export const TipoActividadForm: React.FC<TipoActividadFormProps> = ({
       codigo: formData.codigo.trim(),
       nombre: formData.nombre.trim(),
       descripcion: formData.descripcion?.trim() || undefined,
-      orden: formData.orden,
+      orden: formData.orden !== undefined && formData.orden !== null && formData.orden !== ''
+        ? Number(formData.orden)
+        : undefined,
     };
 
     // Si estamos editando, incluir el campo activo

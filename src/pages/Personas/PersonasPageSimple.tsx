@@ -349,7 +349,7 @@ const PersonasPageSimple: React.FC = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
-            Gestión de Personas
+            Gestión de PersonasER
           </Typography>
           <Typography variant="body1" color="text.secondary">
             Módulo para gestionar socios, docentes y estudiantes.
