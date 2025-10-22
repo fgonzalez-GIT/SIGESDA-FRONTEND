@@ -145,6 +145,13 @@ export const ActividadFormPage: React.FC = () => {
       setErrors((prev) => ({ ...prev, horarios: 'Seleccione un día' }));
       return;
     }
+
+    // Validar que el día sea válido (1-7)
+    if (nuevoHorario.diaSemanaId < 1 || nuevoHorario.diaSemanaId > 7) {
+      setErrors((prev) => ({ ...prev, horarios: 'El día seleccionado no es válido' }));
+      return;
+    }
+
     if (!nuevoHorario.horaInicio || !nuevoHorario.horaFin) {
       setErrors((prev) => ({ ...prev, horarios: 'Complete las horas' }));
       return;
@@ -233,6 +240,16 @@ export const ActividadFormPage: React.FC = () => {
     // Validar todos los pasos
     if (!validateStep(0) || !validateStep(1) || !validateStep(2)) {
       setErrors((prev) => ({ ...prev, general: 'Por favor corrija los errores en el formulario' }));
+      return;
+    }
+
+    // Validar que todos los días de semana sean válidos (1-7)
+    const horariosInvalidos = horarios.filter(h => h.diaSemanaId < 1 || h.diaSemanaId > 7);
+    if (horariosInvalidos.length > 0) {
+      setErrors((prev) => ({
+        ...prev,
+        general: 'Algunos horarios tienen días de semana inválidos. Por favor elimínelos y agréguelos nuevamente.'
+      }));
       return;
     }
 

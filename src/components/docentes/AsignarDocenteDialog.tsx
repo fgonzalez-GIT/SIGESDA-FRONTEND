@@ -74,21 +74,21 @@ export const AsignarDocenteDialog: React.FC<AsignarDocenteDialogProps> = ({
         setDocenteError('Debe seleccionar un docente');
         return false;
       }
+
+      // Validar que el docente no esté ya asignado (independientemente del rol)
+      const yaAsignado = docentesExistentes.some(
+        (d) => Number(d.docente_id) === Number(docenteId)
+      );
+
+      if (yaAsignado) {
+        setDocenteError('Este docente ya está asignado a la actividad. Un docente solo puede tener un rol por actividad.');
+        return false;
+      }
     }
 
     if (activeStep === 1) {
       if (!rolDocenteId) {
         setRolError('Debe seleccionar un rol para el docente');
-        return false;
-      }
-
-      // Validar que no esté duplicado (mismo docente + mismo rol)
-      const yaAsignado = docentesExistentes.some(
-        (d) => Number(d.docente_id) === Number(docenteId) && d.rol_docente_id === rolDocenteId
-      );
-
-      if (yaAsignado) {
-        setRolError('Este docente ya está asignado con este rol a la actividad');
         return false;
       }
     }
@@ -164,6 +164,7 @@ export const AsignarDocenteDialog: React.FC<AsignarDocenteDialogProps> = ({
               required
               label="Docente"
               fullWidth
+              excludeDocenteIds={docentesExistentes.map((d) => d.docente_id)}
             />
           </Box>
         );
