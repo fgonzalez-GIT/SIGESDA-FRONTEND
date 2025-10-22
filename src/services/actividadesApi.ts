@@ -275,7 +275,7 @@ export const asignarDocente = async (
  */
 export const desasignarDocente = async (
   actividadId: number,
-  docenteId: string,
+  docenteId: number,
   rolDocenteId: number
 ): Promise<DocenteActividad> => {
   const response = await api.delete<ApiResponse<DocenteActividad>>(

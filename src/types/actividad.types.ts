@@ -87,7 +87,7 @@ export interface HorarioActividad {
 export interface DocenteActividad {
   id: number;
   actividad_id: number;
-  docente_id: string; // CUID
+  docente_id: number; // FK a Persona.id (no es CUID, es Int)
   rol_docente_id: number;
   fecha_asignacion: string;
   fecha_desasignacion: string | null;
@@ -101,7 +101,7 @@ export interface DocenteActividad {
 
 export interface ParticipacionActividad {
   id: number;
-  persona_id: string; // CUID
+  persona_id: number; // FK a Persona.id (Int)
   actividad_id: number;
   fecha_inicio: string;
   fecha_fin: string | null;
@@ -214,7 +214,7 @@ export interface UpdateHorarioDTO {
 }
 
 export interface AsignarDocenteDTO {
-  docenteId: string; // CUID
+  docenteId: number; // FK a Persona.id (Int)
   rolDocenteId: number;
   observaciones?: string;
 }
