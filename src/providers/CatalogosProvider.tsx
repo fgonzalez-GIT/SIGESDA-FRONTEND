@@ -30,10 +30,20 @@ export const CatalogosProvider: React.FC<CatalogosProviderProps> = ({ children }
 
   // Filtrar diasSemana para solo incluir IDs válidos (1-7)
   // El backend tiene duplicados con IDs 8-14 que deben ser ignorados
-  const catalogosFiltrados = catalogos ? {
-    ...catalogos,
-    diasSemana: catalogos.diasSemana.filter(dia => dia.id >= 1 && dia.id <= 7)
-  } : null;
+  const catalogosFiltrados = React.useMemo(() => {
+    if (!catalogos) return null;
+
+    const diasFiltrados = catalogos.diasSemana.filter(dia => dia.id <= 7);
+
+    // Debug: verificar que el filtrado está funcionando
+    console.log('🔍 Días de semana originales:', catalogos.diasSemana.map(d => ({ id: d.id, nombre: d.nombre })));
+    console.log('✅ Días de semana filtrados:', diasFiltrados.map(d => ({ id: d.id, nombre: d.nombre })));
+
+    return {
+      ...catalogos,
+      diasSemana: diasFiltrados
+    };
+  }, [catalogos]);
 
   // Mostrar loading mientras carga
   if (loading) {

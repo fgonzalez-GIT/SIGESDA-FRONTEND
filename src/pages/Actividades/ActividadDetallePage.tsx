@@ -189,7 +189,23 @@ export const ActividadDetalleV2Page: React.FC = () => {
       setParticipanteADesinscribir(null);
     } catch (err: any) {
       console.error('Error al desinscribir participante:', err);
-      alert(err.message || 'Error al desinscribir el participante');
+
+      // Extraer mensaje de error
+      let errorMessage = 'Error al desinscribir el participante';
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      alert(errorMessage);
+
+      // Si el participante ya estaba inactivo, refrescar lista y cerrar diálogo
+      if (errorMessage.includes('ya está inactiv')) {
+        refetchParticipantes();
+        setConfirmarDesinscribirDialog(false);
+        setParticipanteADesinscribir(null);
+      }
     } finally {
       setDesinscribiendoParticipante(false);
     }

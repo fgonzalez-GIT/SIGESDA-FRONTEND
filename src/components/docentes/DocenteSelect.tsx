@@ -25,6 +25,7 @@ interface DocenteSelectProps {
   fullWidth?: boolean;
   helperText?: string;
   showSearch?: boolean;
+  excludeDocenteIds?: number[]; // Lista de IDs de docentes ya asignados
 }
 
 export const DocenteSelect: React.FC<DocenteSelectProps> = ({
@@ -37,6 +38,7 @@ export const DocenteSelect: React.FC<DocenteSelectProps> = ({
   fullWidth = true,
   helperText,
   showSearch = true,
+  excludeDocenteIds = [],
 }) => {
   const [docentes, setDocentes] = useState<Persona[]>([]);
   const [loading, setLoading] = useState(false);
@@ -170,22 +172,34 @@ export const DocenteSelect: React.FC<DocenteSelectProps> = ({
             </em>
           </MenuItem>
         ) : (
-          docentesOrdenados.map((docente) => (
-            <MenuItem key={docente.id} value={docente.id}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                <PersonIcon fontSize="small" color="action" />
-                <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <Typography variant="body2">
-                    {docente.apellido}, {docente.nombre}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {docente.dni && `DNI: ${docente.dni}`}
-                    {docente.especialidad && ` • ${docente.especialidad}`}
-                  </Typography>
+          docentesOrdenados.map((docente) => {
+            const yaAsignado = excludeDocenteIds.includes(docente.id);
+
+            return (
+              <MenuItem
+                key={docente.id}
+                value={docente.id}
+                disabled={yaAsignado}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                  <PersonIcon fontSize="small" color={yaAsignado ? "disabled" : "action"} />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <Typography
+                      variant="body2"
+                      color={yaAsignado ? "text.disabled" : "text.primary"}
+                    >
+                      {docente.apellido}, {docente.nombre}
+                      {yaAsignado && ' (Ya asignado)'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {docente.dni && `DNI: ${docente.dni}`}
+                      {docente.especialidad && ` • ${docente.especialidad}`}
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
-            </MenuItem>
-          ))
+              </MenuItem>
+            );
+          })
         )}
       </Select>
       {(error || helperText) && (
