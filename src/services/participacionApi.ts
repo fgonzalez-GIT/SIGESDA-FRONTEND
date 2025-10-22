@@ -31,7 +31,7 @@ export interface ParticipacionExtendida extends ParticipacionActividad {
 }
 
 export interface CreateParticipacionDTO {
-  persona_id: string;
+  persona_id: number; // FK a Persona.id (Int)
   actividad_id: number;
   fecha_inicio: string;
   fecha_fin?: string;
