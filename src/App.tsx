@@ -24,6 +24,7 @@ import CategoriasActividadPage from './pages/CategoriasActividad/CategoriasActiv
 // Actividades
 import ActividadesPage from './pages/Actividades/ActividadesPage';
 import ActividadDetallePage from './pages/Actividades/ActividadDetallePage';
+import ActividadDetallePageV2 from './pages/Actividades/ActividadDetallePageV2';
 import ActividadFormPage from './pages/Actividades/ActividadFormPage';
 
 function App() {
@@ -41,7 +42,8 @@ function App() {
                 {/* Actividades */}
                 <Route path="/actividades" element={<ActividadesPage />} />
                 <Route path="/actividades/nueva" element={<ActividadFormPage />} />
-                <Route path="/actividades/:id" element={<ActividadDetallePage />} />
+                <Route path="/actividades/:id" element={<ActividadDetallePageV2 />} />
+                <Route path="/actividades/:id/v1" element={<ActividadDetallePage />} />
                 <Route path="/actividades/:id/editar" element={<ActividadFormPage />} />
 
                 <Route path="/aulas" element={<AulasPage />} />

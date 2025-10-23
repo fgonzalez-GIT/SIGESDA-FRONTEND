@@ -39,6 +39,38 @@ export interface CreateParticipacionDTO {
   observaciones?: string;
 }
 
+export interface InscripcionMultiplePersonasDTO {
+  actividadId: number;
+  personas: Array<{
+    personaId: number;
+    fechaInicio: string;
+    precioEspecial?: number;
+    observaciones?: string;
+  }>;
+  fechaInicioComun?: string;
+  precioEspecialComun?: number;
+  observacionesComunes?: string;
+}
+
+export interface InscripcionMultiplePersonasResponse {
+  success: boolean;
+  message: string;
+  data: {
+    participacionesCreadas: Array<{
+      id: number;
+      personaNombre: string;
+      fecha_inicio: string;
+    }>;
+    totalCreadas: number;
+    totalErrores: number;
+    errores: Array<{
+      personaId: number;
+      error: string;
+    }>;
+    actividadNombre: string;
+  };
+}
+
 export interface UpdateParticipacionDTO {
   fecha_inicio?: string;
   fecha_fin?: string;
@@ -104,6 +136,24 @@ export const crearParticipacion = async (
 };
 
 /**
+ * Inscribe múltiples personas a una actividad
+ */
+export const inscribirMultiplesPersonas = async (
+  data: InscripcionMultiplePersonasDTO
+): Promise<InscripcionMultiplePersonasResponse> => {
+  const response = await api.post<InscripcionMultiplePersonasResponse>(
+    `/participacion/inscripcion-multiple-personas`,
+    data
+  );
+
+  if (!response.data.success && response.data.data.totalCreadas === 0) {
+    throw new Error(response.data.message || 'Error al inscribir participantes');
+  }
+
+  return response.data;
+};
+
+/**
  * Lista todas las participaciones (de todas las actividades)
  * Necesitamos obtener participantes de cada actividad
  */
@@ -153,10 +203,14 @@ export const actualizarParticipacion = async (
 
 /**
  * Elimina una participación (dar de baja)
- * Por ahora no está implementado en Actividades
  */
 export const eliminarParticipacion = async (id: number): Promise<void> => {
-  throw new Error('Método no implementado en Actividades');
+  const response = await api.delete<ApiResponse<Participacion>>(
+    `/participaciones/${id}`
+  );
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Error al eliminar participación');
+  }
 };
 
 // ============================================
