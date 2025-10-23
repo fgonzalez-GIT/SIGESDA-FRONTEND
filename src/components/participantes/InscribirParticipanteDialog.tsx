@@ -25,8 +25,8 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
 import { format } from 'date-fns';
 import { ParticipanteSelect } from './ParticipanteSelect';
-import { crearParticipacion } from '../../services/participacionApi';
-import type { CreateParticipacionDTO } from '../../services/participacionApi';
+import { crearParticipacion, inscribirMultiplesPersonas } from '../../services/participacionApi';
+import type { CreateParticipacionDTO, InscripcionMultiplePersonasDTO, InscripcionMultiplePersonasResponse } from '../../services/participacionApi';
 
 interface InscribirParticipanteDialogProps {
   open: boolean;
@@ -53,13 +53,14 @@ export const InscribirParticipanteDialog: React.FC<InscribirParticipanteDialogPr
   onSuccess,
   participantesExistentes = [],
 }) => {
-  const [participanteId, setParticipanteId] = useState<number | string>('');
+  const [participanteIds, setParticipanteIds] = useState<number[]>([]);
   const [fechaInicio, setFechaInicio] = useState<Date | null>(new Date());
   const [precioEspecial, setPrecioEspecial] = useState<string>('');
   const [aplicarDescuento, setAplicarDescuento] = useState(false);
   const [observaciones, setObservaciones] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resultado, setResultado] = useState<InscripcionMultiplePersonasResponse['data'] | null>(null);
 
   // Errores de validación por campo
   const [participanteError, setParticipanteError] = useState<string>('');
@@ -70,18 +71,22 @@ export const InscribirParticipanteDialog: React.FC<InscribirParticipanteDialogPr
 
   // Calcular cupo disponible
   const cuposDisponibles = cupoMaximo ? cupoMaximo - cupoActual : null;
+  const cuposNecesarios = participanteIds.length;
+  const cupoSuficiente = cuposDisponibles === null || cuposDisponibles >= cuposNecesarios;
   const porcentajeOcupacion = cupoMaximo ? (cupoActual / cupoMaximo) * 100 : 0;
+  const porcentajeOcupacionDespues = cupoMaximo ? ((cupoActual + cuposNecesarios) / cupoMaximo) * 100 : 0;
   const cupoLleno = cupoMaximo ? cupoActual >= cupoMaximo : false;
   const cupoAlto = porcentajeOcupacion >= 80;
 
   // Reset form cuando se cierra
   const handleClose = () => {
-    setParticipanteId('');
+    setParticipanteIds([]);
     setFechaInicio(new Date());
     setPrecioEspecial('');
     setAplicarDescuento(false);
     setObservaciones('');
     setError(null);
+    setResultado(null);
     setParticipanteError('');
     setFechaError('');
     onClose();
@@ -93,8 +98,8 @@ export const InscribirParticipanteDialog: React.FC<InscribirParticipanteDialogPr
     setFechaError('');
     setError(null);
 
-    if (!participanteId) {
-      setParticipanteError('Debe seleccionar un participante');
+    if (participanteIds.length === 0) {
+      setParticipanteError('Debe seleccionar al menos un participante');
       return false;
     }
 
@@ -103,19 +108,24 @@ export const InscribirParticipanteDialog: React.FC<InscribirParticipanteDialogPr
       return false;
     }
 
-    // Validar que no esté duplicado
-    const yaInscrito = participantesExistentes.some(
-      (p) => Number(p.persona_id) === Number(participanteId)
+    // Validar que no estén ya inscritos
+    const yaInscritos = participanteIds.filter(id =>
+      participantesExistentes.some(p => Number(p.persona_id) === Number(id))
     );
 
-    if (yaInscrito) {
-      setParticipanteError('Esta persona ya está inscrita en la actividad');
+    if (yaInscritos.length > 0) {
+      setParticipanteError(`${yaInscritos.length} persona(s) ya están inscritas en la actividad`);
       return false;
     }
 
     // Validar cupo
     if (cupoLleno) {
       setError('No hay cupos disponibles para esta actividad');
+      return false;
+    }
+
+    if (!cupoSuficiente) {
+      setError(`No hay suficientes cupos disponibles. Cupos disponibles: ${cuposDisponibles}, personas seleccionadas: ${cuposNecesarios}`);
       return false;
     }
 
@@ -131,32 +141,43 @@ export const InscribirParticipanteDialog: React.FC<InscribirParticipanteDialogPr
     return true;
   };
 
-  // Inscribir participante
+  // Inscribir participante(s)
   const handleInscribir = async () => {
     if (!validarFormulario()) return;
 
     setLoading(true);
     setError(null);
+    setResultado(null);
 
     try {
-      const data: CreateParticipacionDTO = {
-        persona_id: Number(participanteId), // Convertir a número
-        actividad_id: actividadId,
-        fecha_inicio: format(fechaInicio!, 'yyyy-MM-dd'),
-        precio_especial: precioEspecial ? parseFloat(precioEspecial) : undefined,
-        observaciones: observaciones.trim() || undefined,
+      const data: InscripcionMultiplePersonasDTO = {
+        actividadId: actividadId,
+        personas: participanteIds.map(personaId => ({
+          personaId: Number(personaId),
+          fechaInicio: format(fechaInicio!, 'yyyy-MM-dd'),
+          precioEspecial: precioEspecial ? parseFloat(precioEspecial) : undefined,
+          observaciones: observaciones.trim() || undefined,
+        })),
       };
 
-      await crearParticipacion(data);
+      const response = await inscribirMultiplesPersonas(data);
 
-      // Éxito
-      if (onSuccess) {
+      // Guardar resultado
+      setResultado(response.data);
+
+      // Si hay éxitos, actualizar la lista
+      if (response.data.totalCreadas > 0 && onSuccess) {
         onSuccess();
       }
-      handleClose();
+
+      // Si todas las inscripciones fueron exitosas, cerrar
+      if (response.data.totalErrores === 0) {
+        setTimeout(() => handleClose(), 1500); // Dar tiempo para ver el mensaje de éxito
+      }
+
     } catch (err: any) {
-      console.error('Error al inscribir participante:', err);
-      setError(err.message || 'Error al inscribir el participante a la actividad');
+      console.error('Error al inscribir participantes:', err);
+      setError(err.message || 'Error al inscribir los participantes a la actividad');
     } finally {
       setLoading(false);
     }
@@ -177,7 +198,7 @@ export const InscribirParticipanteDialog: React.FC<InscribirParticipanteDialogPr
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <PersonAddIcon />
-              <Typography variant="h6">Inscribir Participante</Typography>
+              <Typography variant="h6">Inscribir Participantes</Typography>
             </Box>
             <IconButton onClick={handleClose} size="small" disabled={loading}>
               <CloseIcon />
@@ -205,16 +226,21 @@ export const InscribirParticipanteDialog: React.FC<InscribirParticipanteDialogPr
                 <Typography variant="body2" color="text.secondary">
                   Cupos: {cupoActual} / {cupoMaximo}
                   {cuposDisponibles !== null && ` (${cuposDisponibles} disponibles)`}
+                  {cuposNecesarios > 0 && (
+                    <Typography component="span" variant="body2" color="primary" sx={{ ml: 1 }}>
+                      → {cupoActual + cuposNecesarios} después
+                    </Typography>
+                  )}
                 </Typography>
                 <Chip
-                  label={`${porcentajeOcupacion.toFixed(0)}%`}
+                  label={`${porcentajeOcupacion.toFixed(0)}%${cuposNecesarios > 0 ? ` → ${porcentajeOcupacionDespues.toFixed(0)}%` : ''}`}
                   size="small"
                   color={cupoLleno ? 'error' : cupoAlto ? 'warning' : 'success'}
                 />
               </Box>
               <LinearProgress
                 variant="determinate"
-                value={porcentajeOcupacion}
+                value={cuposNecesarios > 0 ? porcentajeOcupacionDespues : porcentajeOcupacion}
                 color={cupoLleno ? 'error' : cupoAlto ? 'warning' : 'success'}
                 sx={{ height: 8, borderRadius: 4 }}
               />
@@ -241,21 +267,65 @@ export const InscribirParticipanteDialog: React.FC<InscribirParticipanteDialogPr
             </Alert>
           )}
 
+          {/* Resultado de inscripción */}
+          {resultado && (
+            <Alert
+              severity={resultado.totalErrores > 0 ? 'warning' : 'success'}
+              sx={{ mb: 2 }}
+            >
+              <Typography variant="body2" fontWeight="bold">
+                {resultado.totalCreadas} persona(s) inscrita(s) exitosamente
+                {resultado.totalErrores > 0 && ` • ${resultado.totalErrores} error(es)`}
+              </Typography>
+
+              {resultado.participacionesCreadas.length > 0 && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="caption" color="text.secondary">Inscritos:</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                    {resultado.participacionesCreadas.map((p, idx) => (
+                      <Chip
+                        key={idx}
+                        label={p.personaNombre}
+                        size="small"
+                        color="success"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
+              {resultado.errores && resultado.errores.length > 0 && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="caption" color="error">Errores:</Typography>
+                  <Box sx={{ mt: 0.5 }}>
+                    {resultado.errores.map((err, idx) => (
+                      <Typography key={idx} variant="caption" display="block" color="error">
+                        • Persona ID {err.personaId}: {err.error}
+                      </Typography>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Alert>
+          )}
+
           {/* Formulario */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* Seleccionar participante */}
+            {/* Seleccionar participante(s) */}
             <ParticipanteSelect
-              value={participanteId}
-              onChange={(id) => {
-                setParticipanteId(id);
+              value={participanteIds}
+              onChange={(ids) => {
+                setParticipanteIds(ids as number[]);
                 setParticipanteError('');
                 setError(null);
               }}
               error={participanteError}
               required
-              label="Participante"
+              label="Participantes"
               fullWidth
-              helperText="Seleccione la persona a inscribir en la actividad"
+              multiple
+              helperText={`Seleccione las personas a inscribir en la actividad${cuposNecesarios > 0 ? ` (${cuposNecesarios} seleccionada${cuposNecesarios > 1 ? 's' : ''})` : ''}`}
             />
 
             {/* Fecha de inicio */}
@@ -322,10 +392,10 @@ export const InscribirParticipanteDialog: React.FC<InscribirParticipanteDialogPr
           <Button
             onClick={handleInscribir}
             variant="contained"
-            disabled={loading || cupoLleno}
+            disabled={loading || cupoLleno || participanteIds.length === 0}
             startIcon={loading ? <CircularProgress size={20} /> : <PersonAddIcon />}
           >
-            {loading ? 'Inscribiendo...' : 'Inscribir'}
+            {loading ? 'Inscribiendo...' : `Inscribir ${participanteIds.length > 0 ? `(${participanteIds.length})` : ''}`}
           </Button>
         </DialogActions>
       </Dialog>

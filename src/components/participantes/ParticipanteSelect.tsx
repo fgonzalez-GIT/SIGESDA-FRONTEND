@@ -23,8 +23,8 @@ import { personasApi } from '../../services/personasApi';
 import { Persona } from '../../store/slices/personasSlice';
 
 interface ParticipanteSelectProps {
-  value?: number | string;
-  onChange: (participanteId: number | string) => void;
+  value?: number | string | number[];
+  onChange: (participanteId: number | string | number[]) => void;
   error?: string;
   required?: boolean;
   label?: string;
@@ -33,6 +33,7 @@ interface ParticipanteSelectProps {
   helperText?: string;
   showSearch?: boolean;
   filterTipo?: Array<Persona['tipo']>; // Opcional: filtrar por tipos específicos
+  multiple?: boolean; // Nuevo: permite selección múltiple
 }
 
 // Mapa de iconos según el tipo de persona
@@ -79,7 +80,7 @@ const formatTipo = (tipo: string): string => {
 };
 
 export const ParticipanteSelect: React.FC<ParticipanteSelectProps> = ({
-  value = '',
+  value,
   onChange,
   error,
   required = false,
@@ -89,7 +90,11 @@ export const ParticipanteSelect: React.FC<ParticipanteSelectProps> = ({
   helperText,
   showSearch = true,
   filterTipo,
+  multiple = false,
 }) => {
+  // Inicializar valor según si es múltiple o no
+  const defaultValue = multiple ? [] : '';
+  const currentValue = value !== undefined ? value : defaultValue;
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -174,9 +179,26 @@ export const ParticipanteSelect: React.FC<ParticipanteSelectProps> = ({
     >
       <InputLabel>{label} {required && '*'}</InputLabel>
       <Select
-        value={value}
+        value={currentValue}
         onChange={handleChange}
         label={`${label} ${required ? '*' : ''}`}
+        multiple={multiple}
+        renderValue={multiple ? (selected) => (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {(selected as number[]).map((id) => {
+              const persona = personas.find((p) => p.id === id);
+              return persona ? (
+                <Chip
+                  key={id}
+                  label={`${persona.apellido}, ${persona.nombre}`}
+                  size="small"
+                  color={getTipoColor(persona.tipo)}
+                  sx={{ height: 24 }}
+                />
+              ) : null;
+            })}
+          </Box>
+        ) : undefined}
         endAdornment={
           loading ? (
             <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>

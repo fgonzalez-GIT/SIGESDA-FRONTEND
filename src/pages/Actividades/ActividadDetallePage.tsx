@@ -275,6 +275,15 @@ export const ActividadDetalleV2Page: React.FC = () => {
           </Typography>
         </Box>
         <Box display="flex" gap={1}>
+          <Button
+            variant="outlined"
+            color="secondary"
+            size="small"
+            onClick={() => navigate(`/actividades/${id}/v2`)}
+            sx={{ mr: 1 }}
+          >
+            Ver Interfaz Mejorada (V2)
+          </Button>
           <IconButton color="primary" onClick={handleEdit}>
             <EditIcon />
           </IconButton>
