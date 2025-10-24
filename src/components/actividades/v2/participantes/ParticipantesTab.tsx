@@ -82,7 +82,7 @@ export const ParticipantesTab: React.FC<ParticipantesTabProps> = ({
     setError(null);
 
     try {
-      await participacionApi.eliminar(deleteDialog.participante.id);
+      await participacionApi.eliminar(deleteDialog.participante.id, actividadId);
 
       handleCloseDeleteDialog();
       onRefresh();
