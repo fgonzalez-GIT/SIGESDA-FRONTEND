@@ -210,7 +210,7 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
     setError(null);
 
     try {
-      await inscribirMultiplesPersonas({
+      const response = await inscribirMultiplesPersonas({
         actividadId: actividadId,
         personas: selectedPeople.map(persona => ({
           personaId: persona.id,
@@ -218,7 +218,28 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
         }))
       });
 
-      setSuccessMessage(`¡${selectedPeople.length} persona(s) inscrita(s) exitosamente!`);
+      console.log('Respuesta de inscripción:', response);
+
+      // Verificar si hubo errores en la respuesta
+      const { totalCreadas, totalErrores, errores } = response.data;
+
+      if (totalErrores > 0 && totalCreadas === 0) {
+        // Todas las inscripciones fallaron
+        const errorDetails = errores.map(e => `- Persona ID ${e.personaId}: ${e.error}`).join('\n');
+        setError(`${response.message}\n\nDetalles de los errores:\n${errorDetails}`);
+        return;
+      }
+
+      if (totalErrores > 0) {
+        // Algunas inscripciones fallaron
+        const errorDetails = errores.map(e => `- Persona ID ${e.personaId}: ${e.error}`).join('\n');
+        setSuccessMessage(`${totalCreadas} persona(s) inscrita(s) exitosamente. ${totalErrores} error(es).`);
+        setError(`Algunos participantes no pudieron ser inscritos:\n${errorDetails}`);
+      } else {
+        // Todo exitoso
+        setSuccessMessage(`¡${totalCreadas} persona(s) inscrita(s) exitosamente!`);
+      }
+
       setSelectedPeople([]);
 
       // Cerrar modal y refrescar después de 1.5s
@@ -268,7 +289,7 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
         {/* Alerta de error */}
         {error && (
           <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
-            {error}
+            <Box sx={{ whiteSpace: 'pre-wrap' }}>{error}</Box>
           </Alert>
         )}
 

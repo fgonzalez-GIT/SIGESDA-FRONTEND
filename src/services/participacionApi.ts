@@ -203,10 +203,14 @@ export const actualizarParticipacion = async (
 
 /**
  * Elimina una participación (dar de baja)
+ * NOTA: Requiere tanto el actividadId como el participanteId
  */
-export const eliminarParticipacion = async (id: number): Promise<void> => {
+export const eliminarParticipacion = async (
+  participanteId: number,
+  actividadId: number
+): Promise<void> => {
   const response = await api.delete<ApiResponse<Participacion>>(
-    `/participaciones/${id}`
+    `/actividades/${actividadId}/participantes/${participanteId}`
   );
   if (!response.data.success) {
     throw new Error(response.data.message || 'Error al eliminar participación');
