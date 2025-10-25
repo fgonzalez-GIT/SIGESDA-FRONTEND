@@ -26,6 +26,7 @@ import {
   Select,
   MenuItem,
   Tooltip,
+  CircularProgress,
   // CircularProgress, // Unused - Secciones module removed
 } from '@mui/material';
 import {
@@ -62,11 +63,18 @@ import {
   Persona,
 } from '../../store/slices/personasSlice';
 import { showNotification } from '../../store/slices/uiSlice';
-import { fetchPersonasConFamiliares } from '../../store/slices/familiaresSlice';
+import {
+  fetchPersonasConFamiliares,
+  fetchRelacionesDePersona,
+  eliminarRelacion,
+  RelacionFamiliar,
+} from '../../store/slices/familiaresSlice';
 import PersonaForm from '../../components/forms/PersonaFormSimple';
 import RelacionFamiliarDialog from '../../components/forms/RelacionFamiliarDialogSimple';
 import ReactivatePersonaDialog from '../../components/dialogs/ReactivatePersonaDialog';
 import { CategoriaBadge } from '../../components/categorias/CategoriaBadge';
+import { FamiliarItem } from '../../components/personas/FamiliarItem';
+import { ConfirmDeleteDialog } from '../../components/common/ConfirmDeleteDialog';
 
 const PersonasPageSimple: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -90,6 +98,14 @@ const PersonasPageSimple: React.FC = () => {
   const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
   const [personaToReactivate, setPersonaToReactivate] = useState<Persona | null>(null);
   const [pendingFormData, setPendingFormData] = useState<Omit<Persona, 'id' | 'fechaIngreso'> | null>(null);
+
+  // Estados para gestión de familiares
+  const [familiaresDePersona, setFamiliaresDePersona] = useState<{ [personaId: number]: any[] }>({});
+  const [loadingFamiliares, setLoadingFamiliares] = useState<{ [personaId: number]: boolean }>({});
+  const [relacionToEdit, setRelacionToEdit] = useState<RelacionFamiliar | null>(null);
+  const [deleteRelacionDialogOpen, setDeleteRelacionDialogOpen] = useState(false);
+  const [relacionToDelete, setRelacionToDelete] = useState<number | null>(null);
+  const [deletingRelacion, setDeletingRelacion] = useState(false);
 
   // Estados para búsqueda y filtros
   const [searchTerm, setSearchTerm] = useState('');
@@ -178,6 +194,79 @@ const PersonasPageSimple: React.FC = () => {
 
   const getPersonaFamiliares = (personaId: number) => {
     return personasConFamiliares.find(p => p.id === personaId);
+  };
+
+  // Cargar familiares cuando se expande una fila
+  const handleRowExpand = async (personaId: number) => {
+    toggleRowExpansion(personaId);
+
+    // Solo cargar si no están ya cargados
+    if (!expandedRows.has(personaId) && !familiaresDePersona[personaId]) {
+      setLoadingFamiliares(prev => ({ ...prev, [personaId]: true }));
+      try {
+        const response = await dispatch(fetchRelacionesDePersona(personaId)).unwrap();
+        setFamiliaresDePersona(prev => ({ ...prev, [personaId]: response }));
+      } catch (error) {
+        console.error('Error cargando familiares:', error);
+        dispatch(showNotification({
+          message: 'Error al cargar familiares',
+          severity: 'error'
+        }));
+      } finally {
+        setLoadingFamiliares(prev => ({ ...prev, [personaId]: false }));
+      }
+    }
+  };
+
+  // Handler para agregar familiar
+  const handleAgregarFamiliar = (personaId: number) => {
+    setSelectedPersonaFamiliares(personaId);
+    setRelacionToEdit(null);
+    setFamiliaresDialogOpen(true);
+  };
+
+  // Handler para editar relación
+  const handleEditarRelacion = (relacion: any) => {
+    setRelacionToEdit(relacion);
+    setFamiliaresDialogOpen(true);
+  };
+
+  // Handler para eliminar relación
+  const handleEliminarRelacion = (relacionId: number) => {
+    setRelacionToDelete(relacionId);
+    setDeleteRelacionDialogOpen(true);
+  };
+
+  // Confirmar eliminación de relación
+  const confirmDeleteRelacion = async () => {
+    if (!relacionToDelete) return;
+
+    setDeletingRelacion(true);
+    try {
+      await dispatch(eliminarRelacion(relacionToDelete)).unwrap();
+      dispatch(showNotification({
+        message: 'Relación familiar eliminada exitosamente',
+        severity: 'success'
+      }));
+
+      // Recargar familiares de la persona afectada
+      if (selectedPersonaFamiliares) {
+        const response = await dispatch(fetchRelacionesDePersona(selectedPersonaFamiliares)).unwrap();
+        setFamiliaresDePersona(prev => ({ ...prev, [selectedPersonaFamiliares]: response }));
+      }
+
+      // Recargar datos generales
+      dispatch(fetchPersonasConFamiliares());
+    } catch (error) {
+      dispatch(showNotification({
+        message: 'Error al eliminar relación familiar',
+        severity: 'error'
+      }));
+    } finally {
+      setDeletingRelacion(false);
+      setDeleteRelacionDialogOpen(false);
+      setRelacionToDelete(null);
+    }
   };
 
   const handleDniCheck = async (dni: string) => {
@@ -546,7 +635,7 @@ const PersonasPageSimple: React.FC = () => {
                     <TableCell sx={{ padding: '4px' }}>
                       <IconButton
                         size="small"
-                        onClick={() => toggleRowExpansion(persona.id)}
+                        onClick={() => handleRowExpand(persona.id)}
                         disabled={!hasEmail && !hasPhone}
                       >
                         {isExpanded ? <KeyboardArrowDownIcon /> : <KeyboardArrowRightIcon />}
@@ -809,52 +898,67 @@ const PersonasPageSimple: React.FC = () => {
                                 const personaFamiliares = getPersonaFamiliares(persona.id);
                                 const cantidadFamiliares = personaFamiliares?.familiares.length || 0;
                                 const tieneGrupo = !!personaFamiliares?.grupoFamiliar;
+                                const familiaresLista = familiaresDePersona[persona.id] || [];
+                                const isLoadingFamiliaresData = loadingFamiliares[persona.id] || false;
 
                                 return (
                                   <>
-                                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                      <FamilyIcon fontSize="small" />
-                                      Familiares
-                                    </Typography>
-                                    <Stack spacing={1.5} sx={{ mt: 1 }}>
-                                      <Box display="flex" alignItems="center" gap={2}>
-                                        <Box display="flex" alignItems="center" gap={1} sx={{ minWidth: 100 }}>
-                                          <FamilyIcon fontSize="small" color="primary" />
-                                          <Typography variant="body2" fontWeight={500}>Relaciones:</Typography>
-                                        </Box>
+                                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                                      <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <FamilyIcon fontSize="small" />
+                                        Familiares
+                                      </Typography>
+                                      <Chip
+                                        label={cantidadFamiliares > 0 ? `${cantidadFamiliares} familiar${cantidadFamiliares > 1 ? 'es' : ''}` : 'Sin familiares'}
+                                        size="small"
+                                        color={cantidadFamiliares > 0 ? 'info' : 'default'}
+                                      />
+                                    </Box>
+
+                                    {tieneGrupo && (
+                                      <Box mb={2}>
                                         <Chip
-                                          label={cantidadFamiliares > 0 ? `${cantidadFamiliares} familiar${cantidadFamiliares > 1 ? 'es' : ''}` : 'Sin familiares'}
+                                          icon={<GroupIcon />}
+                                          label={personaFamiliares?.grupoFamiliar?.nombre || 'Grupo Familiar'}
                                           size="small"
-                                          color={cantidadFamiliares > 0 ? 'primary' : 'default'}
+                                          color="success"
                                           variant="outlined"
                                         />
                                       </Box>
-                                      {tieneGrupo && (
-                                        <Box display="flex" alignItems="center" gap={2}>
-                                          <Box display="flex" alignItems="center" gap={1} sx={{ minWidth: 100 }}>
-                                            <GroupIcon fontSize="small" color="success" />
-                                            <Typography variant="body2" fontWeight={500}>Grupo:</Typography>
-                                          </Box>
-                                          <Chip
-                                            label="Grupo Familiar"
-                                            size="small"
-                                            color="success"
-                                            variant="filled"
-                                          />
-                                        </Box>
-                                      )}
-                                      <Box display="flex" alignItems="center" gap={2}>
-                                        <Button
-                                          size="small"
-                                          variant="outlined"
-                                          startIcon={<FamilyIcon />}
-                                          onClick={() => handleFamiliaresClick(persona)}
-                                          fullWidth
-                                        >
-                                          {cantidadFamiliares > 0 ? 'Ver Familiares' : 'Agregar Familiares'}
-                                        </Button>
+                                    )}
+
+                                    <Box display="flex" justifyContent="flex-end" mb={2}>
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        startIcon={<AddIcon />}
+                                        onClick={() => handleAgregarFamiliar(persona.id)}
+                                      >
+                                        Agregar Familiar
+                                      </Button>
+                                    </Box>
+
+                                    {/* Lista de familiares */}
+                                    {isLoadingFamiliaresData ? (
+                                      <Box display="flex" justifyContent="center" p={2}>
+                                        <CircularProgress size={24} />
                                       </Box>
-                                    </Stack>
+                                    ) : familiaresLista.length > 0 ? (
+                                      <Stack spacing={1}>
+                                        {familiaresLista.map((relacion) => (
+                                          <FamiliarItem
+                                            key={relacion.id}
+                                            relacion={relacion}
+                                            onEdit={() => handleEditarRelacion(relacion)}
+                                            onDelete={() => handleEliminarRelacion(relacion.id)}
+                                          />
+                                        ))}
+                                      </Stack>
+                                    ) : (
+                                      <Typography variant="body2" color="text.secondary" align="center" py={2}>
+                                        No hay familiares registrados
+                                      </Typography>
+                                    )}
                                   </>
                                 );
                               })()}
@@ -930,13 +1034,35 @@ const PersonasPageSimple: React.FC = () => {
         onClose={() => {
           setFamiliaresDialogOpen(false);
           setSelectedPersonaFamiliares(null);
+          setRelacionToEdit(null);
         }}
-        onSuccess={() => {
+        onSuccess={async () => {
           setFamiliaresDialogOpen(false);
-          setSelectedPersonaFamiliares(null);
+          setRelacionToEdit(null);
           dispatch(fetchPersonasConFamiliares());
+
+          // Recargar familiares de la persona específica
+          if (selectedPersonaFamiliares) {
+            const response = await dispatch(fetchRelacionesDePersona(selectedPersonaFamiliares)).unwrap();
+            setFamiliaresDePersona(prev => ({ ...prev, [selectedPersonaFamiliares]: response }));
+          }
+
+          setSelectedPersonaFamiliares(null);
         }}
         personaSeleccionada={selectedPersonaFamiliares ?? undefined}
+        relacionToEdit={relacionToEdit}
+      />
+
+      <ConfirmDeleteDialog
+        open={deleteRelacionDialogOpen}
+        onClose={() => {
+          setDeleteRelacionDialogOpen(false);
+          setRelacionToDelete(null);
+        }}
+        onConfirm={confirmDeleteRelacion}
+        title="Eliminar Relación Familiar"
+        message="¿Está seguro que desea eliminar esta relación familiar?"
+        loading={deletingRelacion}
       />
     </Box>
   );

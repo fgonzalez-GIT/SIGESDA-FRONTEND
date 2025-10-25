@@ -25,13 +25,14 @@ import {
   Save,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
-import { CrearRelacionRequest, crearRelacion } from '../../store/slices/familiaresSlice';
+import { CrearRelacionRequest, crearRelacion, actualizarRelacion, RelacionFamiliar } from '../../store/slices/familiaresSlice';
 
 interface RelacionFamiliarDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
   personaSeleccionada?: number;
+  relacionToEdit?: RelacionFamiliar | null;
 }
 
 interface FormData {
@@ -70,10 +71,13 @@ const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
   onClose,
   onSuccess,
   personaSeleccionada,
+  relacionToEdit,
 }) => {
   const dispatch = useAppDispatch();
   const { personas } = useAppSelector((state) => state.personas);
   const { loading } = useAppSelector((state) => state.familiares);
+
+  const isEditing = !!relacionToEdit;
 
   const [formData, setFormData] = useState<FormData>({
     personaId: null,
@@ -89,19 +93,34 @@ const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
 
   useEffect(() => {
     if (open) {
-      setFormData({
-        personaId: personaSeleccionada || null,
-        familiarId: null,
-        tipoRelacion: '',
-        descripcion: '',
-        responsableFinanciero: false,
-        autorizadoRetiro: false,
-        contactoEmergencia: false,
-        porcentajeDescuento: 0,
-      });
+      if (relacionToEdit) {
+        // Modo edición: cargar datos existentes
+        setFormData({
+          personaId: relacionToEdit.personaId,
+          familiarId: relacionToEdit.familiarId,
+          tipoRelacion: relacionToEdit.tipoRelacion,
+          descripcion: relacionToEdit.descripcion || '',
+          responsableFinanciero: relacionToEdit.responsableFinanciero,
+          autorizadoRetiro: relacionToEdit.autorizadoRetiro,
+          contactoEmergencia: relacionToEdit.contactoEmergencia,
+          porcentajeDescuento: relacionToEdit.porcentajeDescuento || 0,
+        });
+      } else {
+        // Modo creación: formulario vacío
+        setFormData({
+          personaId: personaSeleccionada || null,
+          familiarId: null,
+          tipoRelacion: '',
+          descripcion: '',
+          responsableFinanciero: false,
+          autorizadoRetiro: false,
+          contactoEmergencia: false,
+          porcentajeDescuento: 0,
+        });
+      }
       setError(null);
     }
-  }, [open, personaSeleccionada]);
+  }, [open, personaSeleccionada, relacionToEdit]);
 
   const handleChange = (field: keyof FormData) => (value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -120,22 +139,38 @@ const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
     }
 
     try {
-      const request: CrearRelacionRequest = {
-        personaId: formData.personaId,
-        familiarId: formData.familiarId,
-        tipoRelacion: formData.tipoRelacion as any,
-        descripcion: formData.descripcion,
-        responsableFinanciero: formData.responsableFinanciero,
-        autorizadoRetiro: formData.autorizadoRetiro,
-        contactoEmergencia: formData.contactoEmergencia,
-        porcentajeDescuento: formData.porcentajeDescuento,
-      };
+      if (isEditing && relacionToEdit) {
+        // Modo edición: actualizar relación existente
+        const updateData: Partial<RelacionFamiliar> = {
+          tipoRelacion: formData.tipoRelacion as any,
+          descripcion: formData.descripcion,
+          responsableFinanciero: formData.responsableFinanciero,
+          autorizadoRetiro: formData.autorizadoRetiro,
+          contactoEmergencia: formData.contactoEmergencia,
+          porcentajeDescuento: formData.porcentajeDescuento,
+        };
 
-      await dispatch(crearRelacion(request)).unwrap();
+        await dispatch(actualizarRelacion({ id: relacionToEdit.id, relacion: updateData })).unwrap();
+      } else {
+        // Modo creación: crear nueva relación
+        const request: CrearRelacionRequest = {
+          personaId: formData.personaId,
+          familiarId: formData.familiarId,
+          tipoRelacion: formData.tipoRelacion as any,
+          descripcion: formData.descripcion,
+          responsableFinanciero: formData.responsableFinanciero,
+          autorizadoRetiro: formData.autorizadoRetiro,
+          contactoEmergencia: formData.contactoEmergencia,
+          porcentajeDescuento: formData.porcentajeDescuento,
+        };
+
+        await dispatch(crearRelacion(request)).unwrap();
+      }
+
       onSuccess?.();
       onClose();
     } catch (error) {
-      setError('Error al crear la relación familiar');
+      setError(isEditing ? 'Error al actualizar la relación familiar' : 'Error al crear la relación familiar');
     }
   };
 
@@ -148,7 +183,7 @@ const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
         <Box display="flex" alignItems="center" gap={2}>
           <FamilyRestroom color="primary" />
           <Typography variant="h6">
-            Nueva Relación Familiar
+            {isEditing ? 'Editar Relación Familiar' : 'Nueva Relación Familiar'}
           </Typography>
         </Box>
       </DialogTitle>
@@ -180,7 +215,7 @@ const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                   }}
                 />
               )}
-              disabled={!!personaSeleccionada}
+              disabled={!!personaSeleccionada || isEditing}
             />
           </Box>
           <Box minWidth={250} flex={1}>
@@ -202,6 +237,7 @@ const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                   }}
                 />
               )}
+              disabled={isEditing}
             />
           </Box>
         </Box>
@@ -301,7 +337,7 @@ const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
           disabled={loading}
           startIcon={<Save />}
         >
-          {loading ? 'Guardando...' : 'Guardar Relación'}
+          {loading ? 'Guardando...' : (isEditing ? 'Actualizar Relación' : 'Guardar Relación')}
         </Button>
       </DialogActions>
     </Dialog>

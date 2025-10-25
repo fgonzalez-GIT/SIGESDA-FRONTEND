@@ -129,7 +129,7 @@ export const PersonaFormSimple: React.FC<PersonaFormProps> = ({
   const handleChange = (field: keyof PersonaFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
   ) => {
-    const value = event.target ? event.target.value : event;
+    const value = event?.target ? event.target.value : event;
     setFormData(prev => ({
       ...prev,
       [field]: value,
