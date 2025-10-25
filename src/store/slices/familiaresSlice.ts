@@ -167,6 +167,8 @@ let mockRelacionesStore: RelacionFamiliar[] = [
       },
 ];
 
+import familiaresApiReal from '../../services/familiaresApi';
+
 // Mock API functions
 const familiaresAPI = {
   getRelaciones: async (filters: FamiliaresFilters = {}): Promise<RelacionFamiliar[]> => {
@@ -270,26 +272,8 @@ const familiaresAPI = {
   },
 
   crearRelacion: async (request: CrearRelacionRequest): Promise<RelacionFamiliar> => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const nuevaRelacion: RelacionFamiliar = {
-      id: Date.now(),
-      personaId: request.personaId,
-      familiarId: request.familiarId,
-      tipoRelacion: request.tipoRelacion,
-      descripcion: request.descripcion,
-      fechaCreacion: new Date().toISOString().split('T')[0],
-      activo: true,
-      responsableFinanciero: request.responsableFinanciero || false,
-      autorizadoRetiro: request.autorizadoRetiro || false,
-      contactoEmergencia: request.contactoEmergencia || false,
-      porcentajeDescuento: request.porcentajeDescuento,
-    };
-
-    // Agregar al store mock para que persista
-    mockRelacionesStore.push(nuevaRelacion);
-
-    return nuevaRelacion;
+    // Usar API real del backend
+    return await familiaresApiReal.crearRelacion(request);
   },
 
   crearGrupoFamiliar: async (request: CrearGrupoFamiliarRequest): Promise<GrupoFamiliar> => {
@@ -309,23 +293,18 @@ const familiaresAPI = {
   },
 
   eliminarRelacion: async (id: number): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    // Eliminar del store mock
-    mockRelacionesStore = mockRelacionesStore.filter(r => r.id !== id);
+    // Usar API real del backend
+    return await familiaresApiReal.eliminarRelacion(id);
   },
 
   actualizarRelacion: async (id: number, relacion: Partial<RelacionFamiliar>): Promise<RelacionFamiliar> => {
-    await new Promise(resolve => setTimeout(resolve, 400));
+    // Usar API real del backend
+    return await familiaresApiReal.actualizarRelacion(id, relacion);
+  },
 
-    // Actualizar en el store mock
-    const index = mockRelacionesStore.findIndex(r => r.id === id);
-    if (index !== -1) {
-      mockRelacionesStore[index] = { ...mockRelacionesStore[index], ...relacion };
-      return mockRelacionesStore[index];
-    }
-
-    return { id, ...relacion } as RelacionFamiliar;
+  getRelacionesDePersona: async (personaId: number): Promise<any[]> => {
+    // Usar API real del backend
+    return await familiaresApiReal.getRelacionesDePersona(personaId);
   },
 };
 
@@ -390,6 +369,15 @@ export const actualizarRelacion = createAsyncThunk(
   'familiares/actualizarRelacion',
   async ({ id, relacion }: { id: number; relacion: Partial<RelacionFamiliar> }) => {
     const result = await familiaresAPI.actualizarRelacion(id, relacion);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
+  }
+);
+
+export const fetchRelacionesDePersona = createAsyncThunk(
+  'familiares/fetchRelacionesDePersona',
+  async (personaId: number) => {
+    const result = await familiaresAPI.getRelacionesDePersona(personaId);
     // Cuando se conecte a la API real, usar: result.data || result
     return result;
   }
