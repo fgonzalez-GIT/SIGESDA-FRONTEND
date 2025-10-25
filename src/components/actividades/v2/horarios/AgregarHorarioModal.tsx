@@ -169,7 +169,7 @@ export const AgregarHorarioModal: React.FC<AgregarHorarioModalProps> = ({
             </MenuItem>
             {diasSemana.map((dia) => (
               <MenuItem key={dia.id} value={dia.id}>
-                {dia.nombre} ({dia.codigo})
+                {dia.nombre}
               </MenuItem>
             ))}
           </TextField>
