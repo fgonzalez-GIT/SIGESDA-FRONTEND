@@ -25,7 +25,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  // Tooltip, // Unused - Secciones module removed
+  Tooltip,
   // CircularProgress, // Unused - Secciones module removed
 } from '@mui/material';
 import {
@@ -34,8 +34,20 @@ import {
   Add as AddIcon,
   Visibility as ViewIcon,
   FamilyRestroom as FamilyIcon,
+  FamilyRestroomOutlined as FamilyIconOutlined,
   Search as SearchIcon,
   FilterList as FilterListIcon,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  KeyboardArrowRight as KeyboardArrowRightIcon,
+  ContentCopy as ContentCopyIcon,
+  Category as CategoryIcon,
+  Person as PersonIcon,
+  Group as GroupIcon,
+  SchoolOutlined as StudentIcon,
+  WorkOutline as WorkIcon,
+  Business as BusinessIcon,
   // School as SchoolIcon, // Unused - Secciones module removed
 } from '@mui/icons-material';
 // import seccionesApi from '../../services/seccionesApi'; // REMOVED: Secciones module deleted
@@ -84,6 +96,9 @@ const PersonasPageSimple: React.FC = () => {
   const [filterTipo, setFilterTipo] = useState<string>('');
   const [filterEstado, setFilterEstado] = useState<string>('');
   const [filterCategoria, setFilterCategoria] = useState<string>('');
+
+  // Estado para controlar filas expandidas (contacto)
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     dispatch(fetchPersonas());
@@ -304,6 +319,15 @@ const PersonasPageSimple: React.FC = () => {
     return new Date(dateString).toLocaleDateString('es-AR');
   };
 
+  const formatDateShort = (dateString?: string) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString().slice(-2);
+    return `${day}/${month}/${year}`;
+  };
+
   const getTipoLabel = (tipo: string) => {
     const labels = {
       socio: 'Socio',
@@ -313,12 +337,59 @@ const PersonasPageSimple: React.FC = () => {
     return labels[tipo as keyof typeof labels] || tipo;
   };
 
+  // Función para obtener ícono según tipo de persona
+  const getTipoIcon = (tipo: string) => {
+    const tipoUpper = tipo.toUpperCase();
+    switch (tipoUpper) {
+      case 'SOCIO':
+        return <GroupIcon fontSize="small" color="primary" />;
+      case 'NO_SOCIO':
+        return <PersonIcon fontSize="small" color="action" />;
+      case 'ESTUDIANTE':
+        return <StudentIcon fontSize="small" color="secondary" />;
+      case 'DOCENTE':
+        return <WorkIcon fontSize="small" color="success" />;
+      case 'PROVEEDOR':
+        return <BusinessIcon fontSize="small" color="warning" />;
+      default:
+        return <PersonIcon fontSize="small" color="disabled" />;
+    }
+  };
+
   // Función para limpiar filtros
   const handleClearFilters = () => {
     setSearchTerm('');
     setFilterTipo('');
     setFilterEstado('');
     setFilterCategoria('');
+  };
+
+  // Función para expandir/colapsar filas de contacto
+  const toggleRowExpansion = (personaId: number) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(personaId)) {
+        newSet.delete(personaId);
+      } else {
+        newSet.add(personaId);
+      }
+      return newSet;
+    });
+  };
+
+  // Función para copiar al portapapeles
+  const handleCopyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      dispatch(showNotification({
+        message: `${label} copiado al portapapeles`,
+        severity: 'success'
+      }));
+    }).catch(() => {
+      dispatch(showNotification({
+        message: 'Error al copiar al portapapeles',
+        severity: 'error'
+      }));
+    });
   };
 
   // Aplicar filtros a las personas
@@ -434,16 +505,15 @@ const PersonasPageSimple: React.FC = () => {
           <TableHead>
             <TableRow>
               {/* ID column removed - only used internally for key prop */}
-              <TableCell>Nombre</TableCell>
-              <TableCell>Apellido</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Teléfono</TableCell>
-              <TableCell>Tipo</TableCell>
-              <TableCell>Categoría</TableCell>
+              <TableCell sx={{ width: 40 }}></TableCell>
+              <TableCell sx={{ minWidth: 120, whiteSpace: 'nowrap' }}>Nombre</TableCell>
+              <TableCell sx={{ minWidth: 120, whiteSpace: 'nowrap' }}>Apellido</TableCell>
+              <TableCell>Contacto</TableCell>
+              <TableCell sx={{ width: 70 }} align="center">Clasif.</TableCell>
               <TableCell>Estado</TableCell>
-              <TableCell>Familiares</TableCell>
+              <TableCell sx={{ width: 60 }} align="center">Fam.</TableCell>
               {/* <TableCell>Secciones</TableCell> */}
-              <TableCell>Fecha Ingreso</TableCell>
+              <TableCell sx={{ width: 100 }}>Ingreso</TableCell>
               <TableCell align="center">Acciones</TableCell>
             </TableRow>
           </TableHead>
@@ -462,129 +532,341 @@ const PersonasPageSimple: React.FC = () => {
                 </TableCell>
               </TableRow>
             )}
-            {filteredPersonas.map((persona) => (
-              <TableRow key={persona.id} hover>
-                <TableCell>{persona.nombre}</TableCell>
-                <TableCell>{persona.apellido}</TableCell>
-                <TableCell>{persona.email || '-'}</TableCell>
-                <TableCell>{persona.telefono || '-'}</TableCell>
-                <TableCell>{getTipoLabel(persona.tipo)}</TableCell>
-                <TableCell>
-                  {persona.tipo === 'SOCIO' || persona.tipo === 'socio' ? (
-                    <CategoriaBadge categoria={persona.categoria} size="small" />
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">-</Typography>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={persona.estado === 'activo' ? 'Activo' : 'Inactivo'}
-                    color={persona.estado === 'activo' ? 'primary' : 'default'}
-                    size="small"
-                    variant={persona.estado === 'activo' ? 'filled' : 'outlined'}
-                  />
-                </TableCell>
-                <TableCell>
-                  {(() => {
-                    const personaFamiliares = getPersonaFamiliares(persona.id);
-                    const cantidadFamiliares = personaFamiliares?.familiares.length || 0;
-                    const tieneGrupo = !!personaFamiliares?.grupoFamiliar;
+            {filteredPersonas.map((persona) => {
+              const isExpanded = expandedRows.has(persona.id);
+              const hasEmail = !!persona.email;
+              const hasPhone = !!persona.telefono;
+              const isSocio = persona.tipo === 'SOCIO' || persona.tipo === 'socio';
+              const hasCategoria = isSocio && persona.categoria;
 
-                    return (
+              return (
+                <React.Fragment key={persona.id}>
+                  <TableRow hover>
+                    {/* Botón para expandir/colapsar */}
+                    <TableCell sx={{ padding: '4px' }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => toggleRowExpansion(persona.id)}
+                        disabled={!hasEmail && !hasPhone}
+                      >
+                        {isExpanded ? <KeyboardArrowDownIcon /> : <KeyboardArrowRightIcon />}
+                      </IconButton>
+                    </TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 150 }}>
+                      <Tooltip title={persona.nombre.length > 15 ? persona.nombre : ''} placement="top">
+                        <span>{persona.nombre}</span>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 150 }}>
+                      <Tooltip title={persona.apellido.length > 15 ? persona.apellido : ''} placement="top">
+                        <span>{persona.apellido}</span>
+                      </Tooltip>
+                    </TableCell>
+                    {/* Columna de Contacto con íconos */}
+                    <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
-                        {cantidadFamiliares > 0 ? (
-                          <Chip
-                            label={`${cantidadFamiliares} relaciones`}
+                        {hasEmail ? (
+                          <EmailIcon fontSize="small" color="primary" />
+                        ) : (
+                          <EmailIcon fontSize="small" sx={{ color: 'text.disabled' }} />
+                        )}
+                        {hasPhone ? (
+                          <PhoneIcon fontSize="small" color="primary" />
+                        ) : (
+                          <PhoneIcon fontSize="small" sx={{ color: 'text.disabled' }} />
+                        )}
+                        {!hasEmail && !hasPhone && (
+                          <Typography variant="body2" color="text.secondary">
+                            Sin datos
+                          </Typography>
+                        )}
+                      </Box>
+                    </TableCell>
+                    {/* Columna de Clasificación (Tipo + Categoría) */}
+                    <TableCell align="center">
+                      <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
+                        {getTipoIcon(persona.tipo)}
+                        {hasCategoria && (
+                          <CategoryIcon fontSize="small" color="primary" />
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={persona.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                        color={persona.estado === 'activo' ? 'primary' : 'default'}
+                        size="small"
+                        variant={persona.estado === 'activo' ? 'filled' : 'outlined'}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      {(() => {
+                        const personaFamiliares = getPersonaFamiliares(persona.id);
+                        const cantidadFamiliares = personaFamiliares?.familiares.length || 0;
+                        const tieneGrupo = !!personaFamiliares?.grupoFamiliar;
+                        const hasFamiliares = cantidadFamiliares > 0;
+
+                        return (
+                          <IconButton
                             size="small"
-                            color="primary"
-                            variant="outlined"
-                            icon={<FamilyIcon />}
                             onClick={() => handleFamiliaresClick(persona)}
-                            sx={{ cursor: 'pointer' }}
-                          />
+                            color={hasFamiliares ? 'primary' : 'default'}
+                            title={hasFamiliares
+                              ? `${cantidadFamiliares} familiar${cantidadFamiliares > 1 ? 'es' : ''}${tieneGrupo ? ' (con grupo familiar)' : ''}`
+                              : 'Sin familiares - Click para agregar'
+                            }
+                          >
+                            {hasFamiliares ? (
+                              <FamilyIcon />
+                            ) : (
+                              <FamilyIconOutlined sx={{ color: 'text.disabled' }} />
+                            )}
+                          </IconButton>
+                        );
+                      })()}
+                    </TableCell>
+                    {/* COMMENTED OUT: Secciones module removed */}
+                    {/* <TableCell>
+                      {participacionesPorPersona[persona.id] !== undefined ? (
+                        participacionesPorPersona[persona.id] > 0 ? (
+                          <Tooltip title="Ver secciones de esta persona">
+                            <Chip
+                              label={`${participacionesPorPersona[persona.id]} ${participacionesPorPersona[persona.id] === 1 ? 'sección' : 'secciones'}`}
+                              size="small"
+                              color="success"
+                              variant="outlined"
+                              icon={<SchoolIcon />}
+                              onClick={() => navigate(`/participacion?personaId=${persona.id}`)}
+                              sx={{ cursor: 'pointer' }}
+                            />
+                          </Tooltip>
                         ) : (
                           <Chip
-                            label="Sin familiares"
+                            label="Sin secciones"
                             size="small"
                             color="default"
                             variant="outlined"
                           />
-                        )}
-                        {tieneGrupo && (
-                          <Chip
-                            label="Grupo"
-                            size="small"
-                            color="success"
-                            variant="filled"
-                          />
-                        )}
-                      </Box>
-                    );
-                  })()}
-                </TableCell>
-                {/* COMMENTED OUT: Secciones module removed */}
-                {/* <TableCell>
-                  {participacionesPorPersona[persona.id] !== undefined ? (
-                    participacionesPorPersona[persona.id] > 0 ? (
-                      <Tooltip title="Ver secciones de esta persona">
-                        <Chip
-                          label={`${participacionesPorPersona[persona.id]} ${participacionesPorPersona[persona.id] === 1 ? 'sección' : 'secciones'}`}
+                        )
+                      ) : (
+                        <CircularProgress size={20} />
+                      )}
+                    </TableCell> */}
+                    <TableCell>
+                      <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>
+                        {formatDateShort(persona.fechaIngreso)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <IconButton
                           size="small"
-                          color="success"
-                          variant="outlined"
-                          icon={<SchoolIcon />}
-                          onClick={() => navigate(`/participacion?personaId=${persona.id}`)}
-                          sx={{ cursor: 'pointer' }}
-                        />
-                      </Tooltip>
-                    ) : (
-                      <Chip
-                        label="Sin secciones"
-                        size="small"
-                        color="default"
-                        variant="outlined"
-                      />
-                    )
-                  ) : (
-                    <CircularProgress size={20} />
+                          onClick={() => handleViewClick(persona)}
+                          color="primary"
+                        >
+                          <ViewIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEditClick(persona)}
+                          color="primary"
+                        >
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleFamiliaresClick(persona)}
+                          color="secondary"
+                          title="Gestionar familiares"
+                        >
+                          <FamilyIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteClick(persona)}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+
+                  {/* Fila expandible con detalles */}
+                  {isExpanded && (hasEmail || hasPhone) && (
+                    <TableRow>
+                      <TableCell colSpan={10} sx={{ backgroundColor: 'action.hover', py: 2 }}>
+                        <Box sx={{ pl: 4 }}>
+                          <Stack direction="row" spacing={4} divider={<Box sx={{ width: 1, bgcolor: 'divider' }} />}>
+                            {/* Sección de Contacto */}
+                            {(hasEmail || hasPhone) && (
+                              <Box sx={{ flex: 1 }}>
+                                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <EmailIcon fontSize="small" />
+                                  Información de Contacto
+                                </Typography>
+                                <Stack spacing={1.5} sx={{ mt: 1 }}>
+                                  {hasEmail && (
+                                    <Box display="flex" alignItems="center" gap={2}>
+                                      <Box display="flex" alignItems="center" gap={1} sx={{ minWidth: 100 }}>
+                                        <EmailIcon fontSize="small" color="primary" />
+                                        <Typography variant="body2" fontWeight={500}>Email:</Typography>
+                                      </Box>
+                                      <Typography variant="body2" sx={{ flex: 1 }}>
+                                        {persona.email}
+                                      </Typography>
+                                      <Box display="flex" gap={1}>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleCopyToClipboard(persona.email!, 'Email')}
+                                          title="Copiar email"
+                                        >
+                                          <ContentCopyIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton
+                                          size="small"
+                                          component="a"
+                                          href={`mailto:${persona.email}`}
+                                          title="Enviar email"
+                                          color="primary"
+                                        >
+                                          <EmailIcon fontSize="small" />
+                                        </IconButton>
+                                      </Box>
+                                    </Box>
+                                  )}
+                                  {hasPhone && (
+                                    <Box display="flex" alignItems="center" gap={2}>
+                                      <Box display="flex" alignItems="center" gap={1} sx={{ minWidth: 100 }}>
+                                        <PhoneIcon fontSize="small" color="primary" />
+                                        <Typography variant="body2" fontWeight={500}>Teléfono:</Typography>
+                                      </Box>
+                                      <Typography variant="body2" sx={{ flex: 1 }}>
+                                        {persona.telefono}
+                                      </Typography>
+                                      <Box display="flex" gap={1}>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleCopyToClipboard(persona.telefono!, 'Teléfono')}
+                                          title="Copiar teléfono"
+                                        >
+                                          <ContentCopyIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton
+                                          size="small"
+                                          component="a"
+                                          href={`tel:${persona.telefono}`}
+                                          title="Llamar"
+                                          color="primary"
+                                        >
+                                          <PhoneIcon fontSize="small" />
+                                        </IconButton>
+                                      </Box>
+                                    </Box>
+                                  )}
+                                </Stack>
+                              </Box>
+                            )}
+
+                            {/* Sección de Clasificación */}
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <CategoryIcon fontSize="small" />
+                                Clasificación
+                              </Typography>
+                              <Stack spacing={1.5} sx={{ mt: 1 }}>
+                                <Box display="flex" alignItems="center" gap={2}>
+                                  <Box display="flex" alignItems="center" gap={1} sx={{ minWidth: 100 }}>
+                                    {getTipoIcon(persona.tipo)}
+                                    <Typography variant="body2" fontWeight={500}>Tipo:</Typography>
+                                  </Box>
+                                  <Chip
+                                    label={getTipoLabel(persona.tipo)}
+                                    size="small"
+                                    color={isSocio ? 'primary' : 'default'}
+                                    variant="outlined"
+                                  />
+                                </Box>
+                                {isSocio && (
+                                  <Box display="flex" alignItems="center" gap={2}>
+                                    <Box display="flex" alignItems="center" gap={1} sx={{ minWidth: 100 }}>
+                                      <CategoryIcon fontSize="small" color="primary" />
+                                      <Typography variant="body2" fontWeight={500}>Categoría:</Typography>
+                                    </Box>
+                                    {hasCategoria ? (
+                                      <CategoriaBadge categoria={persona.categoria} size="small" />
+                                    ) : (
+                                      <Typography variant="body2" color="text.secondary">Sin categoría</Typography>
+                                    )}
+                                  </Box>
+                                )}
+                              </Stack>
+                            </Box>
+
+                            {/* Sección de Familiares */}
+                            <Box sx={{ flex: 1 }}>
+                              {(() => {
+                                const personaFamiliares = getPersonaFamiliares(persona.id);
+                                const cantidadFamiliares = personaFamiliares?.familiares.length || 0;
+                                const tieneGrupo = !!personaFamiliares?.grupoFamiliar;
+
+                                return (
+                                  <>
+                                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <FamilyIcon fontSize="small" />
+                                      Familiares
+                                    </Typography>
+                                    <Stack spacing={1.5} sx={{ mt: 1 }}>
+                                      <Box display="flex" alignItems="center" gap={2}>
+                                        <Box display="flex" alignItems="center" gap={1} sx={{ minWidth: 100 }}>
+                                          <FamilyIcon fontSize="small" color="primary" />
+                                          <Typography variant="body2" fontWeight={500}>Relaciones:</Typography>
+                                        </Box>
+                                        <Chip
+                                          label={cantidadFamiliares > 0 ? `${cantidadFamiliares} familiar${cantidadFamiliares > 1 ? 'es' : ''}` : 'Sin familiares'}
+                                          size="small"
+                                          color={cantidadFamiliares > 0 ? 'primary' : 'default'}
+                                          variant="outlined"
+                                        />
+                                      </Box>
+                                      {tieneGrupo && (
+                                        <Box display="flex" alignItems="center" gap={2}>
+                                          <Box display="flex" alignItems="center" gap={1} sx={{ minWidth: 100 }}>
+                                            <GroupIcon fontSize="small" color="success" />
+                                            <Typography variant="body2" fontWeight={500}>Grupo:</Typography>
+                                          </Box>
+                                          <Chip
+                                            label="Grupo Familiar"
+                                            size="small"
+                                            color="success"
+                                            variant="filled"
+                                          />
+                                        </Box>
+                                      )}
+                                      <Box display="flex" alignItems="center" gap={2}>
+                                        <Button
+                                          size="small"
+                                          variant="outlined"
+                                          startIcon={<FamilyIcon />}
+                                          onClick={() => handleFamiliaresClick(persona)}
+                                          fullWidth
+                                        >
+                                          {cantidadFamiliares > 0 ? 'Ver Familiares' : 'Agregar Familiares'}
+                                        </Button>
+                                      </Box>
+                                    </Stack>
+                                  </>
+                                );
+                              })()}
+                            </Box>
+                          </Stack>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
                   )}
-                </TableCell> */}
-                <TableCell>{formatDate(persona.fechaIngreso)}</TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleViewClick(persona)}
-                      color="primary"
-                    >
-                      <ViewIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleEditClick(persona)}
-                      color="primary"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleFamiliaresClick(persona)}
-                      color="secondary"
-                      title="Gestionar familiares"
-                    >
-                      <FamilyIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteClick(persona)}
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
+                </React.Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
