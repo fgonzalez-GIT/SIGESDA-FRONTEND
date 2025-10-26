@@ -222,53 +222,55 @@ const familiaresAPI = {
   },
 
   getPersonasConFamiliares: async (): Promise<PersonaConFamiliares[]> => {
-    await new Promise(resolve => setTimeout(resolve, 400));
+    try {
+      // Obtener todas las personas del sistema
+      const personasResponse = await fetch(`${import.meta.env.VITE_API_URL}/personas`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-    // Mock de personas base (en producción vendría de la API de personas)
-    const mockPersonas = [
-      { id: 1, nombre: 'Juan', apellido: 'Pérez', tipo: 'socio' as const },
-      { id: 2, nombre: 'María', apellido: 'González', tipo: 'socio' as const },
-      { id: 3, nombre: 'Pedro', apellido: 'Pérez', tipo: 'estudiante' as const },
-      { id: 4, nombre: 'Ana', apellido: 'García', tipo: 'socio' as const },
-      { id: 5, nombre: 'Luis', apellido: 'García', tipo: 'estudiante' as const },
-    ];
+      if (!personasResponse.ok) {
+        throw new Error('Error al cargar personas');
+      }
 
-    // Construir PersonasConFamiliares dinámicamente desde mockRelacionesStore
-    const personasConFamiliares: PersonaConFamiliares[] = mockPersonas.map(persona => {
-      // Buscar todas las relaciones donde esta persona es el titular
-      const relaciones = mockRelacionesStore.filter(r => r.personaId === persona.id);
+      const personasResult = await personasResponse.json();
+      const personas = personasResult.data || personasResult;
 
-      // Mapear relaciones a familiares
-      const familiares = relaciones.map(relacion => {
-        const familiar = mockPersonas.find(p => p.id === relacion.familiarId);
-        return {
-          familiar: familiar || { id: relacion.familiarId, nombre: 'Desconocido', apellido: '', tipo: 'socio' as const },
+      // Obtener todas las relaciones familiares (sin limit para obtener todas)
+      const relacionesResponse = await familiaresApiReal.getAllRelaciones();
+      const todasLasRelaciones = relacionesResponse.data;
+
+      // Construir PersonasConFamiliares dinámicamente
+      const personasConFamiliares: PersonaConFamiliares[] = personas.map((persona: any) => {
+        // Buscar todas las relaciones donde esta persona es el titular
+        const relaciones = todasLasRelaciones.filter((r: any) => r.personaId === persona.id);
+
+        // Mapear relaciones a familiares con toda la info
+        const familiares = relaciones.map((relacion: any) => ({
+          familiar: relacion.familiar || {
+            id: relacion.familiarId,
+            nombre: 'Desconocido',
+            apellido: '',
+            tipo: 'socio' as const
+          },
           relacion
+        }));
+
+        return {
+          id: persona.id,
+          nombre: persona.nombre,
+          apellido: persona.apellido,
+          tipo: persona.tipo?.toLowerCase() || 'socio',
+          familiares,
+          grupoFamiliar: undefined // Por ahora sin grupos familiares
         };
       });
 
-      return {
-        ...persona,
-        familiares,
-        grupoFamiliar: persona.id === 1 ? {
-          id: 1,
-          nombre: 'Familia Pérez',
-          descripcion: 'Grupo familiar principal',
-          personaReferente: 1,
-          miembros: [1, 2, 3],
-          descuentoGrupal: 20,
-          fechaCreacion: '2025-01-15',
-          activo: true,
-          configuracion: {
-            facturacionConjunta: true,
-            descuentoProgresivo: true,
-            limiteCuotas: 0,
-          },
-        } : undefined
-      };
-    });
-
-    return personasConFamiliares;
+      return personasConFamiliares;
+    } catch (error) {
+      console.error('Error en getPersonasConFamiliares:', error);
+      return [];
+    }
   },
 
   crearRelacion: async (request: CrearRelacionRequest): Promise<RelacionFamiliar> => {
@@ -305,6 +307,21 @@ const familiaresAPI = {
   getRelacionesDePersona: async (personaId: number): Promise<any[]> => {
     // Usar API real del backend
     return await familiaresApiReal.getRelacionesDePersona(personaId);
+  },
+
+  // FASE 2: Nuevas funciones para la tabla completa
+  getAllRelaciones: async (filters?: {
+    page?: number;
+    limit?: number;
+    soloActivos?: boolean;
+    socioId?: number;
+    parentesco?: string;
+  }): Promise<{ data: any[]; total: number; pages: number }> => {
+    return await familiaresApiReal.getAllRelaciones(filters);
+  },
+
+  getEstadisticasParentesco: async (): Promise<Array<{ parentesco: string; count: number }>> => {
+    return await familiaresApiReal.getEstadisticasParentesco();
   },
 };
 
@@ -379,6 +396,29 @@ export const fetchRelacionesDePersona = createAsyncThunk(
   async (personaId: number) => {
     const result = await familiaresAPI.getRelacionesDePersona(personaId);
     // Cuando se conecte a la API real, usar: result.data || result
+    return result;
+  }
+);
+
+// FASE 2: Nuevos thunks para tabla completa
+export const fetchAllRelaciones = createAsyncThunk(
+  'familiares/fetchAllRelaciones',
+  async (filters?: {
+    page?: number;
+    limit?: number;
+    soloActivos?: boolean;
+    socioId?: number;
+    parentesco?: string;
+  }) => {
+    const result = await familiaresAPI.getAllRelaciones(filters);
+    return result;
+  }
+);
+
+export const fetchEstadisticasParentesco = createAsyncThunk(
+  'familiares/fetchEstadisticasParentesco',
+  async () => {
+    const result = await familiaresAPI.getEstadisticasParentesco();
     return result;
   }
 );
@@ -480,6 +520,36 @@ const familiaresSlice = createSlice({
             state.filteredRelaciones[filteredIndex] = action.payload;
           }
         }
+      })
+
+      // FASE 2: Fetch all relaciones con paginación
+      .addCase(fetchAllRelaciones.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllRelaciones.fulfilled, (state, action) => {
+        state.loading = false;
+        state.relaciones = action.payload.data;
+        state.filteredRelaciones = action.payload.data;
+
+        // Actualizar estadísticas
+        state.estadisticas = {
+          ...state.estadisticas,
+          totalRelaciones: action.payload.total,
+        };
+      })
+      .addCase(fetchAllRelaciones.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Error al cargar relaciones';
+      })
+
+      // Fetch estadísticas de parentesco
+      .addCase(fetchEstadisticasParentesco.fulfilled, (state, action) => {
+        const relacionesPorTipo: { [key: string]: number } = {};
+        action.payload.forEach(stat => {
+          relacionesPorTipo[stat.parentesco] = stat.count;
+        });
+        state.estadisticas.relacionesPorTipo = relacionesPorTipo;
       });
   },
 });

@@ -240,6 +240,86 @@ export const familiaresApiReal = {
     // Se puede implementar más adelante si es necesario
     return [];
   },
+
+  // FASE 2: Obtener TODAS las relaciones familiares (con filtros opcionales)
+  getAllRelaciones: async (filters?: {
+    page?: number;
+    limit?: number;
+    soloActivos?: boolean;
+    socioId?: number;
+    parentesco?: string;
+  }): Promise<{ data: any[]; total: number; pages: number }> => {
+    try {
+      // Construir query string
+      const params = new URLSearchParams();
+      if (filters?.page) params.append('page', filters.page.toString());
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+      if (filters?.soloActivos !== undefined) params.append('soloActivos', filters.soloActivos.toString());
+      if (filters?.socioId) params.append('socioId', filters.socioId.toString());
+      if (filters?.parentesco) params.append('parentesco', tipoRelacionMap[filters.parentesco] || filters.parentesco);
+
+      const queryString = params.toString();
+      const url = `${API_BASE_URL}/familiares${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      // El backend retorna: { success: true, data: [...], meta: { total, page, limit } }
+      if (result.success && Array.isArray(result.data)) {
+        return {
+          data: result.data.map(mapRelacionFromBackend),
+          total: result.meta?.total || result.data.length,
+          pages: result.meta?.pages || 1,
+        };
+      }
+
+      return { data: [], total: 0, pages: 0 };
+    } catch (error) {
+      console.error('Error fetching all relaciones:', error);
+      throw error;
+    }
+  },
+
+  // Obtener estadísticas de parentesco
+  getEstadisticasParentesco: async (): Promise<Array<{ parentesco: string; count: number }>> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/familiares/stats/parentesco`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && Array.isArray(result.data)) {
+        // Mapear parentesco de backend a frontend
+        return result.data.map((stat: any) => ({
+          parentesco: parentescoToTipoRelacion[stat.parentesco] || stat.parentesco,
+          count: stat.count || stat._count,
+        }));
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Error fetching estadisticas parentesco:', error);
+      throw error;
+    }
+  },
 };
 
 export default familiaresApiReal;
