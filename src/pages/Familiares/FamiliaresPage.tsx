@@ -24,6 +24,8 @@ import {
   Autocomplete,
   Fade,
   Zoom,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import {
   Add,
@@ -39,12 +41,18 @@ import {
   Timeline,
   Groups,
   LocalOffer,
+  TableChart,
+  ViewModule,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import {
   fetchRelaciones,
   fetchPersonasConFamiliares,
   fetchGrupos,
+  fetchAllRelaciones,
+  fetchEstadisticasParentesco,
+  eliminarRelacion,
+  actualizarRelacion,
   setFilters,
   clearFilters,
   type FamiliaresFilters,
@@ -54,6 +62,10 @@ import {
 } from '../../store/slices/familiaresSlice';
 import { fetchPersonas } from '../../store/slices/personasSlice';
 import RelacionFamiliarDialog from '../../components/forms/RelacionFamiliarDialogSimple';
+import FamiliaresTable from '../../components/familiares/FamiliaresTable';
+import FamiliarFilters, { type FiltrosRelaciones } from '../../components/familiares/FamiliarFilters';
+import FamiliaresStats from '../../components/familiares/FamiliaresStats';
+import { ConfirmDeleteDialog } from '../../components/common/ConfirmDeleteDialog';
 
 interface PersonaNode {
   id: number;
@@ -78,24 +90,48 @@ const FamiliaresPage: React.FC = () => {
     grupos,
     filters,
     loading,
-    error
+    error,
+    estadisticas
   } = useAppSelector((state) => state.familiares);
   const { personas } = useAppSelector((state) => state.personas);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedPersona, setSelectedPersona] = useState<PersonaConFamiliares | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'tree' | 'groups'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table' | 'tree' | 'groups'>('table');
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuPersona, setMenuPersona] = useState<PersonaConFamiliares | null>(null);
 
+  // FASE 2: Nuevos estados para tabla
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [filtrosTabla, setFiltrosTabla] = useState<FiltrosRelaciones>({ soloActivos: true });
+  const [relacionToEdit, setRelacionToEdit] = useState<RelacionFamiliar | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [relacionToDelete, setRelacionToDelete] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
-    dispatch(fetchRelaciones({}));
-    dispatch(fetchPersonasConFamiliares());
-    dispatch(fetchGrupos());
     dispatch(fetchPersonas());
-  }, [dispatch]);
+
+    if (viewMode === 'table') {
+      // FASE 2: Cargar relaciones completas con paginación
+      dispatch(fetchAllRelaciones({
+        page: page + 1, // Backend usa páginas desde 1
+        limit: rowsPerPage,
+        soloActivos: filtrosTabla.soloActivos,
+        socioId: filtrosTabla.personaId,
+        parentesco: filtrosTabla.tipoRelacion,
+      }));
+      dispatch(fetchEstadisticasParentesco());
+    } else {
+      // Modo cards/tree/groups: usar funciones originales
+      dispatch(fetchRelaciones({}));
+      dispatch(fetchPersonasConFamiliares());
+      dispatch(fetchGrupos());
+    }
+  }, [dispatch, viewMode, page, rowsPerPage, filtrosTabla]);
 
   const handleFilterChange = (key: keyof FamiliaresFilters, value: any) => {
     dispatch(setFilters({ ...filters, [key]: value }));
@@ -119,6 +155,108 @@ const FamiliaresPage: React.FC = () => {
   const handleMenuClose = () => {
     setAnchorEl(null);
     setMenuPersona(null);
+  };
+
+  // FASE 2: Handlers para tabla
+  const handlePageChange = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleFiltrosChange = (nuevosFiltros: FiltrosRelaciones) => {
+    setFiltrosTabla(nuevosFiltros);
+    setPage(0); // Reset a primera página cuando cambian filtros
+  };
+
+  const handleClearFiltros = () => {
+    setFiltrosTabla({ soloActivos: true });
+    setPage(0);
+  };
+
+  const handleEditRelacion = (relacion: any) => {
+    setRelacionToEdit(relacion);
+    setDialogOpen(true);
+  };
+
+  const handleDeleteRelacion = (id: number) => {
+    setRelacionToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!relacionToDelete) return;
+
+    setDeleting(true);
+    try {
+      await dispatch(eliminarRelacion(relacionToDelete)).unwrap();
+
+      // Recargar datos
+      if (viewMode === 'table') {
+        await dispatch(fetchAllRelaciones({
+          page: page + 1,
+          limit: rowsPerPage,
+          soloActivos: filtrosTabla.soloActivos,
+          socioId: filtrosTabla.personaId,
+          parentesco: filtrosTabla.tipoRelacion,
+        }));
+      }
+    } catch (error) {
+      console.error('Error al eliminar relación:', error);
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+      setRelacionToDelete(null);
+    }
+  };
+
+  const handleDialogSuccess = () => {
+    setDialogOpen(false);
+    setRelacionToEdit(null);
+
+    // Recargar datos según modo
+    if (viewMode === 'table') {
+      dispatch(fetchAllRelaciones({
+        page: page + 1,
+        limit: rowsPerPage,
+        soloActivos: filtrosTabla.soloActivos,
+        socioId: filtrosTabla.personaId,
+        parentesco: filtrosTabla.tipoRelacion,
+      }));
+    } else {
+      dispatch(fetchRelaciones({}));
+      dispatch(fetchPersonasConFamiliares());
+    }
+  };
+
+  // Calcular estadísticas para el componente Stats
+  const calcularEstadisticas = () => {
+    const totalActivas = relaciones.filter(r => r.activo).length;
+    const conPermisoRF = relaciones.filter(r => r.responsableFinanciero).length;
+    const conPermisoCE = relaciones.filter(r => r.contactoEmergencia).length;
+    const conPermisoAR = relaciones.filter(r => r.autorizadoRetiro).length;
+    const conDescuento = relaciones.filter(r => r.porcentajeDescuento && r.porcentajeDescuento > 0).length;
+
+    const descuentos = relaciones
+      .filter(r => r.porcentajeDescuento && r.porcentajeDescuento > 0)
+      .map(r => r.porcentajeDescuento || 0);
+
+    const descuentoPromedio = descuentos.length > 0
+      ? descuentos.reduce((sum, d) => sum + d, 0) / descuentos.length
+      : 0;
+
+    return {
+      totalRelaciones: relaciones.length,
+      totalActivas,
+      conPermisoRF,
+      conPermisoCE,
+      conPermisoAR,
+      conDescuento,
+      descuentoPromedio,
+    };
   };
 
   const buildFamilyTree = (persona: PersonaConFamiliares): PersonaNode[] => {
@@ -575,28 +713,52 @@ const FamiliaresPage: React.FC = () => {
         </Alert>
       )}
 
+      {/* FASE 2: Estadísticas (solo en modo tabla) */}
+      {viewMode === 'table' && (
+        <FamiliaresStats estadisticas={calcularEstadisticas()} />
+      )}
+
+      {/* FASE 2: Filtros avanzados (solo en modo tabla) */}
+      {viewMode === 'table' && (
+        <FamiliarFilters
+          filtros={filtrosTabla}
+          personas={personas}
+          onFiltrosChange={handleFiltrosChange}
+          onClearFiltros={handleClearFiltros}
+        />
+      )}
+
       {/* Controles de vista y filtros */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
             <Box display="flex" gap={2} alignItems="center">
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={viewMode === 'cards'}
-                    onChange={(e) => setViewMode(e.target.checked ? 'cards' : 'tree')}
-                  />
-                }
-                label="Vista de Tarjetas"
-              />
-              <Button
-                variant={viewMode === 'groups' ? 'contained' : 'outlined'}
-                startIcon={<Groups />}
-                onClick={() => setViewMode('groups')}
+              <Typography variant="body2" color="text.secondary" mr={1}>
+                Modo de vista:
+              </Typography>
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={(e, newMode) => newMode && setViewMode(newMode)}
                 size="small"
               >
-                Grupos
-              </Button>
+                <ToggleButton value="table">
+                  <TableChart sx={{ mr: 0.5 }} fontSize="small" />
+                  Tabla
+                </ToggleButton>
+                <ToggleButton value="cards">
+                  <ViewModule sx={{ mr: 0.5 }} fontSize="small" />
+                  Tarjetas
+                </ToggleButton>
+                <ToggleButton value="tree">
+                  <AccountTree sx={{ mr: 0.5 }} fontSize="small" />
+                  Árbol
+                </ToggleButton>
+                <ToggleButton value="groups">
+                  <Groups sx={{ mr: 0.5 }} fontSize="small" />
+                  Grupos
+                </ToggleButton>
+              </ToggleButtonGroup>
             </Box>
 
             <Box display="flex" gap={2} alignItems="center">
@@ -674,7 +836,21 @@ const FamiliaresPage: React.FC = () => {
       </Card>
 
       {/* Contenido principal */}
-      {viewMode === 'groups' ? (
+      {viewMode === 'table' ? (
+        // FASE 2: Nueva vista de tabla bidireccional
+        <FamiliaresTable
+          relaciones={relaciones}
+          personas={personas}
+          loading={loading}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          totalRelaciones={estadisticas.totalRelaciones}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          onEdit={handleEditRelacion}
+          onDelete={handleDeleteRelacion}
+        />
+      ) : viewMode === 'groups' ? (
         renderGroupsView()
       ) : selectedPersona && viewMode === 'tree' ? (
         renderFamilyTree()
@@ -717,12 +893,26 @@ const FamiliaresPage: React.FC = () => {
       {/* Dialog de relación familiar */}
       <RelacionFamiliarDialog
         open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        onSuccess={() => {
+        onClose={() => {
           setDialogOpen(false);
-          dispatch(fetchRelaciones({}));
-          dispatch(fetchPersonasConFamiliares());
+          setRelacionToEdit(null);
         }}
+        onSuccess={handleDialogSuccess}
+        relacionToEdit={relacionToEdit}
+      />
+
+      {/* FASE 2: Diálogo de confirmación de eliminación */}
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setRelacionToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Eliminar Relación Familiar"
+        message="¿Está seguro que desea eliminar esta relación familiar?"
+        itemName="la relación"
+        loading={deleting}
       />
     </Box>
   );
