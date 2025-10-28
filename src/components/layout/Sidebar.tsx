@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Drawer,
   List,
@@ -10,6 +10,7 @@ import {
   Box,
   Typography,
   Toolbar,
+  Collapse,
 } from '@mui/material';
 import {
   Dashboard,
@@ -24,12 +25,30 @@ import {
   Payment,
   AccountBalance,
   Category,
+  ExpandLess,
+  ExpandMore,
+  PersonAdd,
+  School,
+  ContactPhone,
+  AdminPanelSettings,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const DRAWER_WIDTH = 280;
 
-const menuItems = [
+interface MenuItem {
+  title: string;
+  icon: React.ReactNode;
+  path?: string;
+  color: string;
+  subItems?: {
+    title: string;
+    icon: React.ReactNode;
+    path: string;
+  }[];
+}
+
+const menuItems: MenuItem[] = [
   {
     title: 'Dashboard',
     icon: <Dashboard />,
@@ -41,6 +60,29 @@ const menuItems = [
     icon: <People />,
     path: '/personas',
     color: '#2e7d32',
+  },
+  {
+    title: 'Personas V2',
+    icon: <PersonAdd />,
+    path: '/personas-v2',
+    color: '#1565c0',
+    subItems: [
+      {
+        title: 'Tipos de Persona',
+        icon: <AdminPanelSettings fontSize="small" />,
+        path: '/personas-v2/admin/tipos-persona',
+      },
+      {
+        title: 'Especialidades',
+        icon: <School fontSize="small" />,
+        path: '/personas-v2/admin/especialidades',
+      },
+      {
+        title: 'Tipos de Contacto',
+        icon: <ContactPhone fontSize="small" />,
+        path: '/personas-v2/admin/tipos-contacto',
+      },
+    ],
   },
   {
     title: 'Actividades',
@@ -123,9 +165,25 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ open }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
 
   const handleNavigation = (path: string) => {
     navigate(path);
+  };
+
+  const handleToggleExpand = (title: string) => {
+    setExpandedItems((prev) => ({
+      ...prev,
+      [title]: !prev[title],
+    }));
+  };
+
+  const isItemActive = (item: MenuItem): boolean => {
+    if (item.path && location.pathname === item.path) return true;
+    if (item.subItems) {
+      return item.subItems.some((sub) => location.pathname === sub.path);
+    }
+    return false;
   };
 
   return (
@@ -159,39 +217,95 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
 
       <List sx={{ pt: 1 }}>
         {menuItems.map((item) => (
-          <ListItem key={item.path} disablePadding sx={{ mb: 0.5, px: 1 }}>
-            <ListItemButton
-              onClick={() => handleNavigation(item.path)}
-              selected={location.pathname === item.path}
-              sx={{
-                borderRadius: 2,
-                '&.Mui-selected': {
-                  backgroundColor: `${item.color}15`,
-                  '& .MuiListItemIcon-root': {
-                    color: item.color,
-                  },
-                  '& .MuiListItemText-primary': {
-                    color: item.color,
-                    fontWeight: 600,
-                  },
-                },
-                '&:hover': {
-                  backgroundColor: `${item.color}08`,
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40 }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={item.title}
-                primaryTypographyProps={{
-                  fontSize: '0.9rem',
-                  fontWeight: location.pathname === item.path ? 600 : 400,
+          <React.Fragment key={item.title}>
+            <ListItem disablePadding sx={{ mb: 0.5, px: 1 }}>
+              <ListItemButton
+                onClick={() => {
+                  if (item.subItems) {
+                    handleToggleExpand(item.title);
+                  }
+                  if (item.path) {
+                    handleNavigation(item.path);
+                  }
                 }}
-              />
-            </ListItemButton>
-          </ListItem>
+                selected={isItemActive(item)}
+                sx={{
+                  borderRadius: 2,
+                  '&.Mui-selected': {
+                    backgroundColor: `${item.color}15`,
+                    '& .MuiListItemIcon-root': {
+                      color: item.color,
+                    },
+                    '& .MuiListItemText-primary': {
+                      color: item.color,
+                      fontWeight: 600,
+                    },
+                  },
+                  '&:hover': {
+                    backgroundColor: `${item.color}08`,
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.title}
+                  primaryTypographyProps={{
+                    fontSize: '0.9rem',
+                    fontWeight: isItemActive(item) ? 600 : 400,
+                  }}
+                />
+                {item.subItems && (
+                  expandedItems[item.title] ? <ExpandLess /> : <ExpandMore />
+                )}
+              </ListItemButton>
+            </ListItem>
+
+            {/* Submenú */}
+            {item.subItems && (
+              <Collapse in={expandedItems[item.title]} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  {item.subItems.map((subItem) => (
+                    <ListItem key={subItem.path} disablePadding sx={{ pl: 2, pr: 1, mb: 0.5 }}>
+                      <ListItemButton
+                        onClick={() => handleNavigation(subItem.path)}
+                        selected={location.pathname === subItem.path}
+                        sx={{
+                          borderRadius: 2,
+                          pl: 3,
+                          '&.Mui-selected': {
+                            backgroundColor: `${item.color}20`,
+                            '& .MuiListItemIcon-root': {
+                              color: item.color,
+                            },
+                            '& .MuiListItemText-primary': {
+                              color: item.color,
+                              fontWeight: 600,
+                            },
+                          },
+                          '&:hover': {
+                            backgroundColor: `${item.color}10`,
+                          },
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 35 }}>
+                          {subItem.icon}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={subItem.title}
+                          primaryTypographyProps={{
+                            fontSize: '0.85rem',
+                            fontWeight: location.pathname === subItem.path ? 600 : 400,
+                          }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
+              </Collapse>
+            )}
+          </React.Fragment>
         ))}
       </List>
     </Drawer>
