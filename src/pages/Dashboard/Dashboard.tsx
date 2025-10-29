@@ -36,7 +36,7 @@ const Dashboard: React.FC = () => {
     const loadDashboardData = async () => {
       try {
         // Cargar datos con manejo de errores individual
-        dispatch(fetchPersonas());
+        dispatch(fetchPersonas({}));
         dispatch(fetchActividades({}));
         dispatch(fetchAulas({}));
         dispatch(fetchRelaciones({}));
@@ -55,9 +55,10 @@ const Dashboard: React.FC = () => {
   const relacionesArray = Array.isArray(relaciones) ? relaciones : [];
 
   const totalPersonas = personasArray.length;
-  const totalSocios = personasArray.filter(p => p.tipo?.toLowerCase() === 'socio').length;
-  const totalDocentes = personasArray.filter(p => p.tipo?.toLowerCase() === 'docente').length;
-  const totalEstudiantes = personasArray.filter(p => p.tipo?.toLowerCase() === 'estudiante').length;
+  // En V2, las personas tienen múltiples tipos, usamos los booleanos calculados
+  const totalSocios = personasArray.filter(p => p.esSocio).length;
+  const totalDocentes = personasArray.filter(p => p.esDocente).length;
+  const totalEstudiantes = personasArray.filter(p => p.tipos?.some(t => t.tipoPersonaCodigo === 'ESTUDIANTE')).length;
   const totalActividades = actividadesArray.length;
   const actividadesActivas = actividadesArray.filter(a => a.estado === 'activo').length;
   const totalAulas = aulasArray.length;

@@ -18,15 +18,15 @@ import {
   type CatalogoColumn,
   type CatalogoField,
 } from '../../../components/personas/v2/admin';
-import { useCatalogosPersonas } from '../../../hooks/usePersonasV2';
-import personasV2Api from '../../../services/personasV2Api';
+import { useCatalogosPersonas } from '../../../hooks/usePersonas';
+import personasApi from '../../../services/personasApi';
 import {
   createEspecialidadDocenteSchema,
   updateEspecialidadDocenteSchema,
   type CreateEspecialidadDocenteFormData,
   type UpdateEspecialidadDocenteFormData,
-} from '../../../schemas/personaV2.schema';
-import type { EspecialidadDocente } from '../../../types/personaV2.types';
+} from '../../../schemas/persona.schema';
+import type { EspecialidadDocente } from '../../../types/persona.types';
 import { useAppDispatch } from '../../../hooks/redux';
 import { showNotification } from '../../../store/slices/uiSlice';
 
@@ -142,7 +142,7 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
 
       if (selectedEspecialidad) {
         // Actualizar especialidad existente
-        await personasV2Api.updateEspecialidadDocente(
+        await personasApi.updateEspecialidadDocente(
           selectedEspecialidad.id,
           data as UpdateEspecialidadDocenteFormData
         );
@@ -154,7 +154,7 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
         );
       } else {
         // Crear nueva especialidad
-        await personasV2Api.createEspecialidadDocente(data as CreateEspecialidadDocenteFormData);
+        await personasApi.createEspecialidadDocente(data as CreateEspecialidadDocenteFormData);
         dispatch(
           showNotification({
             message: 'Especialidad creada exitosamente',
@@ -194,7 +194,7 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
 
     try {
       setSubmitting(true);
-      await personasV2Api.deleteEspecialidadDocente(especialidadToDelete.id);
+      await personasApi.deleteEspecialidadDocente(especialidadToDelete.id);
 
       dispatch(
         showNotification({

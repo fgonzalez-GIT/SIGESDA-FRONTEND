@@ -1,284 +1,328 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { CategoriaSocio } from '../../types/categoria.types';
+import personasApi from '../../services/personasApi';
+import type {
+  Persona,
+  PersonasQueryParams,
+  CatalogosPersonas,
+  CreatePersonaDTO,
+  UpdatePersonaDTO,
+} from '../../types/persona.types';
 
-export interface Persona {
-  id: number;
-  nombre: string;
-  apellido: string;
-  dni?: string;
-  email?: string;
-  telefono?: string;
-  direccion?: string;
-  fechaNacimiento?: string | null;
-  tipo: 'SOCIO' | 'DOCENTE' | 'ESTUDIANTE' | 'NO_SOCIO' | 'PROVEEDOR' | 'socio' | 'docente' | 'estudiante' | 'no_socio' | 'proveedor';
-  estado?: 'activo' | 'inactivo';
-  fechaIngreso?: string | null;
-  numeroSocio?: number | null;
-  categoriaId?: number | null; // FK a CategoriaSocio
-  categoria?: CategoriaSocio | null; // Relación populada (cuando se incluye en la query)
-  fechaBaja?: string | null;
-  motivoBaja?: string | null;
-  especialidad?: string | null;
-  honorariosPorHora?: number | null;
-  cuit?: string | null;
-  razonSocial?: string | null;
-  observaciones?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
+/**
+ * Estado del slice de Personas V2
+ */
 interface PersonasState {
+  // Lista de personas
   personas: Persona[];
   loading: boolean;
   error: string | null;
+
+  // Paginación
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+
+  // Filtros actuales
+  filters: PersonasQueryParams;
+
+  // Persona seleccionada (para detalle/edición)
   selectedPersona: Persona | null;
+  selectedPersonaLoading: boolean;
+
+  // Catálogos
+  catalogos: CatalogosPersonas | null;
+  catalogosLoading: boolean;
+  catalogosError: string | null;
 }
 
 const initialState: PersonasState = {
   personas: [],
   loading: false,
   error: null,
+
+  pagination: {
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 0,
+  },
+
+  filters: {
+    page: 1,
+    limit: 20,
+    includeTipos: true,
+    includeContactos: false,
+    includeRelaciones: true,
+  },
+
   selectedPersona: null,
+  selectedPersonaLoading: false,
+
+  catalogos: null,
+  catalogosLoading: false,
+  catalogosError: null,
 };
 
-export const fetchPersonas = createAsyncThunk(
-  'personas/fetchPersonas',
+// ============================================================================
+// ASYNC THUNKS
+// ============================================================================
+
+/**
+ * Cargar catálogos de Personas V2
+ */
+export const fetchCatalogosPersonas = createAsyncThunk(
+  'personas/fetchCatalogos',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/personas`);
-      if (!response.ok) {
-        throw new Error('Error al cargar personas');
-      }
-      const result = await response.json();
-      return result.data || result;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
+      const response = await personasApi.getCatalogos();
+      return response.data;
+    } catch (error: any) {
+      // Si el endpoint no existe, retornar catálogos vacíos
+      console.warn('⚠️ Endpoint de catálogos no disponible, usando valores por defecto');
+      return {
+        tiposPersona: [],
+        categoriasSocio: [],
+        especialidadesDocentes: [],
+        tiposContacto: [],
+      };
     }
   }
 );
 
-export const checkDniExists = createAsyncThunk(
-  'personas/checkDniExists',
-  async (dni: string, { rejectWithValue }) => {
+/**
+ * Cargar lista de personas con filtros
+ */
+export const fetchPersonas = createAsyncThunk(
+  'personas/fetchPersonas',
+  async (params: PersonasQueryParams | undefined, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/personas/check-dni/${dni}`);
-      if (!response.ok) {
-        throw new Error('Error al verificar DNI');
-      }
-      const result = await response.json();
-      return result.data || result;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
+      const response = await personasApi.getAll(params);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Error al cargar personas'
+      );
     }
   }
 );
 
+/**
+ * Cargar una persona por ID
+ */
+export const fetchPersonaById = createAsyncThunk(
+  'personas/fetchPersonaById',
+  async (id: number, { rejectWithValue }) => {
+    try {
+      const response = await personasApi.getById(id);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Error al cargar persona'
+      );
+    }
+  }
+);
+
+/**
+ * Crear nueva persona
+ */
 export const createPersona = createAsyncThunk(
   'personas/createPersona',
-  async (persona: Omit<Persona, 'id'>, { rejectWithValue }) => {
+  async (data: CreatePersonaDTO, { rejectWithValue }) => {
     try {
-      // Limpiar campos undefined/null antes de enviar
-      const cleanPersona = Object.fromEntries(
-        Object.entries(persona).filter(([_, value]) => value !== undefined && value !== null && value !== '')
+      const response = await personasApi.create(data);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Error al crear persona'
       );
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/personas`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(cleanPersona),
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-
-        // Detectar error 409 específicamente
-        if (response.status === 409) {
-          throw new Error('DNI_DUPLICADO');
-        }
-
-        const errorMessage = errorData.error || errorData.message || 'Error al crear persona';
-        console.error('Error creating persona:', errorData);
-        throw new Error(errorMessage);
-      }
-      const result = await response.json();
-      return result.data || result;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
   }
 );
 
+/**
+ * Actualizar persona existente
+ */
 export const updatePersona = createAsyncThunk(
   'personas/updatePersona',
-  async (persona: Persona, { rejectWithValue }) => {
+  async ({ id, data }: { id: number; data: UpdatePersonaDTO }, { rejectWithValue }) => {
     try {
-      // Convertir campos vacíos a null explícitamente para permitir borrado
-      // Solo eliminamos undefined (campos no incluidos)
-      const cleanPersona = Object.fromEntries(
-        Object.entries(persona)
-          .filter(([_, value]) => value !== undefined)
-          .map(([key, value]) => [key, value === '' ? null : value])
+      const response = await personasApi.update(id, data);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Error al actualizar persona'
       );
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/personas/${persona.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(cleanPersona),
-      });
-      if (!response.ok) {
-        throw new Error('Error al actualizar persona');
-      }
-      const result = await response.json();
-      return result.data || result;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
   }
 );
 
+/**
+ * Eliminar persona
+ */
 export const deletePersona = createAsyncThunk(
   'personas/deletePersona',
   async (id: number, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/personas/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar persona');
-      }
-
-      const result = await response.json();
-      return result.data || result;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
+      await personasApi.delete(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Error al eliminar persona'
+      );
     }
   }
 );
 
-export const reactivatePersona = createAsyncThunk(
-  'personas/reactivatePersona',
-  async ({ id, data }: { id: number; data: Partial<Persona> }, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/personas/${id}/reactivate`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ...data, estado: 'activo' }),
-      });
-      if (!response.ok) {
-        throw new Error('Error al reactivar persona');
-      }
-      const result = await response.json();
-      return result.data || result;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
-    }
-  }
-);
+// ============================================================================
+// SLICE
+// ============================================================================
 
 const personasSlice = createSlice({
   name: 'personas',
   initialState,
   reducers: {
+    // Actualizar filtros
+    setFilters: (state, action: PayloadAction<PersonasQueryParams>) => {
+      state.filters = action.payload;
+    },
+
+    // Resetear filtros
+    resetFilters: (state) => {
+      state.filters = initialState.filters;
+    },
+
+    // Seleccionar persona
     setSelectedPersona: (state, action: PayloadAction<Persona | null>) => {
       state.selectedPersona = action.payload;
     },
+
+    // Limpiar errores
     clearError: (state) => {
+      state.error = null;
+    },
+
+    // Limpiar estado
+    clearState: (state) => {
+      state.personas = [];
+      state.selectedPersona = null;
       state.error = null;
     },
   },
   extraReducers: (builder) => {
-    builder
-      // Fetch personas
-      .addCase(fetchPersonas.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchPersonas.fulfilled, (state, action) => {
-        state.loading = false;
-        state.personas = action.payload;
-      })
-      .addCase(fetchPersonas.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
-      // Create persona
-      .addCase(createPersona.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(createPersona.fulfilled, (state, action) => {
-        state.loading = false;
-        state.personas.push(action.payload);
-      })
-      .addCase(createPersona.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
-      // Update persona
-      .addCase(updatePersona.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(updatePersona.fulfilled, (state, action) => {
-        state.loading = false;
-        const index = state.personas.findIndex(p => p.id === action.payload.id);
-        if (index !== -1) {
-          state.personas[index] = action.payload;
-        }
-      })
-      .addCase(updatePersona.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
-      // Delete persona
-      .addCase(deletePersona.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(deletePersona.fulfilled, (state, action) => {
-        state.loading = false;
+    // Fetch Catálogos
+    builder.addCase(fetchCatalogosPersonas.pending, (state) => {
+      state.catalogosLoading = true;
+      state.catalogosError = null;
+    });
+    builder.addCase(fetchCatalogosPersonas.fulfilled, (state, action) => {
+      state.catalogosLoading = false;
+      state.catalogos = action.payload;
+    });
+    builder.addCase(fetchCatalogosPersonas.rejected, (state, action) => {
+      state.catalogosLoading = false;
+      state.catalogosError = action.payload as string;
+    });
 
-        // El backend hace soft delete, así que actualizamos la persona con fechaBaja
-        const index = state.personas.findIndex(p => p.id === action.payload.id);
+    // Fetch Personas
+    builder.addCase(fetchPersonas.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(fetchPersonas.fulfilled, (state, action) => {
+      state.loading = false;
+      state.personas = action.payload.data;
+      if (action.payload.pagination) {
+        state.pagination = action.payload.pagination;
+      }
+    });
+    builder.addCase(fetchPersonas.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
 
-        if (index !== -1) {
-          // Immer permite mutación directa - actualizar todas las propiedades
-          state.personas[index] = {
-            ...state.personas[index],
-            ...action.payload
-          };
-        }
-      })
-      .addCase(deletePersona.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
-      // Reactivate persona
-      .addCase(reactivatePersona.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(reactivatePersona.fulfilled, (state, action) => {
-        state.loading = false;
-        const index = state.personas.findIndex(p => p.id === action.payload.id);
-        if (index !== -1) {
-          state.personas[index] = action.payload;
-        } else {
-          state.personas.push(action.payload);
-        }
-      })
-      .addCase(reactivatePersona.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      });
+    // Fetch Persona By ID
+    builder.addCase(fetchPersonaById.pending, (state) => {
+      state.selectedPersonaLoading = true;
+      state.error = null;
+    });
+    builder.addCase(fetchPersonaById.fulfilled, (state, action) => {
+      state.selectedPersonaLoading = false;
+      state.selectedPersona = action.payload;
+    });
+    builder.addCase(fetchPersonaById.rejected, (state, action) => {
+      state.selectedPersonaLoading = false;
+      state.error = action.payload as string;
+    });
+
+    // Create Persona
+    builder.addCase(createPersona.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(createPersona.fulfilled, (state, action) => {
+      state.loading = false;
+      state.personas.unshift(action.payload);
+      state.pagination.total += 1;
+    });
+    builder.addCase(createPersona.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // Update Persona
+    builder.addCase(updatePersona.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(updatePersona.fulfilled, (state, action) => {
+      state.loading = false;
+      const index = state.personas.findIndex((p) => p.id === action.payload.id);
+      if (index !== -1) {
+        state.personas[index] = action.payload;
+      }
+      if (state.selectedPersona?.id === action.payload.id) {
+        state.selectedPersona = action.payload;
+      }
+    });
+    builder.addCase(updatePersona.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // Delete Persona
+    builder.addCase(deletePersona.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(deletePersona.fulfilled, (state, action) => {
+      state.loading = false;
+      state.personas = state.personas.filter((p) => p.id !== action.payload);
+      state.pagination.total = Math.max(0, state.pagination.total - 1);
+      if (state.selectedPersona?.id === action.payload) {
+        state.selectedPersona = null;
+      }
+    });
+    builder.addCase(deletePersona.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
   },
 });
 
-export const { setSelectedPersona, clearError } = personasSlice.actions;
+// ============================================================================
+// EXPORTS
+// ============================================================================
+
+export const {
+  setFilters,
+  resetFilters,
+  setSelectedPersona,
+  clearError,
+  clearState,
+} = personasSlice.actions;
+
 export default personasSlice.reducer;

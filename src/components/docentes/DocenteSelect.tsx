@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { Search as SearchIcon, Person as PersonIcon } from '@mui/icons-material';
 import { personasApi } from '../../services/personasApi';
-import { Persona } from '../../store/slices/personasSlice';
+import { Persona } from '../../types/persona.types';
 
 interface DocenteSelectProps {
   value?: number | string;
@@ -51,13 +51,14 @@ export const DocenteSelect: React.FC<DocenteSelectProps> = ({
       setLoading(true);
       setFetchError(null);
       try {
-        // Filtrar personas por tipo DOCENTE (debe ser en MAYÚSCULAS)
+        // En V2, filtrar por tipo de persona usando tiposCodigos
         const response = await personasApi.getAll({
-          tipo: 'DOCENTE' as any, // Backend espera MAYÚSCULAS
-          estado: 'activo',
-          limit: 100, // Límite máximo permitido por el backend
+          tiposCodigos: ['DOCENTE'],
+          estado: 'ACTIVO',
+          limit: 100, // Límite máximo
         });
 
+        // En V2, la respuesta tiene estructura { success, data, pagination }
         setDocentes(response.data || []);
       } catch (err) {
         console.error('Error al cargar docentes:', err);
@@ -175,6 +176,10 @@ export const DocenteSelect: React.FC<DocenteSelectProps> = ({
           docentesOrdenados.map((docente) => {
             const yaAsignado = excludeDocenteIds.includes(docente.id);
 
+            // En V2, la especialidad está en el tipo DOCENTE
+            const tipoDocente = docente.tipos?.find(t => t.tipoPersonaCodigo === 'DOCENTE');
+            const especialidad = tipoDocente?.especialidad?.nombre;
+
             return (
               <MenuItem
                 key={docente.id}
@@ -193,7 +198,7 @@ export const DocenteSelect: React.FC<DocenteSelectProps> = ({
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {docente.dni && `DNI: ${docente.dni}`}
-                      {docente.especialidad && ` • ${docente.especialidad}`}
+                      {especialidad && ` • ${especialidad}`}
                     </Typography>
                   </Box>
                 </Box>

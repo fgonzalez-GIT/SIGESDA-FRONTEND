@@ -8,7 +8,7 @@ import {
   Business as BusinessIcon,
   Help as HelpIcon,
 } from '@mui/icons-material';
-import type { TipoPersona, PersonaTipo } from '../../../../types/personaV2.types';
+import type { TipoPersona, PersonaTipo } from '../../../../types/persona.types';
 
 interface TipoBadgeProps {
   tipo: TipoPersona | PersonaTipo | string;

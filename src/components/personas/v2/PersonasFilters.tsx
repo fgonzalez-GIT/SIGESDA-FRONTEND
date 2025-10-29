@@ -19,12 +19,12 @@ import {
   FilterList as FilterListIcon,
   Clear as ClearIcon,
 } from '@mui/icons-material';
-import type { PersonasV2QueryParams, CatalogosPersonas } from '../../../types/personaV2.types';
+import type { PersonasQueryParams, CatalogosPersonas } from '../../../types/persona.types';
 
 interface PersonasFiltersProps {
-  filters: PersonasV2QueryParams;
+  filters: PersonasQueryParams;
   catalogos: CatalogosPersonas | null;
-  onFilterChange: (filters: PersonasV2QueryParams) => void;
+  onFilterChange: (filters: PersonasQueryParams) => void;
   onClearFilters: () => void;
   resultCount?: number;
   totalCount?: number;

@@ -21,7 +21,7 @@ import {
   Business as BusinessIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
-import type { PersonaTipo } from '../../../../types/personaV2.types';
+import type { PersonaTipo } from '../../../../types/persona.types';
 import { TipoBadge } from './TipoBadge';
 
 interface TipoItemProps {

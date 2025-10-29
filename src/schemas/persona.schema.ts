@@ -74,7 +74,7 @@ export const updatePersonaTipoSchema = z.object({
   observaciones: z.string().max(500).optional().or(z.literal('')),
 });
 
-export const createPersonaV2Schema = z.object({
+export const createPersonaSchema = z.object({
   nombre: z.string().min(2).max(100).trim(),
   apellido: z.string().min(2).max(100).trim(),
   dni: z.string().regex(dniRegex).min(7).max(8),
@@ -99,7 +99,7 @@ export const createPersonaV2Schema = z.object({
   path: ['contactos'],
 });
 
-export const updatePersonaV2Schema = z.object({
+export const updatePersonaSchema = z.object({
   nombre: z.string().min(2).max(100).trim().optional(),
   apellido: z.string().min(2).max(100).trim().optional(),
   dni: z.string().regex(dniRegex).min(7).max(8).optional(),
@@ -172,8 +172,8 @@ export type CreateContactoFormData = z.infer<typeof createContactoSchema>;
 export type UpdateContactoFormData = z.infer<typeof updateContactoSchema>;
 export type CreatePersonaTipoFormData = z.infer<typeof createPersonaTipoSchema>;
 export type UpdatePersonaTipoFormData = z.infer<typeof updatePersonaTipoSchema>;
-export type CreatePersonaV2FormData = z.infer<typeof createPersonaV2Schema>;
-export type UpdatePersonaV2FormData = z.infer<typeof updatePersonaV2Schema>;
+export type CreatePersonaFormData = z.infer<typeof createPersonaSchema>;
+export type UpdatePersonaFormData = z.infer<typeof updatePersonaSchema>;
 export type CreateTipoPersonaFormData = z.infer<typeof createTipoPersonaSchema>;
 export type UpdateTipoPersonaFormData = z.infer<typeof updateTipoPersonaSchema>;
 export type CreateEspecialidadDocenteFormData = z.infer<typeof createEspecialidadDocenteSchema>;

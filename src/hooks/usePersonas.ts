@@ -5,12 +5,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type {
-  PersonaV2,
-  PersonasV2QueryParams,
-  PersonasV2PaginatedResponse,
+  Persona,
+  PersonasQueryParams,
+  PersonasPaginatedResponse,
   CatalogosPersonas,
-  CreatePersonaV2DTO,
-  UpdatePersonaV2DTO,
+  CreatePersonaDTO,
+  UpdatePersonaDTO,
   PersonaTipo,
   CreatePersonaTipoDTO,
   UpdatePersonaTipoDTO,
@@ -18,8 +18,8 @@ import type {
   CreateContactoDTO,
   UpdateContactoDTO,
   EstadisticasTipos,
-} from '../types/personaV2.types';
-import personasV2Api from '../services/personasV2Api';
+} from '../types/persona.types';
+import personasApi from '../services/personasApi';
 
 // ============================================================================
 // HOOK: useCatalogosPersonas
@@ -57,7 +57,7 @@ export const useCatalogosPersonas = (): UseCatalogosPersonasResult => {
     try {
       setLoading(true);
       setError(null);
-      const response = await personasV2Api.getCatalogos();
+      const response = await personasApi.getCatalogos();
       setCatalogos(response.data);
     } catch (err) {
       // Si el endpoint no existe (404), inicializar con catálogos vacíos
@@ -83,11 +83,11 @@ export const useCatalogosPersonas = (): UseCatalogosPersonasResult => {
 };
 
 // ============================================================================
-// HOOK: usePersonasV2
+// HOOK: usePersonas
 // ============================================================================
 
-interface UsePersonasV2Result {
-  personas: PersonaV2[];
+interface UsePersonasResult {
+  personas: Persona[];
   pagination: {
     page: number;
     limit: number;
@@ -96,7 +96,7 @@ interface UsePersonasV2Result {
   };
   loading: boolean;
   error: string | null;
-  fetchPersonas: (params?: PersonasV2QueryParams) => Promise<void>;
+  fetchPersonas: (params?: PersonasQueryParams) => Promise<void>;
   refetch: () => Promise<void>;
 }
 
@@ -105,7 +105,7 @@ interface UsePersonasV2Result {
  *
  * @example
  * ```tsx
- * const { personas, pagination, loading, fetchPersonas } = usePersonasV2({
+ * const { personas, pagination, loading, fetchPersonas } = usePersonas({
  *   page: 1,
  *   limit: 20,
  *   tiposCodigos: ['SOCIO', 'DOCENTE'],
@@ -121,8 +121,8 @@ interface UsePersonasV2Result {
  * fetchPersonas({ tiposCodigos: ['SOCIO'] });
  * ```
  */
-export const usePersonasV2 = (initialParams?: PersonasV2QueryParams): UsePersonasV2Result => {
-  const [personas, setPersonas] = useState<PersonaV2[]>([]);
+export const usePersonas = (initialParams?: PersonasQueryParams): UsePersonasResult => {
+  const [personas, setPersonas] = useState<Persona[]>([]);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -131,16 +131,16 @@ export const usePersonasV2 = (initialParams?: PersonasV2QueryParams): UsePersona
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentParams, setCurrentParams] = useState<PersonasV2QueryParams | undefined>(initialParams);
+  const [currentParams, setCurrentParams] = useState<PersonasQueryParams | undefined>(initialParams);
 
-  const fetchPersonas = useCallback(async (params?: PersonasV2QueryParams) => {
+  const fetchPersonas = useCallback(async (params?: PersonasQueryParams) => {
     try {
       setLoading(true);
       setError(null);
       const mergedParams = { ...currentParams, ...params };
       setCurrentParams(mergedParams);
 
-      const response = await personasV2Api.getAll(mergedParams);
+      const response = await personasApi.getAll(mergedParams);
       setPersonas(response.data);
       if (response.pagination) {
         setPagination(response.pagination);
@@ -163,11 +163,11 @@ export const usePersonasV2 = (initialParams?: PersonasV2QueryParams): UsePersona
 };
 
 // ============================================================================
-// HOOK: usePersonaV2
+// HOOK: usePersona
 // ============================================================================
 
-interface UsePersonaV2Result {
-  persona: PersonaV2 | null;
+interface UsePersonaResult {
+  persona: Persona | null;
   loading: boolean;
   error: string | null;
   fetchPersona: (id: number, includeRelaciones?: boolean) => Promise<void>;
@@ -179,7 +179,7 @@ interface UsePersonaV2Result {
  *
  * @example
  * ```tsx
- * const { persona, loading, refetch } = usePersonaV2(personaId);
+ * const { persona, loading, refetch } = usePersona(personaId);
  *
  * if (loading) return <div>Cargando...</div>;
  *
@@ -187,8 +187,8 @@ interface UsePersonaV2Result {
  * console.log(persona.contactos); // Array de contactos
  * ```
  */
-export const usePersonaV2 = (id?: number, includeRelaciones: boolean = true): UsePersonaV2Result => {
-  const [persona, setPersona] = useState<PersonaV2 | null>(null);
+export const usePersona = (id?: number, includeRelaciones: boolean = true): UsePersonaResult => {
+  const [persona, setPersona] = useState<Persona | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentId, setCurrentId] = useState<number | undefined>(id);
@@ -199,7 +199,7 @@ export const usePersonaV2 = (id?: number, includeRelaciones: boolean = true): Us
       setError(null);
       setCurrentId(personaId);
 
-      const response = await personasV2Api.getById(personaId, includeRel);
+      const response = await personasApi.getById(personaId, includeRel);
       setPersona(response.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar persona');
@@ -269,7 +269,7 @@ export const usePersonaTipos = (personaId?: number): UsePersonaTiposResult => {
     try {
       setLoading(true);
       setError(null);
-      const response = await personasV2Api.getTipos(currentPersonaId);
+      const response = await personasApi.getTipos(currentPersonaId);
       setTipos(response.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar tipos');
@@ -285,7 +285,7 @@ export const usePersonaTipos = (personaId?: number): UsePersonaTiposResult => {
     try {
       setLoading(true);
       setError(null);
-      const response = await personasV2Api.asignarTipo(currentPersonaId, tipo);
+      const response = await personasApi.asignarTipo(currentPersonaId, tipo);
       await fetchTipos(); // Refrescar lista
       return response.data;
     } catch (err) {
@@ -304,7 +304,7 @@ export const usePersonaTipos = (personaId?: number): UsePersonaTiposResult => {
     try {
       setLoading(true);
       setError(null);
-      const response = await personasV2Api.actualizarTipo(tipoId, data);
+      const response = await personasApi.actualizarTipo(tipoId, data);
       await fetchTipos(); // Refrescar lista
       return response.data;
     } catch (err) {
@@ -322,7 +322,7 @@ export const usePersonaTipos = (personaId?: number): UsePersonaTiposResult => {
     try {
       setLoading(true);
       setError(null);
-      await personasV2Api.desasignarTipo(currentPersonaId, tipoId);
+      await personasApi.desasignarTipo(currentPersonaId, tipoId);
       await fetchTipos(); // Refrescar lista
       return true;
     } catch (err) {
@@ -338,7 +338,7 @@ export const usePersonaTipos = (personaId?: number): UsePersonaTiposResult => {
     try {
       setLoading(true);
       setError(null);
-      const response = await personasV2Api.toggleTipo(tipoId);
+      const response = await personasApi.toggleTipo(tipoId);
       await fetchTipos(); // Refrescar lista
       return response.data;
     } catch (err) {
@@ -415,7 +415,7 @@ export const usePersonaContactos = (personaId?: number): UsePersonaContactosResu
     try {
       setLoading(true);
       setError(null);
-      const response = await personasV2Api.getContactos(currentPersonaId);
+      const response = await personasApi.getContactos(currentPersonaId);
       setContactos(response.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar contactos');
@@ -431,7 +431,7 @@ export const usePersonaContactos = (personaId?: number): UsePersonaContactosResu
     try {
       setLoading(true);
       setError(null);
-      const response = await personasV2Api.addContacto(currentPersonaId, contacto);
+      const response = await personasApi.addContacto(currentPersonaId, contacto);
       await fetchContactos(); // Refrescar lista
       return response.data;
     } catch (err) {
@@ -450,7 +450,7 @@ export const usePersonaContactos = (personaId?: number): UsePersonaContactosResu
     try {
       setLoading(true);
       setError(null);
-      const response = await personasV2Api.updateContacto(contactoId, data);
+      const response = await personasApi.updateContacto(contactoId, data);
       await fetchContactos(); // Refrescar lista
       return response.data;
     } catch (err) {
@@ -466,7 +466,7 @@ export const usePersonaContactos = (personaId?: number): UsePersonaContactosResu
     try {
       setLoading(true);
       setError(null);
-      await personasV2Api.deleteContacto(contactoId);
+      await personasApi.deleteContacto(contactoId);
       await fetchContactos(); // Refrescar lista
       return true;
     } catch (err) {
@@ -482,7 +482,7 @@ export const usePersonaContactos = (personaId?: number): UsePersonaContactosResu
     try {
       setLoading(true);
       setError(null);
-      const response = await personasV2Api.setPrincipal(contactoId);
+      const response = await personasApi.setPrincipal(contactoId);
       await fetchContactos(); // Refrescar lista
       return response.data;
     } catch (err) {
@@ -545,7 +545,7 @@ export const useEstadisticasTipos = (): UseEstadisticasTiposResult => {
     try {
       setLoading(true);
       setError(null);
-      const response = await personasV2Api.getEstadisticasTipos();
+      const response = await personasApi.getEstadisticasTipos();
       setEstadisticas(response.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar estadísticas');

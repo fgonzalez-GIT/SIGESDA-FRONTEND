@@ -97,7 +97,7 @@ const CuotasPage: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchCuotas());
-    dispatch(fetchPersonas());
+    dispatch(fetchPersonas({}));
   }, [dispatch]);
 
   const handleFilterChange = (newFilters: Partial<CuotasFilters>) => {

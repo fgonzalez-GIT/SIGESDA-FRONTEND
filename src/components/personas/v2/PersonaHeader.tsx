@@ -7,12 +7,12 @@ import {
   CalendarToday as CalendarIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
-import type { PersonaV2 } from '../../../types/personaV2.types';
+import type { Persona } from '../../../types/persona.types';
 import { TiposBadges } from './tipos';
-import { getNombreCompleto } from '../../../types/personaV2.types';
+import { getNombreCompleto } from '../../../types/persona.types';
 
 interface PersonaHeaderProps {
-  persona: PersonaV2;
+  persona: Persona;
   showContactInfo?: boolean;
   showDates?: boolean;
   compact?: boolean;

@@ -20,7 +20,7 @@ import {
   School as EstudianteIcon,
 } from '@mui/icons-material';
 import { personasApi } from '../../services/personasApi';
-import { Persona } from '../../store/slices/personasSlice';
+import { Persona } from '../../types/persona.types';
 
 interface ParticipanteSelectProps {
   value?: number | string | number[];
@@ -32,7 +32,7 @@ interface ParticipanteSelectProps {
   fullWidth?: boolean;
   helperText?: string;
   showSearch?: boolean;
-  filterTipo?: Array<Persona['tipo']>; // Opcional: filtrar por tipos específicos
+  filterTipo?: string[]; // Opcional: filtrar por tipos específicos (códigos: 'SOCIO', 'DOCENTE', etc.)
   multiple?: boolean; // Nuevo: permite selección múltiple
 }
 
@@ -106,20 +106,15 @@ export const ParticipanteSelect: React.FC<ParticipanteSelectProps> = ({
       setLoading(true);
       setFetchError(null);
       try {
-        // Obtener todas las personas activas
+        // Obtener todas las personas activas (V2 usa paginación)
         const response = await personasApi.getAll({
-          estado: 'activo',
-          limit: 100, // Límite máximo permitido por el backend
+          estado: 'ACTIVO',
+          limit: 100, // Límite máximo
+          tiposCodigos: filterTipo && filterTipo.length > 0 ? filterTipo : undefined,
         });
 
-        let personasList = response.data || [];
-
-        // Aplicar filtro de tipo si se especificó
-        if (filterTipo && filterTipo.length > 0) {
-          personasList = personasList.filter((p) =>
-            filterTipo.some((tipo) => p.tipo.toUpperCase() === tipo.toUpperCase())
-          );
-        }
+        // En V2, la respuesta tiene estructura { success, data, pagination }
+        const personasList = response.data || [];
 
         setPersonas(personasList);
       } catch (err) {
@@ -187,15 +182,18 @@ export const ParticipanteSelect: React.FC<ParticipanteSelectProps> = ({
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
             {(selected as number[]).map((id) => {
               const persona = personas.find((p) => p.id === id);
-              return persona ? (
+              if (!persona) return null;
+              // En V2, mostramos el primer tipo o "Sin tipo"
+              const primerTipo = persona.tipos?.[0]?.tipoPersonaCodigo || 'SIN_TIPO';
+              return (
                 <Chip
                   key={id}
                   label={`${persona.apellido}, ${persona.nombre}`}
                   size="small"
-                  color={getTipoColor(persona.tipo)}
+                  color={getTipoColor(primerTipo)}
                   sx={{ height: 24 }}
                 />
-              ) : null;
+              );
             })}
           </Box>
         ) : undefined}
@@ -253,30 +251,50 @@ export const ParticipanteSelect: React.FC<ParticipanteSelectProps> = ({
             </em>
           </MenuItem>
         ) : (
-          personasOrdenadas.map((persona) => (
-            <MenuItem key={persona.id} value={persona.id}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                {getTipoIcon(persona.tipo)}
-                <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="body2">
-                      {persona.apellido}, {persona.nombre}
+          personasOrdenadas.map((persona) => {
+            // En V2, una persona puede tener múltiples tipos
+            const primerTipo = persona.tipos?.[0]?.tipoPersonaCodigo || 'SIN_TIPO';
+            const tipoSocio = persona.tipos?.find(t => t.tipoPersonaCodigo === 'SOCIO');
+            const numeroSocio = tipoSocio?.numeroSocio;
+
+            return (
+              <MenuItem key={persona.id} value={persona.id}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                  {getTipoIcon(primerTipo)}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                      <Typography variant="body2">
+                        {persona.apellido}, {persona.nombre}
+                      </Typography>
+                      {/* Mostrar todos los tipos como chips */}
+                      {persona.tipos && persona.tipos.length > 0 ? (
+                        persona.tipos.map((tipo, idx) => (
+                          <Chip
+                            key={idx}
+                            label={formatTipo(tipo.tipoPersonaCodigo)}
+                            size="small"
+                            color={getTipoColor(tipo.tipoPersonaCodigo)}
+                            sx={{ height: 18, fontSize: '0.65rem' }}
+                          />
+                        ))
+                      ) : (
+                        <Chip
+                          label="Sin tipo"
+                          size="small"
+                          color="default"
+                          sx={{ height: 18, fontSize: '0.65rem' }}
+                        />
+                      )}
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {persona.dni && `DNI: ${persona.dni}`}
+                      {numeroSocio && ` • Nº Socio: ${numeroSocio}`}
                     </Typography>
-                    <Chip
-                      label={formatTipo(persona.tipo)}
-                      size="small"
-                      color={getTipoColor(persona.tipo)}
-                      sx={{ height: 18, fontSize: '0.65rem' }}
-                    />
                   </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {persona.dni && `DNI: ${persona.dni}`}
-                    {persona.numeroSocio && ` • Nº Socio: ${persona.numeroSocio}`}
-                  </Typography>
                 </Box>
-              </Box>
-            </MenuItem>
-          ))
+              </MenuItem>
+            );
+          })
         )}
       </Select>
       {(error || helperText) && (

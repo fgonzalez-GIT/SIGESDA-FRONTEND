@@ -25,15 +25,15 @@ import {
   Phone as PhoneIcon,
   LocationOn as LocationIcon,
 } from '@mui/icons-material';
-import type { PersonaV2 } from '../../../types/personaV2.types';
+import type { Persona } from '../../../types/persona.types';
 import { TiposBadges } from './tipos';
-import { getNombreCompleto } from '../../../types/personaV2.types';
+import { getNombreCompleto } from '../../../types/persona.types';
 
 interface PersonasTableProps {
-  personas: PersonaV2[];
-  onView?: (persona: PersonaV2) => void;
-  onEdit?: (persona: PersonaV2) => void;
-  onDelete?: (persona: PersonaV2) => void;
+  personas: Persona[];
+  onView?: (persona: Persona) => void;
+  onEdit?: (persona: Persona) => void;
+  onDelete?: (persona: Persona) => void;
   showActions?: boolean;
   expandable?: boolean;
 }
