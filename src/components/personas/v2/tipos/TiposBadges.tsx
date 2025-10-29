@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Stack, Tooltip } from '@mui/material';
-import type { PersonaTipo, TipoPersona } from '../../../../types/personaV2.types';
+import type { PersonaTipo, TipoPersona } from '../../../../types/persona.types';
 import { TipoBadge } from './TipoBadge';
 
 interface TiposBadgesProps {

@@ -132,7 +132,7 @@ export interface Contacto {
 /**
  * Persona V2 - con múltiples tipos
  */
-export interface PersonaV2 {
+export interface Persona {
   id: number;
 
   // Datos personales básicos
@@ -200,7 +200,7 @@ export interface CreateContactoDTO {
 /**
  * DTO para crear una persona con tipos y contactos
  */
-export interface CreatePersonaV2DTO {
+export interface CreatePersonaDTO {
   // Datos personales
   nombre: string;
   apellido: string;
@@ -224,7 +224,7 @@ export interface CreatePersonaV2DTO {
 /**
  * DTO para actualizar una persona (todos los campos opcionales)
  */
-export interface UpdatePersonaV2DTO {
+export interface UpdatePersonaDTO {
   nombre?: string;
   apellido?: string;
   dni?: string;
@@ -267,7 +267,7 @@ export interface UpdateContactoDTO {
 /**
  * Parámetros de consulta para listar personas
  */
-export interface PersonasV2QueryParams {
+export interface PersonasQueryParams {
   // Paginación
   page?: number;
   limit?: number;
@@ -296,9 +296,9 @@ export interface PersonasV2QueryParams {
 /**
  * Respuesta paginada de personas
  */
-export interface PersonasV2PaginatedResponse {
+export interface PersonasPaginatedResponse {
   success: boolean;
-  data: PersonaV2[];
+  data: Persona[];
   pagination: {
     page: number;
     limit: number;
@@ -348,7 +348,7 @@ export interface EstadisticasTipos {
  * Resumen de tipos por persona
  */
 export interface ResumenTiposPersona {
-  persona: PersonaV2;
+  persona: Persona;
   cantidadTipos: number;
   tiposActivos: string[];
   tiposInactivos: string[];
@@ -423,28 +423,28 @@ export interface ReorderCatalogoDTO {
 /**
  * Verificar si una persona tiene un tipo específico
  */
-export const personaTieneTipo = (persona: PersonaV2, codigoTipo: string): boolean => {
+export const personaTieneTipo = (persona: Persona, codigoTipo: string): boolean => {
   return persona.tipos?.some(t => t.tipoPersonaCodigo === codigoTipo && t.activo) ?? false;
 };
 
 /**
  * Obtener tipos activos de una persona
  */
-export const getTiposActivos = (persona: PersonaV2): PersonaTipo[] => {
+export const getTiposActivos = (persona: Persona): PersonaTipo[] => {
   return persona.tipos?.filter(t => t.activo) ?? [];
 };
 
 /**
  * Obtener códigos de tipos activos
  */
-export const getCodigosTiposActivos = (persona: PersonaV2): string[] => {
+export const getCodigosTiposActivos = (persona: Persona): string[] => {
   return getTiposActivos(persona).map(t => t.tipoPersonaCodigo);
 };
 
 /**
  * Obtener contacto principal de una persona
  */
-export const getContactoPrincipal = (persona: PersonaV2): Contacto | null => {
+export const getContactoPrincipal = (persona: Persona): Contacto | null => {
   return persona.contactos?.find(c => c.esPrincipal && c.activo) ?? null;
 };
 
@@ -466,7 +466,7 @@ export const tipoRequiereCampos = (tipoPersona: TipoPersona): {
 /**
  * Formatear nombre completo
  */
-export const getNombreCompleto = (persona: PersonaV2 | CreatePersonaV2DTO): string => {
+export const getNombreCompleto = (persona: Persona | CreatePersonaDTO): string => {
   return `${persona.apellido}, ${persona.nombre}`.trim();
 };
 

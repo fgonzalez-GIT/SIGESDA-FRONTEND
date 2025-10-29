@@ -39,7 +39,7 @@ import { RolBadge } from '../RolBadge';
 import { ProyeccionCupo } from './ProyeccionCupo';
 import { personasApi } from '../../../../services/personasApi';
 import { inscribirMultiplesPersonas } from '../../../../services/participacionApi';
-import type { Persona } from '../../../../store/slices/personasSlice';
+import type { Persona } from '../../../../types/persona.types';
 
 interface InscripcionUnificadaModalProps {
   open: boolean;
@@ -98,7 +98,8 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
     setLoading(true);
     setError(null);
     try {
-      const response = await personasApi.getAll({ limit: 100 });
+      // En V2, la respuesta tiene estructura { success, data, pagination }
+      const response = await personasApi.getAll({ limit: 100, estado: 'ACTIVO' });
       setPersonas(response.data);
     } catch (err: any) {
       setError(err.message || 'Error al cargar personas');
@@ -254,6 +255,11 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
     }
   };
 
+  // Helper: obtener el primer tipo de una persona V2
+  const getPrimerTipo = (persona: Persona): string => {
+    return persona.tipos?.[0]?.tipoPersonaCodigo || 'NO_SOCIO';
+  };
+
   // Determinar color del avatar según el tipo de persona
   const getAvatarColor = (tipo?: string) => {
     const tipoUpper = tipo?.toUpperCase() || '';
@@ -350,7 +356,7 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
                   >
                     <ListItemButton onClick={() => addPerson(persona)}>
                       <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: getAvatarColor(persona.tipo) }}>
+                        <Avatar sx={{ bgcolor: getAvatarColor(getPrimerTipo(persona)) }}>
                           <PersonIcon />
                         </Avatar>
                       </ListItemAvatar>
@@ -363,7 +369,7 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
                             >
                               {persona.apellido}, {persona.nombre}
                             </Typography>
-                            <RolBadge tipo={persona.tipo || 'NO_SOCIO'} size="small" />
+                            <RolBadge tipo={getPrimerTipo(persona)} size="small" />
                           </Box>
                         }
                         secondary={
@@ -439,7 +445,7 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <RolBadge tipo={persona.tipo || 'NO_SOCIO'} size="small" />
+                        <RolBadge tipo={getPrimerTipo(persona)} size="small" />
                       </TableCell>
                       <TableCell>
                         <Typography variant="caption" color="text.secondary">

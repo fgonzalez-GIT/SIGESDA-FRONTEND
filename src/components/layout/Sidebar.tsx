@@ -59,28 +59,22 @@ const menuItems: MenuItem[] = [
     title: 'Personas',
     icon: <People />,
     path: '/personas',
-    color: '#2e7d32',
-  },
-  {
-    title: 'Personas V2',
-    icon: <PersonAdd />,
-    path: '/personas-v2',
     color: '#1565c0',
     subItems: [
       {
         title: 'Tipos de Persona',
         icon: <AdminPanelSettings fontSize="small" />,
-        path: '/personas-v2/admin/tipos-persona',
+        path: '/personas/admin/tipos-persona',
       },
       {
         title: 'Especialidades',
         icon: <School fontSize="small" />,
-        path: '/personas-v2/admin/especialidades',
+        path: '/personas/admin/especialidades',
       },
       {
         title: 'Tipos de Contacto',
         icon: <ContactPhone fontSize="small" />,
-        path: '/personas-v2/admin/tipos-contacto',
+        path: '/personas/admin/tipos-contacto',
       },
     ],
   },

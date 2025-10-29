@@ -31,21 +31,21 @@ import {
   Person as PersonIcon,
 } from '@mui/icons-material';
 import type {
-  CreatePersonaV2DTO,
-  PersonaV2,
+  CreatePersonaDTO,
+  Persona,
   CatalogosPersonas,
   CreatePersonaTipoDTO,
-} from '../../../types/personaV2.types';
+} from '../../../types/persona.types';
 import {
-  createPersonaV2Schema,
-  type CreatePersonaV2FormData,
-} from '../../../schemas/personaV2.schema';
+  createPersonaSchema,
+  type CreatePersonaFormData,
+} from '../../../schemas/persona.schema';
 
 interface PersonaFormV2Props {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: CreatePersonaV2DTO) => Promise<void>;
-  persona?: PersonaV2 | null;
+  onSubmit: (data: CreatePersonaDTO) => Promise<void>;
+  persona?: Persona | null;
   catalogos: CatalogosPersonas | null;
   loading?: boolean;
 }
@@ -85,8 +85,8 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
     watch,
     setValue,
     formState: { errors },
-  } = useForm<CreatePersonaV2FormData>({
-    resolver: zodResolver(createPersonaV2Schema),
+  } = useForm<CreatePersonaFormData>({
+    resolver: zodResolver(createPersonaSchema),
     defaultValues: {
       nombre: '',
       apellido: '',
@@ -180,10 +180,10 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
     }
   };
 
-  const handleFormSubmit = async (data: CreatePersonaV2FormData) => {
+  const handleFormSubmit = async (data: CreatePersonaFormData) => {
     try {
       setSubmitting(true);
-      await onSubmit(data as CreatePersonaV2DTO);
+      await onSubmit(data as CreatePersonaDTO);
       reset();
       setSelectedTipos([]);
       onClose();

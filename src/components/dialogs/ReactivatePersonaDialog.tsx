@@ -10,7 +10,7 @@ import {
   Box,
   Divider,
 } from '@mui/material';
-import { Persona } from '../../store/slices/personasSlice';
+import type { Persona } from '../../types/persona.types';
 
 interface ReactivatePersonaDialogProps {
   open: boolean;

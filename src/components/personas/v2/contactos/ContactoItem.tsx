@@ -18,7 +18,7 @@ import {
   StarBorder as StarBorderIcon,
   Launch as LaunchIcon,
 } from '@mui/icons-material';
-import type { Contacto } from '../../../../types/personaV2.types';
+import type { Contacto } from '../../../../types/persona.types';
 import { ContactoBadge } from './ContactoBadge';
 
 interface ContactoItemProps {

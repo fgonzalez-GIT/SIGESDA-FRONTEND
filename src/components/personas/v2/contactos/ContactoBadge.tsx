@@ -12,7 +12,7 @@ import {
   ContactPhone as ContactIcon,
   Help as HelpIcon,
 } from '@mui/icons-material';
-import type { TipoContacto, Contacto } from '../../../../types/personaV2.types';
+import type { TipoContacto, Contacto } from '../../../../types/persona.types';
 
 interface ContactoBadgeProps {
   tipoContacto: TipoContacto | Contacto | string;

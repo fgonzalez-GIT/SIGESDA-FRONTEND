@@ -19,13 +19,13 @@ import {
   PersonaFormV2,
   LoadingSkeleton,
 } from '../../components/personas/v2';
-import { usePersonasV2, useCatalogosPersonas } from '../../hooks/usePersonasV2';
-import personasV2Api from '../../services/personasV2Api';
+import { usePersonas, useCatalogosPersonas } from '../../hooks/usePersonas';
+import personasApi from '../../services/personasApi';
 import type {
-  PersonaV2,
-  PersonasV2QueryParams,
-  CreatePersonaV2DTO,
-} from '../../types/personaV2.types';
+  Persona,
+  PersonasQueryParams,
+  CreatePersonaDTO,
+} from '../../types/persona.types';
 import { useAppDispatch } from '../../hooks/redux';
 import { showNotification } from '../../store/slices/uiSlice';
 
@@ -33,7 +33,7 @@ import { showNotification } from '../../store/slices/uiSlice';
  * Página principal del Módulo Personas V2
  * Lista de personas con filtros, paginación y CRUD completo
  */
-const PersonasPageV2: React.FC = () => {
+const PersonasPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -41,7 +41,7 @@ const PersonasPageV2: React.FC = () => {
   const { catalogos, loading: catalogosLoading } = useCatalogosPersonas();
 
   // Estado de filtros
-  const [filters, setFilters] = useState<PersonasV2QueryParams>({
+  const [filters, setFilters] = useState<PersonasQueryParams>({
     page: 1,
     limit: 20,
     includeTipos: true,
@@ -50,13 +50,13 @@ const PersonasPageV2: React.FC = () => {
   });
 
   // Estado de personas
-  const { personas, pagination, loading, fetchPersonas, refetch } = usePersonasV2(filters);
+  const { personas, pagination, loading, fetchPersonas, refetch } = usePersonas(filters);
 
   // Estados de UI
   const [formOpen, setFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedPersona, setSelectedPersona] = useState<PersonaV2 | null>(null);
-  const [personaToDelete, setPersonaToDelete] = useState<PersonaV2 | null>(null);
+  const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
+  const [personaToDelete, setPersonaToDelete] = useState<Persona | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   // Recargar personas cuando cambian los filtros
@@ -65,7 +65,7 @@ const PersonasPageV2: React.FC = () => {
   }, [filters]);
 
   // Handlers de filtros
-  const handleFilterChange = (newFilters: PersonasV2QueryParams) => {
+  const handleFilterChange = (newFilters: PersonasQueryParams) => {
     setFilters(newFilters);
   };
 
@@ -89,16 +89,16 @@ const PersonasPageV2: React.FC = () => {
     setFormOpen(true);
   };
 
-  const handleViewClick = (persona: PersonaV2) => {
+  const handleViewClick = (persona: Persona) => {
     navigate(`/personas-v2/${persona.id}`);
   };
 
-  const handleEditClick = (persona: PersonaV2) => {
+  const handleEditClick = (persona: Persona) => {
     setSelectedPersona(persona);
     setFormOpen(true);
   };
 
-  const handleDeleteClick = (persona: PersonaV2) => {
+  const handleDeleteClick = (persona: Persona) => {
     setPersonaToDelete(persona);
     setDeleteDialogOpen(true);
   };
@@ -108,11 +108,11 @@ const PersonasPageV2: React.FC = () => {
     setSelectedPersona(null);
   };
 
-  const handleFormSubmit = async (data: CreatePersonaV2DTO) => {
+  const handleFormSubmit = async (data: CreatePersonaDTO) => {
     try {
       if (selectedPersona) {
         // Actualizar persona existente
-        await personasV2Api.update(selectedPersona.id, data);
+        await personasApi.update(selectedPersona.id, data);
         dispatch(
           showNotification({
             message: 'Persona actualizada exitosamente',
@@ -121,7 +121,7 @@ const PersonasPageV2: React.FC = () => {
         );
       } else {
         // Crear nueva persona
-        await personasV2Api.create(data);
+        await personasApi.create(data);
         dispatch(
           showNotification({
             message: 'Persona creada exitosamente',
@@ -161,7 +161,7 @@ const PersonasPageV2: React.FC = () => {
 
     try {
       setDeleting(true);
-      await personasV2Api.delete(personaToDelete.id);
+      await personasApi.delete(personaToDelete.id);
 
       dispatch(
         showNotification({
@@ -298,4 +298,4 @@ const PersonasPageV2: React.FC = () => {
   );
 };
 
-export default PersonasPageV2;
+export default PersonasPage;

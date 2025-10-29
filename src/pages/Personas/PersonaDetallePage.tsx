@@ -21,7 +21,7 @@ import {
   FamilyRestroom as FamilyIcon,
 } from '@mui/icons-material';
 import { PersonaHeader, ContactosTab } from '../../components/personas/v2';
-import { usePersonaV2, useCatalogosPersonas } from '../../hooks/usePersonasV2';
+import { usePersona, useCatalogosPersonas } from '../../hooks/usePersonas';
 import { TipoItem } from '../../components/personas/v2/tipos';
 
 interface TabPanelProps {
@@ -50,7 +50,7 @@ function TabPanel(props: TabPanelProps) {
  * Página de detalle de una persona
  * Incluye tabs para: Datos Generales, Tipos, Contactos, Familiares
  */
-const PersonaDetallePageV2: React.FC = () => {
+const PersonaDetallePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const personaId = id ? parseInt(id) : undefined;
@@ -58,7 +58,7 @@ const PersonaDetallePageV2: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
 
   // Cargar persona y catálogos
-  const { persona, loading, error } = usePersonaV2(personaId);
+  const { persona, loading, error } = usePersona(personaId);
   const { catalogos, loading: catalogosLoading } = useCatalogosPersonas();
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -244,4 +244,4 @@ const PersonaDetallePageV2: React.FC = () => {
   );
 };
 
-export default PersonaDetallePageV2;
+export default PersonaDetallePage;

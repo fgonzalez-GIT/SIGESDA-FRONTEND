@@ -21,8 +21,8 @@ import {
 } from '@mui/icons-material';
 import { ContactoItem } from './ContactoItem';
 import { AgregarContactoModal } from './AgregarContactoModal';
-import { usePersonaContactos } from '../../../../hooks/usePersonasV2';
-import type { Contacto, CreateContactoDTO, CatalogosPersonas } from '../../../../types/personaV2.types';
+import { usePersonaContactos } from '../../../../hooks/usePersonas';
+import type { Contacto, CreateContactoDTO, CatalogosPersonas } from '../../../../types/persona.types';
 import { useAppDispatch } from '../../../../hooks/redux';
 import { showNotification } from '../../../../store/slices/uiSlice';
 

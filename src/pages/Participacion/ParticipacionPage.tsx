@@ -71,7 +71,7 @@ interface Participacion {
 }
 
 // Usar tipos de Redux para Persona
-import type { Persona as PersonaRedux } from '../../store/slices/personasSlice';
+import type { Persona } from '../../types/persona.types';
 import type { Actividad } from '../../types/actividad.types';
 
 const ParticipacionPage: React.FC = () => {
@@ -113,7 +113,7 @@ const ParticipacionPage: React.FC = () => {
   // Cargar datos reales desde APIs
   useEffect(() => {
     // Cargar personas desde Redux
-    dispatch(fetchPersonas());
+    dispatch(fetchPersonas({}));
   }, [dispatch]);
 
   // Cargar participaciones desde la API

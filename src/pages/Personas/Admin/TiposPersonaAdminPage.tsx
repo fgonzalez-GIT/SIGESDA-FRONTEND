@@ -18,15 +18,15 @@ import {
   type CatalogoColumn,
   type CatalogoField,
 } from '../../../components/personas/v2/admin';
-import { useCatalogosPersonas } from '../../../hooks/usePersonasV2';
-import personasV2Api from '../../../services/personasV2Api';
+import { useCatalogosPersonas } from '../../../hooks/usePersonas';
+import personasApi from '../../../services/personasApi';
 import {
   createTipoPersonaSchema,
   updateTipoPersonaSchema,
   type CreateTipoPersonaFormData,
   type UpdateTipoPersonaFormData,
-} from '../../../schemas/personaV2.schema';
-import type { TipoPersona } from '../../../types/personaV2.types';
+} from '../../../schemas/persona.schema';
+import type { TipoPersona } from '../../../types/persona.types';
 import { useAppDispatch } from '../../../hooks/redux';
 import { showNotification } from '../../../store/slices/uiSlice';
 
@@ -193,7 +193,7 @@ const TiposPersonaAdminPage: React.FC = () => {
 
       if (selectedTipo) {
         // Actualizar tipo existente
-        await personasV2Api.updateTipoPersona(
+        await personasApi.updateTipoPersona(
           selectedTipo.id,
           data as UpdateTipoPersonaFormData
         );
@@ -205,7 +205,7 @@ const TiposPersonaAdminPage: React.FC = () => {
         );
       } else {
         // Crear nuevo tipo
-        await personasV2Api.createTipoPersona(data as CreateTipoPersonaFormData);
+        await personasApi.createTipoPersona(data as CreateTipoPersonaFormData);
         dispatch(
           showNotification({
             message: 'Tipo de persona creado exitosamente',
@@ -245,7 +245,7 @@ const TiposPersonaAdminPage: React.FC = () => {
 
     try {
       setSubmitting(true);
-      await personasV2Api.deleteTipoPersona(tipoToDelete.id);
+      await personasApi.deleteTipoPersona(tipoToDelete.id);
 
       dispatch(
         showNotification({

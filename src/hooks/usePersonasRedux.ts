@@ -1,22 +1,22 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from './redux';
 import {
-  fetchCatalogosPersonasV2,
-  fetchPersonasV2,
-  fetchPersonaV2ById,
-  createPersonaV2,
-  updatePersonaV2,
-  deletePersonaV2,
+  fetchCatalogosPersonas,
+  fetchPersonas,
+  fetchPersonaById,
+  createPersona,
+  updatePersona,
+  deletePersona,
   setFilters,
   resetFilters,
   setSelectedPersona,
   clearError,
-} from '../store/slices/personasV2Slice';
+} from '../store/slices/personasSlice';
 import type {
-  PersonasV2QueryParams,
-  CreatePersonaV2DTO,
-  UpdatePersonaV2DTO,
-} from '../types/personaV2.types';
+  PersonasQueryParams,
+  CreatePersonaDTO,
+  UpdatePersonaDTO,
+} from '../types/persona.types';
 
 /**
  * Hook para gestionar Personas V2 usando Redux
@@ -29,10 +29,10 @@ import type {
  *
  * @example
  * ```tsx
- * const { personas, loading, pagination, filters, updateFilters } = usePersonasV2WithRedux();
+ * const { personas, loading, pagination, filters, updateFilters } = usePersonasWithRedux();
  * ```
  */
-export const usePersonasV2WithRedux = () => {
+export const usePersonasWithRedux = () => {
   const dispatch = useAppDispatch();
   const {
     personas,
@@ -46,10 +46,10 @@ export const usePersonasV2WithRedux = () => {
 
   // Cargar personas automáticamente cuando cambian los filtros
   useEffect(() => {
-    dispatch(fetchPersonasV2(filters));
+    dispatch(fetchPersonas(filters));
   }, [dispatch, JSON.stringify(filters)]);
 
-  const updateFilters = (newFilters: PersonasV2QueryParams) => {
+  const updateFilters = (newFilters: PersonasQueryParams) => {
     dispatch(setFilters(newFilters));
   };
 
@@ -58,35 +58,35 @@ export const usePersonasV2WithRedux = () => {
   };
 
   const selectPersona = (id: number) => {
-    dispatch(fetchPersonaV2ById(id));
+    dispatch(fetchPersonaById(id));
   };
 
-  const createPersona = async (data: CreatePersonaV2DTO) => {
-    const result = await dispatch(createPersonaV2(data));
-    if (createPersonaV2.fulfilled.match(result)) {
+  const createPersona = async (data: CreatePersonaDTO) => {
+    const result = await dispatch(createPersona(data));
+    if (createPersona.fulfilled.match(result)) {
       return result.payload;
     }
     throw new Error(result.payload as string);
   };
 
-  const updatePersona = async (id: number, data: UpdatePersonaV2DTO) => {
-    const result = await dispatch(updatePersonaV2({ id, data }));
-    if (updatePersonaV2.fulfilled.match(result)) {
+  const updatePersona = async (id: number, data: UpdatePersonaDTO) => {
+    const result = await dispatch(updatePersona({ id, data }));
+    if (updatePersona.fulfilled.match(result)) {
       return result.payload;
     }
     throw new Error(result.payload as string);
   };
 
   const deletePersona = async (id: number) => {
-    const result = await dispatch(deletePersonaV2(id));
-    if (deletePersonaV2.fulfilled.match(result)) {
+    const result = await dispatch(deletePersona(id));
+    if (deletePersona.fulfilled.match(result)) {
       return result.payload;
     }
     throw new Error(result.payload as string);
   };
 
   const refetch = () => {
-    dispatch(fetchPersonasV2(filters));
+    dispatch(fetchPersonas(filters));
   };
 
   const clearErrors = () => {
@@ -120,10 +120,10 @@ export const usePersonasV2WithRedux = () => {
  *
  * @example
  * ```tsx
- * const { catalogos, loading, error } = useCatalogosPersonasV2WithRedux();
+ * const { catalogos, loading, error } = useCatalogosPersonasWithRedux();
  * ```
  */
-export const useCatalogosPersonasV2WithRedux = () => {
+export const useCatalogosPersonasWithRedux = () => {
   const dispatch = useAppDispatch();
   const { catalogos, catalogosLoading, catalogosError } = useAppSelector(
     (state) => state.personasV2
@@ -132,12 +132,12 @@ export const useCatalogosPersonasV2WithRedux = () => {
   // Cargar catálogos automáticamente al montar el componente
   useEffect(() => {
     if (!catalogos) {
-      dispatch(fetchCatalogosPersonasV2());
+      dispatch(fetchCatalogosPersonas());
     }
   }, [dispatch, catalogos]);
 
   const refetch = () => {
-    dispatch(fetchCatalogosPersonasV2());
+    dispatch(fetchCatalogosPersonas());
   };
 
   return {
@@ -153,10 +153,10 @@ export const useCatalogosPersonasV2WithRedux = () => {
  *
  * @example
  * ```tsx
- * const { persona, loading, error, loadPersona } = usePersonaV2WithRedux(123);
+ * const { persona, loading, error, loadPersona } = usePersonaWithRedux(123);
  * ```
  */
-export const usePersonaV2WithRedux = (personaId?: number) => {
+export const usePersonaWithRedux = (personaId?: number) => {
   const dispatch = useAppDispatch();
   const { selectedPersona, selectedPersonaLoading, error } = useAppSelector(
     (state) => state.personasV2
@@ -164,12 +164,12 @@ export const usePersonaV2WithRedux = (personaId?: number) => {
 
   useEffect(() => {
     if (personaId) {
-      dispatch(fetchPersonaV2ById(personaId));
+      dispatch(fetchPersonaById(personaId));
     }
   }, [dispatch, personaId]);
 
   const loadPersona = (id: number) => {
-    dispatch(fetchPersonaV2ById(id));
+    dispatch(fetchPersonaById(id));
   };
 
   const clearSelection = () => {

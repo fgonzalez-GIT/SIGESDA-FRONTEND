@@ -113,7 +113,7 @@ const FamiliaresPage: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchPersonas());
+    dispatch(fetchPersonas({}));
 
     if (viewMode === 'table') {
       // FASE 2: Cargar relaciones completas con paginación

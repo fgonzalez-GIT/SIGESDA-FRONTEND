@@ -28,11 +28,11 @@ import type {
   Contacto,
   CreateContactoDTO,
   CatalogosPersonas,
-} from '../../../../types/personaV2.types';
+} from '../../../../types/persona.types';
 import {
   createContactoSchema,
   type CreateContactoFormData,
-} from '../../../../schemas/personaV2.schema';
+} from '../../../../schemas/persona.schema';
 
 interface AgregarContactoModalProps {
   open: boolean;
