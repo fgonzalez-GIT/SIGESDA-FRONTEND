@@ -9,6 +9,7 @@ import {
   CatalogosResponse,
   TipoPersona,
   EspecialidadDocente,
+  CategoriaSocio,
   TipoContacto,
   PersonaTipo,
   CreatePersonaTipoDTO,
@@ -72,6 +73,15 @@ export const personasApi = {
     return response.data;
   },
 
+  /**
+   * Obtener catálogo de categorías de socio
+   * GET /api/catalogos/categorias-socios
+   */
+  getCategoriasSocios: async (): Promise<ApiResponse<CategoriaSocio[]>> => {
+    const response = await api.get('/catalogos/categorias-socios');
+    return response.data;
+  },
+
   // ============================================================================
   // PERSONAS - CRUD
   // ============================================================================
@@ -132,6 +142,51 @@ export const personasApi = {
     estado: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO'
   ): Promise<ApiResponse<Persona>> => {
     const response = await api.patch(`/personas/${id}/estado`, { estado });
+    return response.data;
+  },
+
+  // ============================================================================
+  // BÚSQUEDA Y FILTROS ESPECIALIZADOS
+  // ============================================================================
+
+  /**
+   * Búsqueda de personas por texto
+   * GET /api/personas/search?q=texto
+   */
+  search: async (
+    query: string,
+    params?: Omit<PersonasQueryParams, 'search'>
+  ): Promise<PersonasPaginatedResponse> => {
+    const response = await api.get('/personas/search', {
+      params: { q: query, ...params }
+    });
+    return response.data;
+  },
+
+  /**
+   * Obtener solo socios activos
+   * GET /api/personas/socios
+   */
+  getSocios: async (params?: PersonasQueryParams): Promise<PersonasPaginatedResponse> => {
+    const response = await api.get('/personas/socios', { params });
+    return response.data;
+  },
+
+  /**
+   * Obtener solo docentes activos
+   * GET /api/personas/docentes
+   */
+  getDocentes: async (params?: PersonasQueryParams): Promise<PersonasPaginatedResponse> => {
+    const response = await api.get('/personas/docentes', { params });
+    return response.data;
+  },
+
+  /**
+   * Obtener solo proveedores activos
+   * GET /api/personas/proveedores
+   */
+  getProveedores: async (params?: PersonasQueryParams): Promise<PersonasPaginatedResponse> => {
+    const response = await api.get('/personas/proveedores', { params });
     return response.data;
   },
 

@@ -9,10 +9,11 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const telefonoRegex = /^[\d\s\-\+\(\)]+$/;
 
 export const createContactoSchema = z.object({
-  tipoContactoId: z.number().int().positive(),
-  valor: z.string().min(1).max(200).trim(),
+  tipoContactoId: z.number().int().positive('Tipo de contacto requerido'),
+  valor: z.string().min(1, 'Valor requerido').max(200).trim(),
   descripcion: z.string().max(200).optional().or(z.literal('')),
   esPrincipal: z.boolean().default(false),
+  observaciones: z.string().max(200).optional().or(z.literal('')),
 });
 
 export const updateContactoSchema = z.object({
@@ -21,6 +22,7 @@ export const updateContactoSchema = z.object({
   descripcion: z.string().max(200).optional().or(z.literal('')),
   esPrincipal: z.boolean().optional(),
   activo: z.boolean().optional(),
+  observaciones: z.string().max(200).optional().or(z.literal('')),
 });
 
 const personaTipoBaseSchema = z.object({
@@ -35,14 +37,19 @@ export const createTipoSocioSchema = personaTipoBaseSchema.extend({
 
 export const createTipoDocenteSchema = personaTipoBaseSchema.extend({
   tipoPersonaCodigo: z.literal('DOCENTE'),
-  especialidadId: z.number().int().positive(),
-  honorariosPorHora: z.number().min(0).max(1000000).multipleOf(0.01),
+  especialidadId: z.number().int().positive('Especialidad requerida para docente'),
+  honorariosPorHora: z.number()
+    .min(0, 'Honorarios no pueden ser negativos')
+    .max(1000000, 'Honorarios demasiado altos')
+    .multipleOf(0.01, 'Debe tener máximo 2 decimales'),
 });
 
 export const createTipoProveedorSchema = personaTipoBaseSchema.extend({
   tipoPersonaCodigo: z.literal('PROVEEDOR'),
-  cuit: z.string().regex(cuitRegex).length(11),
-  razonSocial: z.string().min(3).max(200).trim(),
+  cuit: z.string()
+    .length(11, 'CUIT debe tener exactamente 11 dígitos')
+    .regex(cuitRegex, 'CUIT debe contener solo números'),
+  razonSocial: z.string().min(3, 'Razón social muy corta').max(200).trim(),
 });
 
 export const createTipoNoSocioSchema = personaTipoBaseSchema.extend({

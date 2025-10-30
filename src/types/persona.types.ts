@@ -122,6 +122,7 @@ export interface Contacto {
   descripcion?: string;
   esPrincipal: boolean;        // Solo uno puede ser principal
   activo: boolean;
+  observaciones?: string;      // Campo adicional del backend
   createdAt?: string;
   updatedAt?: string;
 
@@ -195,6 +196,7 @@ export interface CreateContactoDTO {
   valor: string;
   descripcion?: string;
   esPrincipal?: boolean;
+  observaciones?: string;      // Campo adicional del backend
 }
 
 /**
@@ -258,6 +260,7 @@ export interface UpdateContactoDTO {
   descripcion?: string;
   esPrincipal?: boolean;
   activo?: boolean;
+  observaciones?: string;      // Campo adicional del backend
 }
 
 // ============================================================================
@@ -482,4 +485,62 @@ export const isValidCuit = (cuit: string): boolean => {
  */
 export const isValidDni = (dni: string): boolean => {
   return /^\d{7,8}$/.test(dni);
+};
+
+/**
+ * Obtener contactos por tipo
+ */
+export const getContactosPorTipo = (
+  persona: Persona,
+  tipoContactoCodigo: string
+): Contacto[] => {
+  if (!persona.contactos) return [];
+  return persona.contactos.filter(
+    c => c.tipoContacto?.codigo === tipoContactoCodigo && c.activo
+  );
+};
+
+/**
+ * Obtener contacto principal por tipo
+ */
+export const getContactoPrincipalPorTipo = (
+  persona: Persona,
+  tipoContactoCodigo: string
+): Contacto | null => {
+  if (!persona.contactos) return null;
+  return persona.contactos.find(
+    c => c.tipoContacto?.codigo === tipoContactoCodigo && c.esPrincipal && c.activo
+  ) ?? null;
+};
+
+/**
+ * Obtener email principal de contactos
+ */
+export const getEmailPrincipal = (persona: Persona): string | null => {
+  const contacto = getContactoPrincipalPorTipo(persona, 'EMAIL');
+  return contacto?.valor ?? null;
+};
+
+/**
+ * Obtener teléfono principal de contactos
+ */
+export const getTelefonoPrincipal = (persona: Persona): string | null => {
+  const contacto = getContactoPrincipalPorTipo(persona, 'TELEFONO');
+  return contacto?.valor ?? null;
+};
+
+/**
+ * Obtener celular principal de contactos
+ */
+export const getCelularPrincipal = (persona: Persona): string | null => {
+  const contacto = getContactoPrincipalPorTipo(persona, 'CELULAR');
+  return contacto?.valor ?? null;
+};
+
+/**
+ * Obtener WhatsApp principal de contactos
+ */
+export const getWhatsAppPrincipal = (persona: Persona): string | null => {
+  const contacto = getContactoPrincipalPorTipo(persona, 'WHATSAPP');
+  return contacto?.valor ?? null;
 };
