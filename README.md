@@ -1,2 +1,0 @@
-# SIGESDA-FRONTEND
-Hola FrontEnd
