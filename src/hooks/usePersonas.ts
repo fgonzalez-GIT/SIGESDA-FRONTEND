@@ -137,7 +137,13 @@ export const usePersonas = (initialParams?: PersonasQueryParams): UsePersonasRes
     try {
       setLoading(true);
       setError(null);
-      const mergedParams = { ...currentParams, ...params };
+      // IMPORTANTE: Siempre incluir tipos y relaciones por defecto
+      const mergedParams = {
+        includeTipos: true,          // ✅ CRÍTICO para cargar array tipos[]
+        includeContactos: false,
+        ...currentParams,
+        ...params
+      };
       setCurrentParams(mergedParams);
 
       const response = await personasApi.getAll(mergedParams);

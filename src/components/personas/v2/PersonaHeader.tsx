@@ -140,24 +140,34 @@ export const PersonaHeader: React.FC<PersonaHeaderProps> = ({
         {showDates && (
           <Box>
             <Typography variant="subtitle2" gutterBottom color="text.secondary">
-              Fechas
+              Fechas por Tipo
             </Typography>
-            <Stack direction="row" spacing={3}>
-              {persona.fechaIngreso && (
-                <Box display="flex" alignItems="center" gap={1}>
+            <Stack spacing={1.5}>
+              {/* Fechas de ingreso por tipo */}
+              {persona.tipos?.filter(t => t.activo && t.fechaAsignacion).map(tipo => (
+                <Box key={`ingreso-${tipo.id}`} display="flex" alignItems="center" gap={1}>
                   <CalendarIcon fontSize="small" color="action" />
                   <Typography variant="body2">
-                    Ingreso: <strong>{formatDate(persona.fechaIngreso)}</strong>
+                    Ingreso {tipo.tipoPersona?.nombre || tipo.tipoPersonaCodigo}:{' '}
+                    <strong>{formatDate(tipo.fechaAsignacion)}</strong>
                   </Typography>
                 </Box>
-              )}
-              {persona.fechaBaja && (
-                <Box display="flex" alignItems="center" gap={1}>
+              ))}
+              {/* Fechas de baja por tipo */}
+              {persona.tipos?.filter(t => !t.activo && t.updatedAt).map(tipo => (
+                <Box key={`baja-${tipo.id}`} display="flex" alignItems="center" gap={1}>
                   <CalendarIcon fontSize="small" color="error" />
                   <Typography variant="body2" color="error">
-                    Baja: <strong>{formatDate(persona.fechaBaja)}</strong>
+                    Baja {tipo.tipoPersona?.nombre || tipo.tipoPersonaCodigo}:{' '}
+                    <strong>{formatDate(tipo.updatedAt)}</strong>
                   </Typography>
                 </Box>
+              ))}
+              {/* Mensaje si no hay fechas */}
+              {(!persona.tipos || persona.tipos.length === 0) && (
+                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                  Sin tipos asignados
+                </Typography>
               )}
             </Stack>
           </Box>
@@ -177,16 +187,17 @@ export const PersonaHeader: React.FC<PersonaHeaderProps> = ({
           </Box>
         )}
 
-        {persona.motivoBaja && (
-          <Box>
+        {/* Mostrar observaciones de tipos dados de baja */}
+        {persona.tipos?.filter(t => !t.activo && t.observaciones).map(tipo => (
+          <Box key={`obs-baja-${tipo.id}`}>
             <Typography variant="subtitle2" gutterBottom color="error">
-              Motivo de Baja
+              Observaciones de Baja - {tipo.tipoPersona?.nombre || tipo.tipoPersonaCodigo}
             </Typography>
             <Typography variant="body2" color="error">
-              {persona.motivoBaja}
+              {tipo.observaciones}
             </Typography>
           </Box>
-        )}
+        ))}
       </Stack>
     </Paper>
   );

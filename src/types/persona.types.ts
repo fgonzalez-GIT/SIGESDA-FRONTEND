@@ -147,9 +147,6 @@ export interface Persona {
 
   // Estado
   estado: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO';
-  fechaIngreso?: string;       // ISO 8601
-  fechaBaja?: string;
-  motivoBaja?: string;
   observaciones?: string;
 
   // Metadatos
@@ -543,4 +540,82 @@ export const getCelularPrincipal = (persona: Persona): string | null => {
 export const getWhatsAppPrincipal = (persona: Persona): string | null => {
   const contacto = getContactoPrincipalPorTipo(persona, 'WHATSAPP');
   return contacto?.valor ?? null;
+};
+
+/**
+ * Obtener datos de tipo SOCIO de una persona
+ */
+export const getTipoSocio = (persona: Persona): PersonaTipo | null => {
+  return persona.tipos?.find(
+    t => t.tipoPersonaCodigo === 'SOCIO' && t.activo
+  ) ?? null;
+};
+
+/**
+ * Obtener datos de tipo DOCENTE de una persona
+ */
+export const getTipoDocente = (persona: Persona): PersonaTipo | null => {
+  return persona.tipos?.find(
+    t => t.tipoPersonaCodigo === 'DOCENTE' && t.activo
+  ) ?? null;
+};
+
+/**
+ * Obtener datos de tipo PROVEEDOR de una persona
+ */
+export const getTipoProveedor = (persona: Persona): PersonaTipo | null => {
+  return persona.tipos?.find(
+    t => t.tipoPersonaCodigo === 'PROVEEDOR' && t.activo
+  ) ?? null;
+};
+
+/**
+ * Obtener número de socio de una persona
+ * Accede al campo numeroSocio dentro del array tipos[]
+ */
+export const getNumeroSocio = (persona: Persona): number | null => {
+  const tipoSocio = getTipoSocio(persona);
+  return tipoSocio?.numeroSocio ?? null;
+};
+
+/**
+ * Obtener categoría de socio de una persona
+ * Accede a la relación categoria dentro del tipo SOCIO
+ */
+export const getCategoriaSocio = (persona: Persona): CategoriaSocio | null => {
+  const tipoSocio = getTipoSocio(persona);
+  return tipoSocio?.categoria ?? null;
+};
+
+/**
+ * Obtener especialidad de docente de una persona
+ * Accede a la relación especialidad dentro del tipo DOCENTE
+ */
+export const getEspecialidadDocente = (persona: Persona): EspecialidadDocente | null => {
+  const tipoDocente = getTipoDocente(persona);
+  return tipoDocente?.especialidad ?? null;
+};
+
+/**
+ * Obtener honorarios por hora de un docente
+ */
+export const getHonorariosPorHora = (persona: Persona): number | null => {
+  const tipoDocente = getTipoDocente(persona);
+  return tipoDocente?.honorariosPorHora ?? null;
+};
+
+/**
+ * Obtener CUIT de un proveedor
+ */
+export const getCuitProveedor = (persona: Persona): string | null => {
+  const tipoProveedor = getTipoProveedor(persona);
+  return tipoProveedor?.cuit ?? null;
+};
+
+/**
+ * Obtener razón social de un proveedor
+ */
+export const getRazonSocialProveedor = (persona: Persona): string | null => {
+  const tipoProveedor = getTipoProveedor(persona);
+  return tipoProveedor?.razonSocial ?? null;
 };

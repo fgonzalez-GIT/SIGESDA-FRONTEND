@@ -223,7 +223,27 @@ export const PersonasTable: React.FC<PersonasTableProps> = ({
                   {/* Fecha de ingreso */}
                   <TableCell>
                     <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>
-                      {formatDate(persona.fechaIngreso)}
+                      {(() => {
+                        const tiposActivos = persona.tipos?.filter(t => t.activo && t.fechaAsignacion);
+                        if (!tiposActivos || tiposActivos.length === 0) return '-';
+
+                        // Mostrar todas las fechas por tipo
+                        return (
+                          <Stack spacing={0.5}>
+                            {tiposActivos.map((tipo, index) => (
+                              <Typography
+                                key={tipo.id || index}
+                                variant="caption"
+                                display="block"
+                                sx={{ whiteSpace: 'nowrap' }}
+                              >
+                                <strong>{tipo.tipoPersona?.nombre || tipo.tipoPersonaCodigo}:</strong>{' '}
+                                {formatDate(tipo.fechaAsignacion)}
+                              </Typography>
+                            ))}
+                          </Stack>
+                        );
+                      })()}
                     </Typography>
                   </TableCell>
 

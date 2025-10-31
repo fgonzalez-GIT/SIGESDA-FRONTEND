@@ -38,12 +38,22 @@ export const personasApi = {
   // ============================================================================
 
   /**
-   * Obtener todos los catálogos de una vez (optimizado)
-   * GET /api/catalogos/personas/todos
+   * Obtener todos los catálogos de una vez
+   * NOTA: Los endpoints de catálogos de personas aún no están implementados en el backend
+   * Retorna datos vacíos hasta que se implementen
    */
   getCatalogos: async (): Promise<CatalogosResponse> => {
-    const response = await api.get('/catalogos/personas/todos');
-    return response.data;
+    // TODO: Implementar endpoints de catálogos en el backend
+    // Por ahora retornamos estructura vacía para que la app no falle
+    return {
+      success: true,
+      data: {
+        tiposPersona: [],
+        especialidadesDocentes: [],
+        categoriasSocio: [],
+        tiposContacto: [],
+      },
+    };
   },
 
   /**
@@ -75,10 +85,10 @@ export const personasApi = {
 
   /**
    * Obtener catálogo de categorías de socio
-   * GET /api/catalogos/categorias-socios
+   * GET /api/categorias-socios
    */
   getCategoriasSocios: async (): Promise<ApiResponse<CategoriaSocio[]>> => {
-    const response = await api.get('/catalogos/categorias-socios');
+    const response = await api.get('/categorias-socios');
     return response.data;
   },
 

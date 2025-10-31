@@ -22,7 +22,16 @@ interface DocenteItemProps {
       id: number;
       nombre: string;
       apellido: string;
-      especialidad?: string;
+      tipos?: Array<{
+        tipoPersonaCodigo: string;
+        activo: boolean;
+        especialidadId?: number;
+        especialidad?: {
+          id: number;
+          nombre: string;
+          codigo: string;
+        };
+      }>;
     };
     roles_docentes?: {
       id: number;
@@ -99,11 +108,16 @@ export const DocenteItem: React.FC<DocenteItemProps> = React.memo(({ docente, on
         }
         secondary={
           <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
-            {docente.personas?.especialidad && (
-              <Typography variant="caption" display="block" color="text.secondary">
-                Especialidad: {docente.personas.especialidad}
-              </Typography>
-            )}
+            {(() => {
+              const tipoDocente = docente.personas?.tipos?.find(
+                t => t.tipoPersonaCodigo === 'DOCENTE' && t.activo
+              );
+              return tipoDocente?.especialidad && (
+                <Typography variant="caption" display="block" color="text.secondary">
+                  Especialidad: {tipoDocente.especialidad.nombre}
+                </Typography>
+              );
+            })()}
             {docente.observaciones && (
               <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
                 Obs: {docente.observaciones}
