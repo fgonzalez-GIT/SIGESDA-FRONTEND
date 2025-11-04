@@ -177,3 +177,19 @@ Backend must be running on port 8000 for the proxy to work correctly.
 - Frontend runs on port **3003**
 - Backend expected on port **8000**
 - API calls to `/api/*` are proxied to backend
+
+## Known Issues
+
+### Backend API Compatibility
+Some frontend API calls may fail if backend endpoints are not implemented:
+- `/api/catalogos/personas/todos` (404) - The `usePersonas` hook has fallback logic with default values
+- Some endpoints may return 500 errors if backend database schema is incomplete
+
+The application is designed to handle these gracefully with fallback data and error handling.
+
+### MUI Grid Migration
+The codebase uses deprecated MUI Grid v1 API (`item`, `xs`, `sm` props). MUI v7 requires Grid2 component. When updating Grid components:
+- Remove `item` prop (no longer needed)
+- Replace `xs`, `sm`, `md`, etc. with `size={{ xs: 12, sm: 6 }}` syntax
+- Or import `Grid2` instead of `Grid` from `@mui/material`
+- See: https://mui.com/material-ui/migration/upgrade-to-grid-v2/
