@@ -24,6 +24,7 @@ import { PersonaHeader, ContactosTab } from '../../components/personas/v2';
 import { usePersona, useCatalogosPersonas } from '../../hooks/usePersonas';
 import { TipoItem } from '../../components/personas/v2/tipos';
 import { AsignarTipoModal } from '../../components/personas/v2/tipos/AsignarTipoModal';
+import { FamiliaresTab } from '../../components/personas/v2/familiares';
 import { personasApi } from '../../services/personasApi';
 import { handleApiError } from '../../utils/errorHandling';
 import { useAppDispatch } from '../../hooks/useRedux';
@@ -298,12 +299,11 @@ const PersonaDetallePage: React.FC = () => {
         {/* Tab Panel: Familiares */}
         <TabPanel value={tabValue} index={3}>
           <Box p={2}>
-            <Typography variant="h6" gutterBottom>
-              Familiares
-            </Typography>
-            <Alert severity="info" sx={{ mt: 2 }}>
-              Integración con módulo de familiares en desarrollo
-            </Alert>
+            <FamiliaresTab
+              personaId={persona.id}
+              personaNombre={persona.nombre}
+              personaApellido={persona.apellido}
+            />
           </Box>
         </TabPanel>
       </Paper>

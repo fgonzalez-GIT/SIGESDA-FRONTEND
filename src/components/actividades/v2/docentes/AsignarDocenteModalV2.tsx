@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import debounce from 'lodash/debounce';
 import {
   Dialog,
   DialogTitle,
@@ -64,11 +65,25 @@ export const AsignarDocenteModalV2: React.FC<AsignarDocenteModalV2Props> = ({
   const [docentes, setDocentes] = useState<DocenteDisponible[]>([]);
   const [roles, setRoles] = useState<RolDocente[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
   // Selección
   const [docenteSeleccionado, setDocenteSeleccionado] = useState<DocenteDisponible | null>(null);
   const [rolSeleccionado, setRolSeleccionado] = useState<number | null>(null);
   const [observaciones, setObservaciones] = useState('');
+
+  // Debounced search (300ms delay)
+  const debouncedSetSearch = useMemo(
+    () => debounce((value: string) => setDebouncedSearchTerm(value), 300),
+    []
+  );
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSetSearch.cancel();
+    };
+  }, [debouncedSetSearch]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -135,9 +150,9 @@ export const AsignarDocenteModalV2: React.FC<AsignarDocenteModalV2Props> = ({
     }
   };
 
-  // Filtrar docentes por búsqueda
+  // Filtrar docentes por búsqueda (usando debounced term)
   const docentesFiltrados = docentes.filter((docente) => {
-    const searchLower = searchTerm.toLowerCase();
+    const searchLower = debouncedSearchTerm.toLowerCase();
     return (
       docente.nombre.toLowerCase().includes(searchLower) ||
       docente.apellido.toLowerCase().includes(searchLower) ||
@@ -155,7 +170,11 @@ export const AsignarDocenteModalV2: React.FC<AsignarDocenteModalV2Props> = ({
         fullWidth
         placeholder="Buscar por nombre, apellido o email..."
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
+        onChange={(e) => {
+          const value = e.target.value;
+          setSearchTerm(value);
+          debouncedSetSearch(value);
+        }}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">

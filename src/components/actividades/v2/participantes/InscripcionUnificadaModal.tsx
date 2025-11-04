@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import debounce from 'lodash/debounce';
 import {
   Dialog,
   DialogTitle,
@@ -75,6 +76,7 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [selectedPeople, setSelectedPeople] = useState<Persona[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [inscribiendo, setInscribiendo] = useState(false);
@@ -82,6 +84,22 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Debounced search (300ms delay)
+  const debouncedSetSearch = useMemo(
+    () => debounce((value: string) => {
+      setDebouncedSearchTerm(value);
+      setHighlightedIndex(0);
+    }, 300),
+    []
+  );
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSetSearch.cancel();
+    };
+  }, [debouncedSetSearch]);
 
   // Cargar personas disponibles al abrir el modal
   useEffect(() => {
@@ -111,7 +129,7 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
   // Filtrar personas disponibles (no inscritas y no seleccionadas)
   const filteredPeople = useMemo(() => {
     // Requiere mínimo 2 caracteres para activar el autocompletado
-    if (searchTerm.trim().length < 2) return [];
+    if (debouncedSearchTerm.trim().length < 2) return [];
 
     const selectedIds = new Set(selectedPeople.map(p => p.id));
     const existenteIds = new Set(participantesExistentes);
@@ -124,7 +142,7 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
         }
 
         // Búsqueda por nombre, apellido, email, DNI
-        const searchLower = searchTerm.toLowerCase();
+        const searchLower = debouncedSearchTerm.toLowerCase();
         const nombreCompleto = `${persona.nombre} ${persona.apellido}`.toLowerCase();
         const apellidoNombre = `${persona.apellido} ${persona.nombre}`.toLowerCase();
         const email = persona.email?.toLowerCase() || '';
@@ -138,7 +156,7 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
         );
       })
       .slice(0, 8); // Limitar a 8 resultados
-  }, [searchTerm, personas, selectedPeople, participantesExistentes]);
+  }, [debouncedSearchTerm, personas, selectedPeople, participantesExistentes]);
 
   // Agregar persona a la lista de seleccionados
   const addPerson = (person: Persona) => {
@@ -314,8 +332,9 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
             placeholder="Buscar y Añadir Persona (Mín. 2 letras para activar el autocompletado)"
             value={searchTerm}
             onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setHighlightedIndex(0);
+              const value = e.target.value;
+              setSearchTerm(value);
+              debouncedSetSearch(value);
             }}
             onKeyDown={handleKeyDown}
             disabled={loading || inscribiendo}
@@ -329,7 +348,7 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
           />
 
           {/* Dropdown de autocompletado */}
-          <Collapse in={filteredPeople.length > 0 && searchTerm.length >= 2}>
+          <Collapse in={filteredPeople.length > 0 && debouncedSearchTerm.length >= 2}>
             <Paper
               elevation={4}
               sx={{
