@@ -82,6 +82,46 @@ const PersonaDetallePage: React.FC = () => {
     console.log('Editar persona', personaId);
   };
 
+  const handleAsignarTipo = () => {
+    setAsignarTipoOpen(true);
+  };
+
+  const handleAsignarTipoSuccess = () => {
+    refetch(); // Recargar persona completa con nuevos tipos
+  };
+
+  const handleEliminarTipo = async (tipoId: number) => {
+    if (!personaId || !persona) return;
+
+    const confirmacion = window.confirm('¿Estás seguro de desasignar este tipo?');
+    if (!confirmacion) return;
+
+    setLoadingAction(true);
+    try {
+      await personasApi.desasignarTipo(personaId, tipoId);
+      dispatch(removerTipo(tipoId));
+      refetch();
+    } catch (err: any) {
+      handleApiError(err);
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
+  const handleToggleTipo = async (tipoId: number) => {
+    if (!personaId) return;
+
+    setLoadingAction(true);
+    try {
+      await personasApi.toggleTipo(tipoId);
+      refetch();
+    } catch (err: any) {
+      handleApiError(err);
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
   if (loading || catalogosLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -212,17 +252,36 @@ const PersonaDetallePage: React.FC = () => {
         {/* Tab Panel: Tipos */}
         <TabPanel value={tabValue} index={1}>
           <Box p={2}>
-            <Typography variant="h6" gutterBottom>
-              Tipos Asignados
-            </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6">
+                Tipos Asignados ({persona.tipos?.length || 0})
+              </Typography>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<CategoryIcon />}
+                onClick={handleAsignarTipo}
+                disabled={loadingAction}
+              >
+                Asignar Tipo
+              </Button>
+            </Box>
+
             {persona.tipos && persona.tipos.length > 0 ? (
-              <Box display="flex" flexDirection="column" gap={2} mt={2}>
+              <Box display="flex" flexDirection="column" gap={2}>
                 {persona.tipos.map((tipo) => (
-                  <TipoItem key={tipo.id} tipo={tipo} showActions={false} compact />
+                  <TipoItem
+                    key={tipo.id}
+                    tipo={tipo}
+                    showActions={true}
+                    compact={false}
+                    onDelete={() => handleEliminarTipo(tipo.id)}
+                    onToggle={() => handleToggleTipo(tipo.id)}
+                  />
                 ))}
               </Box>
             ) : (
-              <Alert severity="info" sx={{ mt: 2 }}>
+              <Alert severity="info">
                 No hay tipos asignados a esta persona
               </Alert>
             )}
@@ -248,6 +307,19 @@ const PersonaDetallePage: React.FC = () => {
           </Box>
         </TabPanel>
       </Paper>
+
+      {/* Modal de asignación de tipos */}
+      {persona && (
+        <AsignarTipoModal
+          open={asignarTipoOpen}
+          onClose={() => setAsignarTipoOpen(false)}
+          personaId={persona.id}
+          personaNombre={`${persona.nombre} ${persona.apellido}`}
+          catalogos={catalogos}
+          tiposAsignados={persona.tipos?.map(t => t.tipoPersonaCodigo) || []}
+          onSuccess={handleAsignarTipoSuccess}
+        />
+      )}
     </Box>
   );
 };
