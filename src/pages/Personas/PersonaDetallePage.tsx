@@ -23,6 +23,11 @@ import {
 import { PersonaHeader, ContactosTab } from '../../components/personas/v2';
 import { usePersona, useCatalogosPersonas } from '../../hooks/usePersonas';
 import { TipoItem } from '../../components/personas/v2/tipos';
+import { AsignarTipoModal } from '../../components/personas/v2/tipos/AsignarTipoModal';
+import { personasApi } from '../../services/personasApi';
+import { handleApiError } from '../../utils/errorHandling';
+import { useAppDispatch } from '../../hooks/useRedux';
+import { setTiposAsignados, removerTipo } from '../../store/slices/personasSlice';
 
 interface TabPanelProps {
   children?: React.Node;
@@ -53,12 +58,15 @@ function TabPanel(props: TabPanelProps) {
 const PersonaDetallePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const personaId = id ? parseInt(id) : undefined;
 
   const [tabValue, setTabValue] = useState(0);
+  const [asignarTipoOpen, setAsignarTipoOpen] = useState(false);
+  const [loadingAction, setLoadingAction] = useState(false);
 
   // Cargar persona y catálogos
-  const { persona, loading, error } = usePersona(personaId);
+  const { persona, loading, error, refetch } = usePersona(personaId);
   const { catalogos, loading: catalogosLoading } = useCatalogosPersonas();
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
