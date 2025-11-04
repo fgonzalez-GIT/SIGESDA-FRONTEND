@@ -315,6 +315,24 @@ export const obtenerParticipantes = async (actividadId: number): Promise<Partici
   return response.data.data;
 };
 
+/**
+ * Inscribir participante con validación de cupos
+ * Retorna los cupos disponibles actualizados
+ */
+export const inscribirParticipante = async (
+  actividadId: number,
+  personaId: number
+): Promise<{ cuposDisponibles: number; participacion: ParticipacionActividad }> => {
+  const response = await api.post<ApiResponse<{ cuposDisponibles: number; participacion: ParticipacionActividad }>>(
+    `${BASE_URL}/${actividadId}/participantes`,
+    { personaId }
+  );
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.error || 'Error al inscribir participante');
+  }
+  return response.data.data;
+};
+
 // ============================================
 // ESTADÍSTICAS
 // ============================================
@@ -437,6 +455,7 @@ export const actividadesApi = {
 
   // Participantes
   obtenerParticipantes,
+  inscribirParticipante,
 
   // Estadísticas
   obtenerEstadisticasActividad,

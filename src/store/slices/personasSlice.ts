@@ -211,6 +211,38 @@ const personasSlice = createSlice({
       state.selectedPersona = null;
       state.error = null;
     },
+
+    /**
+     * NUEVO: Actualizar tipos asignados de la persona seleccionada
+     * Se usa cuando se obtienen los tipos asignados a una persona
+     */
+    setTiposAsignados: (state, action: PayloadAction<any[]>) => {
+      if (state.selectedPersona) {
+        state.selectedPersona.tipos = action.payload;
+      }
+    },
+
+    /**
+     * NUEVO: Agregar un tipo a la persona seleccionada
+     * Se usa tras asignar exitosamente un tipo
+     */
+    agregarTipo: (state, action: PayloadAction<any>) => {
+      if (state.selectedPersona && state.selectedPersona.tipos) {
+        state.selectedPersona.tipos.push(action.payload);
+      }
+    },
+
+    /**
+     * NUEVO: Remover un tipo de la persona seleccionada
+     * Se usa tras desasignar exitosamente un tipo
+     */
+    removerTipo: (state, action: PayloadAction<number>) => {
+      if (state.selectedPersona && state.selectedPersona.tipos) {
+        state.selectedPersona.tipos = state.selectedPersona.tipos.filter(
+          (t: any) => t.id !== action.payload
+        );
+      }
+    },
   },
   extraReducers: (builder) => {
     // Fetch Catálogos
@@ -323,6 +355,9 @@ export const {
   setSelectedPersona,
   clearError,
   clearState,
+  setTiposAsignados,
+  agregarTipo,
+  removerTipo,
 } = personasSlice.actions;
 
 export default personasSlice.reducer;

@@ -180,6 +180,26 @@ const actividadesSlice = createSlice({
     clearFilters: (state) => {
       state.filters = {};
     },
+    /**
+     * NUEVO: Decrementar cupos tras inscripción exitosa
+     * Actualiza cupoActual cuando se inscribe un participante
+     */
+    decrementarCupos: (state, action: PayloadAction<number>) => {
+      const actividad = state.actividades.find((a) => a.id === action.payload);
+      if (actividad && actividad.cupoMaximo) {
+        // Incrementar cupoActual (inscriptos)
+        actividad.cupoActual = (actividad.cupoActual || 0) + 1;
+      }
+    },
+    /**
+     * NUEVO: Incrementar cupos tras eliminar inscripción
+     */
+    incrementarCupos: (state, action: PayloadAction<number>) => {
+      const actividad = state.actividades.find((a) => a.id === action.payload);
+      if (actividad && actividad.cupoActual > 0) {
+        actividad.cupoActual -= 1;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -258,7 +278,9 @@ export const {
   setSelectedActividad,
   clearError,
   setFilters,
-  clearFilters
+  clearFilters,
+  decrementarCupos,
+  incrementarCupos,
 } = actividadesSlice.actions;
 
 export default actividadesSlice.reducer;
