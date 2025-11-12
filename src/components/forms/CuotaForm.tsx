@@ -135,11 +135,15 @@ export const CuotaForm: React.FC<CuotaFormProps> = ({
 
     const montoFinal = formData.monto - formData.descuento + formData.recargo;
 
+    const socioTipo = persona.tipos?.find(t => t.tipoPersonaCodigo === 'SOCIO');
+    const personaTipoValue = persona.tipos?.[0]?.tipoPersonaCodigo.toLowerCase() as 'socio' | 'docente' | 'estudiante';
+
     const cuotaData: Omit<Cuota, 'id'> = {
       personaId: formData.personaId!,
       personaNombre: persona.nombre,
       personaApellido: persona.apellido,
-      personaTipo: persona.tipo,
+      personaTipo: personaTipoValue,
+      categoriaId: socioTipo?.categoriaId || '',
       monto: formData.monto,
       concepto: formData.concepto,
       mesVencimiento: formData.mesVencimiento,
@@ -182,7 +186,7 @@ export const CuotaForm: React.FC<CuotaFormProps> = ({
 
   const personasOptions = personas.map(persona => ({
     id: persona.id,
-    label: `${persona.nombre} ${persona.apellido} (${persona.tipo})`,
+    label: `${persona.nombre} ${persona.apellido} (${persona.tipos?.map(t => t.tipoPersonaCodigo).join(', ') || 'Sin tipo'})`,
     persona
   }));
 
@@ -221,7 +225,7 @@ export const CuotaForm: React.FC<CuotaFormProps> = ({
                       {option.persona.nombre} {option.persona.apellido}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {option.persona.tipo} - {option.persona.email}
+                      {option.persona.tipos?.map(t => t.tipoPersonaCodigo).join(', ') || 'Sin tipo'} - {option.persona.email}
                     </Typography>
                   </Box>
                 </li>

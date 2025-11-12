@@ -31,7 +31,7 @@ import { useAppDispatch } from '../../hooks/useRedux';
 import { setTiposAsignados, removerTipo } from '../../store/slices/personasSlice';
 
 interface TabPanelProps {
-  children?: React.Node;
+  children?: React.ReactNode;
   index: number;
   value: number;
 }

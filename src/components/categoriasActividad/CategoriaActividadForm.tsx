@@ -157,7 +157,7 @@ export const CategoriaActividadForm: React.FC<CategoriaActividadFormProps> = ({
       codigo: formData.codigo.trim(),
       nombre: formData.nombre.trim(),
       descripcion: formData.descripcion?.trim() || undefined,
-      orden: formData.orden !== undefined && formData.orden !== null && formData.orden !== ''
+      orden: formData.orden !== undefined && formData.orden !== null
         ? Number(formData.orden)
         : undefined,
     };

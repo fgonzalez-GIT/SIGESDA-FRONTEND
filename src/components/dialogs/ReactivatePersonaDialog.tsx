@@ -71,7 +71,7 @@ export const ReactivatePersonaDialog: React.FC<ReactivatePersonaDialogProps> = (
             <strong>Teléfono:</strong> {persona.telefono || 'No registrado'}
           </Typography>
           <Typography variant="body2" sx={{ mb: 0.5 }}>
-            <strong>Tipo:</strong> {getTipoLabel(persona.tipo)}
+            <strong>Tipo:</strong> {persona.tipos?.map(t => getTipoLabel(t.tipoPersonaCodigo)).join(', ') || 'Sin tipo'}
           </Typography>
           <Typography variant="body2">
             <strong>Estado:</strong> Inactivo

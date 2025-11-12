@@ -72,8 +72,8 @@ export const GenerarCuotasMasivasDialog: React.FC<GenerarCuotasMasivasDialogProp
   // Filtrar personas según el tipo seleccionado
   const personasFiltradas = personas.filter(persona => {
     if (formData.filtroTipo === 'todos') return true;
-    return persona.tipo === formData.filtroTipo;
-  }).filter(persona => persona.estado === 'activo'); // Solo personas activas
+    return persona.tipos?.some(t => t.tipoPersonaCodigo.toLowerCase() === formData.filtroTipo);
+  }).filter(persona => persona.estado === 'ACTIVO'); // Solo personas activas
 
   useEffect(() => {
     if (open) {
@@ -379,28 +379,36 @@ export const GenerarCuotasMasivasDialog: React.FC<GenerarCuotasMasivasDialogProp
                   {personasFiltradas.map((persona, index) => (
                     <React.Fragment key={persona.id}>
                       <ListItem
-                        button
-                        onClick={() => handleTogglePersona(persona.id)}
-                        disabled={loading}
+                        component="div"
+                        onClick={loading ? undefined : () => handleTogglePersona(persona.id)}
                         sx={{
                           bgcolor: formData.personasSeleccionadas.includes(persona.id)
                             ? 'action.selected'
                             : 'transparent',
+                          cursor: loading ? 'default' : 'pointer',
+                          opacity: loading ? 0.5 : 1,
+                          pointerEvents: loading ? 'none' : 'auto',
+                          '&:hover': {
+                            bgcolor: loading ? undefined : 'action.hover',
+                          },
                         }}
                       >
                         <ListItemText
                           primary={`${persona.nombre} ${persona.apellido}`}
                           secondary={
                             <Box>
-                              <Chip
-                                label={persona.tipo}
-                                size="small"
-                                color={
-                                  persona.tipo === 'socio' ? 'primary' :
-                                  persona.tipo === 'docente' ? 'secondary' : 'default'
-                                }
-                                sx={{ mr: 1 }}
-                              />
+                              {persona.tipos?.map(t => (
+                                <Chip
+                                  key={t.id}
+                                  label={t.tipoPersonaCodigo}
+                                  size="small"
+                                  color={
+                                    t.tipoPersonaCodigo === 'SOCIO' ? 'primary' :
+                                    t.tipoPersonaCodigo === 'DOCENTE' ? 'secondary' : 'default'
+                                  }
+                                  sx={{ mr: 1 }}
+                                />
+                              ))}
                               {persona.email}
                             </Box>
                           }

@@ -17,12 +17,12 @@ import {
   Alert,
   Autocomplete,
   Chip,
-  Grid,
   InputAdornment,
   Stepper,
   Step,
   StepLabel,
   StepContent,
+  Grid,
 } from '@mui/material';
 import {
   FamilyRestroom,
@@ -222,7 +222,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
 
   const personasOptions = personas.map(persona => ({
     id: persona.id,
-    label: `${persona.nombre} ${persona.apellido} (${persona.tipo})`,
+    label: `${persona.nombre} ${persona.apellido} (${persona.tipos?.map(t => t.tipoPersonaCodigo).join(', ') || 'Sin tipo'})`,
     persona
   }));
 
@@ -231,7 +231,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
     .filter(persona => persona.id !== formData.personaId)
     .map(persona => ({
       id: persona.id,
-      label: `${persona.nombre} ${persona.apellido} (${persona.tipo})`,
+      label: `${persona.nombre} ${persona.apellido} (${persona.tipos?.map(t => t.tipoPersonaCodigo).join(', ') || 'Sin tipo'})`,
       persona
     }));
 
@@ -535,7 +535,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                         {personaPrincipal?.nombre} {personaPrincipal?.apellido}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {personaPrincipal?.tipo}
+                        {personaPrincipal?.tipos?.map(t => t.tipoPersonaCodigo).join(', ') || 'Sin tipo'}
                       </Typography>
                     </Box>
                   </Grid>
@@ -549,7 +549,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                         {familiarSeleccionado?.nombre} {familiarSeleccionado?.apellido}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {familiarSeleccionado?.tipo}
+                        {familiarSeleccionado?.tipos?.map(t => t.tipoPersonaCodigo).join(', ') || 'Sin tipo'}
                       </Typography>
                     </Box>
                   </Grid>

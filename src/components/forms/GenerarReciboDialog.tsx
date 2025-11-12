@@ -202,7 +202,7 @@ export const GenerarReciboDialog: React.FC<GenerarReciboDialogProps> = ({
 
   const personasOptions = personas.map(persona => ({
     id: persona.id,
-    label: `${persona.nombre} ${persona.apellido} (${persona.tipo})`,
+    label: `${persona.nombre} ${persona.apellido} (${persona.tipos?.map(t => t.tipoPersonaCodigo).join(', ') || 'Sin tipo'})`,
     persona
   }));
 
@@ -270,7 +270,7 @@ export const GenerarReciboDialog: React.FC<GenerarReciboDialogProps> = ({
                         {option.persona.nombre} {option.persona.apellido}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {option.persona.tipo} - {option.persona.email}
+                        {option.persona.tipos?.map(t => t.tipoPersonaCodigo).join(', ') || 'Sin tipo'} - {option.persona.email}
                       </Typography>
                     </Box>
                   </li>

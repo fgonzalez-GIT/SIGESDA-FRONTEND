@@ -135,9 +135,9 @@ export const ParticipanteSelect: React.FC<ParticipanteSelectProps> = ({
     const searchLower = searchTerm.toLowerCase();
     const nombreCompleto = `${persona.nombre} ${persona.apellido}`.toLowerCase();
     const dni = persona.dni?.toLowerCase() || '';
-    const tipo = persona.tipo.toLowerCase();
+    const tipos = persona.tipos?.map(t => t.tipoPersonaCodigo.toLowerCase()).join(' ') || '';
 
-    return nombreCompleto.includes(searchLower) || dni.includes(searchLower) || tipo.includes(searchLower);
+    return nombreCompleto.includes(searchLower) || dni.includes(searchLower) || tipos.includes(searchLower);
   });
 
   // Ordenar personas por apellido, nombre
