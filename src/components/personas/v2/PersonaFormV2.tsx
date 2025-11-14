@@ -43,6 +43,7 @@ import {
 import { personasApi } from '../../../services/personasApi';
 import { debounce } from '../../../utils/debounce';
 import { ContactosFormSection } from './forms/ContactosFormSection';
+import { TipoPersonaMultiSelect } from './TipoPersonaMultiSelect';
 
 interface PersonaFormV2Props {
   open: boolean;
@@ -76,7 +77,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
   catalogos,
   loading = false,
 }) => {
-  const [selectedTipos, setSelectedTipos] = useState<string[]>([]);
+  const [selectedTipos, setSelectedTipos] = useState<string[]>(['NO_SOCIO']);
   const [submitting, setSubmitting] = useState(false);
   const [dniValidating, setDniValidating] = useState(false);
   const [dniError, setDniError] = useState<string | null>(null);
@@ -101,7 +102,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
       direccion: '',
       fechaNacimiento: '',
       observaciones: '',
-      tipos: [],
+      tipos: [{ tipoPersonaCodigo: 'NO_SOCIO' }],
       contactos: [],
     },
   });
@@ -153,8 +154,27 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
 
   useEffect(() => {
     if (persona) {
-      // Modo edición: cargar solo datos básicos (sin tipos)
-      // Los tipos se gestionan mediante AsignarTipoModal desde PersonaDetallePage
+      // Modo edición: cargar datos básicos Y tipos existentes
+      const tiposExistentes = persona.tipos?.map((pt) => {
+        const tipo: any = {
+          tipoPersonaCodigo: pt.tipoPersona.codigo,
+        };
+
+        // Cargar campos específicos según el tipo
+        const codigoUpper = pt.tipoPersona.codigo.toUpperCase();
+        if (codigoUpper === 'SOCIO' && pt.categoriaId) {
+          tipo.categoriaId = pt.categoriaId;
+        } else if (codigoUpper === 'DOCENTE') {
+          tipo.especialidadId = pt.especialidadId;
+          tipo.honorariosPorHora = pt.honorariosPorHora || 0;
+        } else if (codigoUpper === 'PROVEEDOR') {
+          tipo.cuit = pt.cuit || '';
+          tipo.razonSocial = pt.razonSocial || '';
+        }
+
+        return tipo;
+      }) || [];
+
       reset({
         nombre: persona.nombre,
         apellido: persona.apellido,
@@ -164,12 +184,14 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
         direccion: persona.direccion || '',
         fechaNacimiento: persona.fechaNacimiento || '',
         observaciones: persona.observaciones || '',
-        tipos: [], // No incluir tipos en edición
+        tipos: tiposExistentes,
         contactos: [],
       });
-      setSelectedTipos([]);
+
+      // Actualizar tipos seleccionados
+      setSelectedTipos(tiposExistentes.map((t: any) => t.tipoPersonaCodigo));
     } else {
-      // Modo creación: resetear formulario completo con tipos
+      // Modo creación: resetear formulario con NO_SOCIO predeterminado
       reset({
         nombre: '',
         apellido: '',
@@ -179,10 +201,10 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
         direccion: '',
         fechaNacimiento: '',
         observaciones: '',
-        tipos: [],
+        tipos: [{ tipoPersonaCodigo: 'NO_SOCIO' }],
         contactos: [],
       });
-      setSelectedTipos([]);
+      setSelectedTipos(['NO_SOCIO']);
     }
   }, [persona, reset]);
 
@@ -230,6 +252,46 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
       setValue('tipos', [...tiposToAdd, newTipo]);
       setSelectedTipos([...selectedToKeep, codigoTipo]);
     }
+  };
+
+  // Nuevo handler para TipoPersonaMultiSelect
+  const handleTiposChange = (newCodigos: string[]) => {
+    const currentTipos = tiposWatch || [];
+
+    // Determinar qué tipos agregar y cuáles eliminar
+    const tiposToAdd = newCodigos.filter(codigo => !selectedTipos.includes(codigo));
+    const tiposToRemove = selectedTipos.filter(codigo => !newCodigos.includes(codigo));
+
+    let updatedTipos = [...currentTipos];
+
+    // Eliminar tipos desmarcados
+    tiposToRemove.forEach(codigo => {
+      updatedTipos = updatedTipos.filter((t: any) => t.tipoPersonaCodigo !== codigo);
+    });
+
+    // Agregar nuevos tipos con campos por defecto
+    tiposToAdd.forEach(codigo => {
+      const codigoUpper = codigo.toUpperCase();
+      const newTipo: any = {
+        tipoPersonaCodigo: codigo,
+      };
+
+      // Inicializar campos específicos según el tipo
+      if (codigoUpper === 'SOCIO') {
+        newTipo.categoriaId = '';
+      } else if (codigoUpper === 'DOCENTE') {
+        newTipo.especialidadId = undefined;
+        newTipo.honorariosPorHora = 0;
+      } else if (codigoUpper === 'PROVEEDOR') {
+        newTipo.cuit = '';
+        newTipo.razonSocial = '';
+      }
+
+      updatedTipos.push(newTipo);
+    });
+
+    setValue('tipos', updatedTipos);
+    setSelectedTipos(newCodigos);
   };
 
   const handleFormSubmit = async (data: CreatePersonaFormData) => {
@@ -423,6 +485,33 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
       <form onSubmit={handleSubmit(handleFormSubmit)}>
         <DialogContent dividers>
           <Stack spacing={3}>
+            {/* Tipos de persona - Disponible en ambos modos */}
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Tipos de Persona *
+              </Typography>
+              {errors.tipos && typeof errors.tipos.message === 'string' && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {errors.tipos.message}
+                </Alert>
+              )}
+
+              <TipoPersonaMultiSelect
+                value={selectedTipos}
+                onChange={handleTiposChange}
+                tiposPersona={catalogos.tiposPersona}
+                error={!!errors.tipos}
+                helperText={errors.tipos && typeof errors.tipos.message === 'string' ? errors.tipos.message : undefined}
+              />
+
+              {/* Campos dinámicos según tipos seleccionados */}
+              {tiposWatch?.map((tipo: any, index: number) =>
+                renderCamposTipo(tipo.tipoPersonaCodigo, index)
+              )}
+            </Box>
+
+            <Divider />
+
             {/* Datos personales */}
             <Box>
               <Typography variant="h6" gutterBottom>
@@ -587,63 +676,6 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
               </Grid>
             </Box>
 
-            {/* Tipos de persona - Solo en modo creación */}
-            {!isEditing && (
-              <>
-                <Divider />
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    Tipos de Persona *
-                  </Typography>
-                  {errors.tipos && typeof errors.tipos.message === 'string' && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                      {errors.tipos.message}
-                    </Alert>
-                  )}
-                  <FormGroup>
-                    {catalogos.tiposPersona
-                      .filter((t) => t.activo)
-                      .map((tipo) => (
-                        <FormControlLabel
-                          key={tipo.id}
-                          control={
-                            <Checkbox
-                              checked={selectedTipos.includes(tipo.codigo)}
-                              onChange={() => handleTipoToggle(tipo.codigo)}
-                            />
-                          }
-                          label={
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <span>{tipo.nombre}</span>
-                              {tipo.descripcion && (
-                                <Typography variant="caption" color="text.secondary">
-                                  ({tipo.descripcion})
-                                </Typography>
-                              )}
-                            </Box>
-                          }
-                        />
-                      ))}
-                  </FormGroup>
-
-                  {/* Campos dinámicos según tipos seleccionados */}
-                  {tiposWatch?.map((tipo: any, index: number) =>
-                    renderCamposTipo(tipo.tipoPersonaCodigo, index)
-                  )}
-                </Box>
-                <Divider />
-              </>
-            )}
-
-            {/* Mensaje informativo en modo edición */}
-            {isEditing && (
-              <>
-                <Alert severity="info">
-                  Para gestionar los tipos de esta persona, utilice la pestaña "Tipos" en la página de detalle.
-                </Alert>
-                <Divider />
-              </>
-            )}
 
             {/* Contactos - Solo en modo creación */}
             {!isEditing && (
