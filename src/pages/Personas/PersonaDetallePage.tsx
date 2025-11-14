@@ -27,7 +27,7 @@ import { AsignarTipoModal } from '../../components/personas/v2/tipos/AsignarTipo
 import { FamiliaresTab } from '../../components/personas/v2/familiares';
 import { personasApi } from '../../services/personasApi';
 import { handleApiError } from '../../utils/errorHandling';
-import { useAppDispatch } from '../../hooks/useRedux';
+import { useAppDispatch } from '../../hooks/redux';
 import { setTiposAsignados, removerTipo } from '../../store/slices/personasSlice';
 
 interface TabPanelProps {

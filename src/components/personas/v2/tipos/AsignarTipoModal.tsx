@@ -104,7 +104,20 @@ export const AsignarTipoModal: React.FC<AsignarTipoModalProps> = ({
       return false;
     }
 
-    switch (tipoSeleccionado.toUpperCase()) {
+    // Validar exclusión mutua SOCIO ↔ NO_SOCIO
+    const tipoUpper = tipoSeleccionado.toUpperCase();
+    if (tipoUpper === 'SOCIO' && tiposAsignados.includes('NO_SOCIO')) {
+      newErrors.tipo = 'No se puede asignar SOCIO: la persona ya tiene tipo NO_SOCIO (son mutuamente excluyentes)';
+      setErrors(newErrors);
+      return false;
+    }
+    if (tipoUpper === 'NO_SOCIO' && tiposAsignados.includes('SOCIO')) {
+      newErrors.tipo = 'No se puede asignar NO_SOCIO: la persona ya tiene tipo SOCIO (son mutuamente excluyentes)';
+      setErrors(newErrors);
+      return false;
+    }
+
+    switch (tipoUpper) {
       case 'SOCIO':
         if (!categoriaId) {
           newErrors.categoriaId = 'La categoría es obligatoria para tipo SOCIO';
@@ -295,20 +308,14 @@ export const AsignarTipoModal: React.FC<AsignarTipoModalProps> = ({
     }
   };
 
-  // Alerta de exclusión mutua SOCIO/NO_SOCIO
-  const showExclusionWarning = () => {
+  // Alerta informativa sobre exclusión mutua SOCIO/NO_SOCIO (ahora prevenido en validación)
+  const showExclusionInfo = () => {
     const tipoUpper = tipoSeleccionado.toUpperCase();
-    if (tipoUpper === 'SOCIO' && tiposAsignados.includes('NO_SOCIO')) {
+    if ((tipoUpper === 'SOCIO' || tipoUpper === 'NO_SOCIO') &&
+        !(tiposAsignados.includes('SOCIO') || tiposAsignados.includes('NO_SOCIO'))) {
       return (
-        <Alert severity="warning" sx={{ mt: 2 }}>
-          ⚠️ Al asignar tipo SOCIO, se desasignará automáticamente el tipo NO_SOCIO (son mutuamente excluyentes)
-        </Alert>
-      );
-    }
-    if (tipoUpper === 'NO_SOCIO' && tiposAsignados.includes('SOCIO')) {
-      return (
-        <Alert severity="warning" sx={{ mt: 2 }}>
-          ⚠️ Al asignar tipo NO_SOCIO, se desasignará automáticamente el tipo SOCIO (son mutuamente excluyentes)
+        <Alert severity="info" sx={{ mt: 2 }}>
+          ℹ️ Los tipos SOCIO y NO_SOCIO son mutuamente excluyentes. No se podrá asignar el otro tipo mientras este esté activo.
         </Alert>
       );
     }
@@ -390,8 +397,8 @@ export const AsignarTipoModal: React.FC<AsignarTipoModalProps> = ({
             </>
           )}
 
-          {/* Warning de exclusión mutua */}
-          {showExclusionWarning()}
+          {/* Información sobre exclusión mutua */}
+          {showExclusionInfo()}
         </Box>
       </DialogContent>
 

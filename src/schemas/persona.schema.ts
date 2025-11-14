@@ -96,6 +96,18 @@ export const createPersonaSchema = z.object({
   message: 'Debe asignar al menos un tipo a la persona',
   path: ['tipos'],
 }).refine(data => {
+  // Validación de exclusión mutua: SOCIO y NO_SOCIO no pueden coexistir
+  if (data.tipos && data.tipos.length > 0) {
+    const codigos = data.tipos.map((t: any) => t.tipoPersonaCodigo?.toUpperCase());
+    const hasSocio = codigos.includes('SOCIO');
+    const hasNoSocio = codigos.includes('NO_SOCIO');
+    return !(hasSocio && hasNoSocio);
+  }
+  return true;
+}, {
+  message: 'Una persona no puede ser SOCIO y NO_SOCIO simultáneamente',
+  path: ['tipos'],
+}).refine(data => {
   if (data.contactos && data.contactos.length > 0) {
     const contactosPrincipales = data.contactos.filter(c => c.esPrincipal);
     return contactosPrincipales.length <= 1;

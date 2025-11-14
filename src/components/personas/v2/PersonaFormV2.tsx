@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -40,6 +40,9 @@ import {
   createPersonaSchema,
   type CreatePersonaFormData,
 } from '../../../schemas/persona.schema';
+import { personasApi } from '../../../services/personasApi';
+import { debounce } from '../../../utils/debounce';
+import { ContactosFormSection } from './forms/ContactosFormSection';
 
 interface PersonaFormV2Props {
   open: boolean;
@@ -75,6 +78,8 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
 }) => {
   const [selectedTipos, setSelectedTipos] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [dniValidating, setDniValidating] = useState(false);
+  const [dniError, setDniError] = useState<string | null>(null);
 
   const isEditing = !!persona;
 
@@ -104,9 +109,52 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
   // Observar cambios en tipos para mostrar campos dinámicos
   const tiposWatch = watch('tipos');
 
+  // ============================================================================
+  // VALIDACIÓN ASÍNCRONA DE DNI - DESHABILITADA TEMPORALMENTE
+  // ============================================================================
+  // Para reactivar, descomentar este bloque y las llamadas en el TextField DNI
+  // ============================================================================
+  /*
+  const validateDniAsync = useCallback(
+    debounce(async (dni: string) => {
+      if (!dni || dni.length < 7 || dni.length > 8) {
+        setDniError(null);
+        setDniValidating(false);
+        return;
+      }
+
+      setDniValidating(true);
+      setDniError(null);
+
+      try {
+        const response = await personasApi.validarDni(dni, persona?.id);
+
+        if (!response.success || !response.data) {
+          setDniError(null);
+        } else if (response.data.exists && response.data.personaId !== persona?.id) {
+          setDniError(
+            `El DNI ${dni} ya está registrado${
+              response.data.personaNombre ? ` para ${response.data.personaNombre}` : ''
+            }`
+          );
+        } else {
+          setDniError(null);
+        }
+      } catch (error) {
+        console.error('Error validando DNI:', error);
+        setDniError(null);
+      } finally {
+        setDniValidating(false);
+      }
+    }, 500),
+    [persona?.id]
+  );
+  */
+
   useEffect(() => {
     if (persona) {
-      // Modo edición: cargar datos de la persona
+      // Modo edición: cargar solo datos básicos (sin tipos)
+      // Los tipos se gestionan mediante AsignarTipoModal desde PersonaDetallePage
       reset({
         nombre: persona.nombre,
         apellido: persona.apellido,
@@ -116,23 +164,12 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
         direccion: persona.direccion || '',
         fechaNacimiento: persona.fechaNacimiento || '',
         observaciones: persona.observaciones || '',
-        tipos: persona.tipos?.map((t) => ({
-          tipoPersonaCodigo: t.tipoPersonaCodigo,
-          categoriaId: t.categoriaId,
-          especialidadId: t.especialidadId,
-          honorariosPorHora: t.honorariosPorHora,
-          cuit: t.cuit,
-          razonSocial: t.razonSocial,
-          observaciones: t.observaciones,
-        })) as any || [],
+        tipos: [], // No incluir tipos en edición
         contactos: [],
       });
-
-      // Establecer tipos seleccionados
-      const tiposCodigos = persona.tipos?.map((t) => t.tipoPersonaCodigo) || [];
-      setSelectedTipos(tiposCodigos);
+      setSelectedTipos([]);
     } else {
-      // Modo creación: resetear formulario
+      // Modo creación: resetear formulario completo con tipos
       reset({
         nombre: '',
         apellido: '',
@@ -152,6 +189,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
   const handleTipoToggle = (codigoTipo: string) => {
     const currentTipos = tiposWatch || [];
     const isSelected = selectedTipos.includes(codigoTipo);
+    const codigoUpper = codigoTipo.toUpperCase();
 
     if (isSelected) {
       // Desmarcar: eliminar tipo
@@ -159,33 +197,53 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
       setValue('tipos', newTipos);
       setSelectedTipos(selectedTipos.filter((t) => t !== codigoTipo));
     } else {
+      // Aplicar exclusión mutua SOCIO ↔ NO_SOCIO
+      let tiposToAdd = currentTipos;
+      let selectedToKeep = [...selectedTipos];
+
+      if (codigoUpper === 'SOCIO') {
+        // Si se marca SOCIO, eliminar NO_SOCIO
+        tiposToAdd = currentTipos.filter((t: any) => t.tipoPersonaCodigo?.toUpperCase() !== 'NO_SOCIO');
+        selectedToKeep = selectedToKeep.filter((t) => t.toUpperCase() !== 'NO_SOCIO');
+      } else if (codigoUpper === 'NO_SOCIO') {
+        // Si se marca NO_SOCIO, eliminar SOCIO
+        tiposToAdd = currentTipos.filter((t: any) => t.tipoPersonaCodigo?.toUpperCase() !== 'SOCIO');
+        selectedToKeep = selectedToKeep.filter((t) => t.toUpperCase() !== 'SOCIO');
+      }
+
       // Marcar: agregar tipo con campos por defecto
       const newTipo: any = {
         tipoPersonaCodigo: codigoTipo,
       };
 
       // Inicializar campos específicos según el tipo
-      if (codigoTipo === 'SOCIO') {
+      if (codigoUpper === 'SOCIO') {
         newTipo.categoriaId = '';
-      } else if (codigoTipo === 'DOCENTE') {
+      } else if (codigoUpper === 'DOCENTE') {
         newTipo.especialidadId = undefined;
         newTipo.honorariosPorHora = 0;
-      } else if (codigoTipo === 'PROVEEDOR') {
+      } else if (codigoUpper === 'PROVEEDOR') {
         newTipo.cuit = '';
         newTipo.razonSocial = '';
       }
 
-      setValue('tipos', [...currentTipos, newTipo]);
-      setSelectedTipos([...selectedTipos, codigoTipo]);
+      setValue('tipos', [...tiposToAdd, newTipo]);
+      setSelectedTipos([...selectedToKeep, codigoTipo]);
     }
   };
 
   const handleFormSubmit = async (data: CreatePersonaFormData) => {
+    // VALIDACIÓN DNI DESHABILITADA TEMPORALMENTE
+    // if (dniError) {
+    //   return;
+    // }
+
     try {
       setSubmitting(true);
       await onSubmit(data as CreatePersonaDTO);
       reset();
       setSelectedTipos([]);
+      // setDniError(null);
       onClose();
     } catch (error) {
       console.error('Error en formulario:', error);
@@ -416,6 +474,34 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                         inputProps={{ maxLength: 8 }}
                         error={!!errors.dni}
                         helperText={errors.dni?.message || '7 u 8 dígitos'}
+                        // VALIDACIÓN ASÍNCRONA DESHABILITADA
+                        // Para reactivar, descomentar el código comentado arriba
+                        /*
+                        error={!!errors.dni || !!dniError}
+                        helperText={
+                          errors.dni?.message ||
+                          dniError ||
+                          '7 u 8 dígitos'
+                        }
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setDniError(null);
+                          if (e.target.value.length >= 7 && e.target.value.length <= 8) {
+                            validateDniAsync(e.target.value);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          field.onBlur();
+                          if (e.target.value.length >= 7 && e.target.value.length <= 8) {
+                            validateDniAsync(e.target.value);
+                          }
+                        }}
+                        InputProps={{
+                          endAdornment: dniValidating ? (
+                            <CircularProgress size={20} />
+                          ) : null,
+                        }}
+                        */
                       />
                     )}
                   />
@@ -501,51 +587,75 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
               </Grid>
             </Box>
 
-            <Divider />
-
-            {/* Tipos de persona */}
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                Tipos de Persona *
-              </Typography>
-              {errors.tipos && typeof errors.tipos.message === 'string' && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  {errors.tipos.message}
-                </Alert>
-              )}
-              <FormGroup>
-                {catalogos.tiposPersona
-                  .filter((t) => t.activo)
-                  .map((tipo) => (
-                    <FormControlLabel
-                      key={tipo.id}
-                      control={
-                        <Checkbox
-                          checked={selectedTipos.includes(tipo.codigo)}
-                          onChange={() => handleTipoToggle(tipo.codigo)}
+            {/* Tipos de persona - Solo en modo creación */}
+            {!isEditing && (
+              <>
+                <Divider />
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    Tipos de Persona *
+                  </Typography>
+                  {errors.tipos && typeof errors.tipos.message === 'string' && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      {errors.tipos.message}
+                    </Alert>
+                  )}
+                  <FormGroup>
+                    {catalogos.tiposPersona
+                      .filter((t) => t.activo)
+                      .map((tipo) => (
+                        <FormControlLabel
+                          key={tipo.id}
+                          control={
+                            <Checkbox
+                              checked={selectedTipos.includes(tipo.codigo)}
+                              onChange={() => handleTipoToggle(tipo.codigo)}
+                            />
+                          }
+                          label={
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <span>{tipo.nombre}</span>
+                              {tipo.descripcion && (
+                                <Typography variant="caption" color="text.secondary">
+                                  ({tipo.descripcion})
+                                </Typography>
+                              )}
+                            </Box>
+                          }
                         />
-                      }
-                      label={
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <span>{tipo.nombre}</span>
-                          {tipo.descripcion && (
-                            <Typography variant="caption" color="text.secondary">
-                              ({tipo.descripcion})
-                            </Typography>
-                          )}
-                        </Box>
-                      }
-                    />
-                  ))}
-              </FormGroup>
+                      ))}
+                  </FormGroup>
 
-              {/* Campos dinámicos según tipos seleccionados */}
-              {tiposWatch?.map((tipo: any, index: number) =>
-                renderCamposTipo(tipo.tipoPersonaCodigo, index)
-              )}
-            </Box>
+                  {/* Campos dinámicos según tipos seleccionados */}
+                  {tiposWatch?.map((tipo: any, index: number) =>
+                    renderCamposTipo(tipo.tipoPersonaCodigo, index)
+                  )}
+                </Box>
+                <Divider />
+              </>
+            )}
 
-            <Divider />
+            {/* Mensaje informativo en modo edición */}
+            {isEditing && (
+              <>
+                <Alert severity="info">
+                  Para gestionar los tipos de esta persona, utilice la pestaña "Tipos" en la página de detalle.
+                </Alert>
+                <Divider />
+              </>
+            )}
+
+            {/* Contactos - Solo en modo creación */}
+            {!isEditing && (
+              <>
+                <ContactosFormSection
+                  control={control}
+                  errors={errors}
+                  catalogos={catalogos}
+                />
+                <Divider />
+              </>
+            )}
 
             {/* Observaciones */}
             <Box>
@@ -578,6 +688,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
             variant="contained"
             startIcon={submitting || loading ? <CircularProgress size={20} /> : <SaveIcon />}
             disabled={submitting || loading}
+            // VALIDACIÓN DNI DESHABILITADA: disabled={submitting || loading || !!dniError || dniValidating}
           >
             {submitting || loading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear'}
           </Button>

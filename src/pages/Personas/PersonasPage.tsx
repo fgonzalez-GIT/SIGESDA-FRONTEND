@@ -16,37 +16,32 @@ import { Add as AddIcon } from '@mui/icons-material';
 import {
   PersonasTable,
   PersonasFilters,
-  PersonaFormV2,
   LoadingSkeleton,
 } from '../../components/personas/v2';
-import { usePersonas, useCatalogosPersonas } from '../../hooks/usePersonas';
-import personasApi from '../../services/personasApi';
+import { PersonaFormBasic } from '../../components/personas/basic/PersonaFormBasic';
+import { usePersonas } from '../../hooks/usePersonas';
+import personasApiBasic from '../../services/personasApi.basic';
 import type {
   Persona,
   PersonasQueryParams,
-  CreatePersonaDTO,
 } from '../../types/persona.types';
+import type { CreatePersonaBasicFormData } from '../../schemas/persona.basic.schema';
 import { useAppDispatch } from '../../hooks/redux';
 import { showNotification } from '../../store/slices/uiSlice';
 
 /**
- * Página principal del Módulo Personas V2
- * Lista de personas con filtros, paginación y CRUD completo
+ * Página principal del Módulo Personas - Versión Básica
+ * Compatible con Backend Básico (6 endpoints)
+ * Lista de personas con filtros, paginación y CRUD básico
  */
 const PersonasPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  // Estado de catálogos
-  const { catalogos, loading: catalogosLoading } = useCatalogosPersonas();
-
   // Estado de filtros
   const [filters, setFilters] = useState<PersonasQueryParams>({
     page: 1,
     limit: 20,
-    includeTipos: true,
-    includeContactos: false,
-    includeRelaciones: true,
   });
 
   // Estado de personas
@@ -73,9 +68,6 @@ const PersonasPage: React.FC = () => {
     setFilters({
       page: 1,
       limit: 20,
-      includeTipos: true,
-      includeContactos: false,
-      includeRelaciones: true,
     });
   };
 
@@ -90,7 +82,7 @@ const PersonasPage: React.FC = () => {
   };
 
   const handleViewClick = (persona: Persona) => {
-    navigate(`/personas-v2/${persona.id}`);
+    navigate(`/personas/${persona.id}`);
   };
 
   const handleEditClick = (persona: Persona) => {
@@ -108,11 +100,11 @@ const PersonasPage: React.FC = () => {
     setSelectedPersona(null);
   };
 
-  const handleFormSubmit = async (data: CreatePersonaDTO) => {
+  const handleFormSubmit = async (data: CreatePersonaBasicFormData) => {
     try {
       if (selectedPersona) {
         // Actualizar persona existente
-        await personasApi.update(selectedPersona.id, data);
+        await personasApiBasic.update(selectedPersona.id, data);
         dispatch(
           showNotification({
             message: 'Persona actualizada exitosamente',
@@ -121,7 +113,7 @@ const PersonasPage: React.FC = () => {
         );
       } else {
         // Crear nueva persona
-        await personasApi.create(data);
+        await personasApiBasic.create(data);
         dispatch(
           showNotification({
             message: 'Persona creada exitosamente',
@@ -161,7 +153,7 @@ const PersonasPage: React.FC = () => {
 
     try {
       setDeleting(true);
-      await personasApi.delete(personaToDelete.id);
+      await personasApiBasic.delete(personaToDelete.id);
 
       dispatch(
         showNotification({
@@ -199,10 +191,10 @@ const PersonasPage: React.FC = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
-            Gestión de Personas V2
+            Gestión de Personas
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Sistema de múltiples tipos por persona con gestión dinámica
+            CRUD básico de personas
           </Typography>
         </Box>
         <Button
@@ -210,7 +202,6 @@ const PersonasPage: React.FC = () => {
           startIcon={<AddIcon />}
           onClick={handleAddClick}
           size="large"
-          disabled={catalogosLoading}
         >
           Nueva Persona
         </Button>
@@ -219,7 +210,7 @@ const PersonasPage: React.FC = () => {
       {/* Filtros */}
       <PersonasFilters
         filters={filters}
-        catalogos={catalogos}
+        catalogos={null}
         onFilterChange={handleFilterChange}
         onClearFilters={handleClearFilters}
         resultCount={personas.length}
@@ -262,12 +253,11 @@ const PersonasPage: React.FC = () => {
       )}
 
       {/* Formulario */}
-      <PersonaFormV2
+      <PersonaFormBasic
         open={formOpen}
         onClose={handleFormClose}
         onSubmit={handleFormSubmit}
         persona={selectedPersona}
-        catalogos={catalogos}
         loading={loading}
       />
 

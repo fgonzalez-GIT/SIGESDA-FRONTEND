@@ -40,6 +40,13 @@ export const personasApi = {
   /**
    * Obtener todos los catálogos de una vez (optimizado)
    * GET /api/catalogos/personas/todos
+   *
+   * NOTA: Este endpoint podría no existir en el backend actual.
+   * Si falla, usar los endpoints individuales:
+   * - getTiposPersona()
+   * - getEspecialidadesDocentes()
+   * - getTiposContacto()
+   * - getCategoriasSocio()
    */
   getCatalogos: async (): Promise<CatalogosResponse> => {
     const response = await api.get('/catalogos/personas/todos');
@@ -48,10 +55,10 @@ export const personasApi = {
 
   /**
    * Obtener catálogo de tipos de persona
-   * GET /api/catalogos/tipos-persona
+   * GET /api/tipo-persona-catalogo
    */
   getTiposPersona: async (): Promise<ApiResponse<TipoPersona[]>> => {
-    const response = await api.get('/catalogos/tipos-persona');
+    const response = await api.get('/tipo-persona-catalogo');
     return response.data;
   },
 
