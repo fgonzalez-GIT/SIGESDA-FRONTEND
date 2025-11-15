@@ -38,27 +38,57 @@ export const personasApi = {
   // ============================================================================
 
   /**
-   * Obtener todos los catálogos de una vez (optimizado)
-   * GET /api/catalogos/personas/todos
+   * Obtener todos los catálogos de una vez
    *
-   * NOTA: Este endpoint podría no existir en el backend actual.
-   * Si falla, usar los endpoints individuales:
-   * - getTiposPersona()
-   * - getEspecialidadesDocentes()
-   * - getTiposContacto()
-   * - getCategoriasSocio()
+   * NOTA: El endpoint batch /api/catalogos/personas/todos no existe en el backend.
+   * Se cargan los catálogos disponibles usando las rutas reales del backend:
+   * - GET /api/catalogos/tipos-persona ✅
+   * - GET /api/catalogos/especialidades-docentes ✅
+   * - GET /api/categorias-socios ✅
+   * - GET /api/catalogos/tipos-contacto ❌ (no existe, se retorna array vacío)
    */
   getCatalogos: async (): Promise<CatalogosResponse> => {
-    const response = await api.get('/catalogos/personas/todos');
-    return response.data;
+    console.info('📦 Cargando catálogos de personas desde endpoints individuales...');
+
+    // Cargar solo los catálogos que existen en el backend
+    const [tiposRes, especialidadesRes, categoriasRes] = await Promise.allSettled([
+      api.get('/catalogos/tipos-persona'),           // ✅ Existe
+      api.get('/catalogos/especialidades-docentes'), // ✅ Existe
+      api.get('/categorias-socios'),                 // ✅ Existe (ruta diferente)
+    ]);
+
+    // Construir respuesta con datos disponibles
+    const catalogos: CatalogosPersonas = {
+      tiposPersona: tiposRes.status === 'fulfilled' ? tiposRes.value.data.data : [],
+      especialidadesDocentes: especialidadesRes.status === 'fulfilled' ? especialidadesRes.value.data.data : [],
+      categoriasSocio: categoriasRes.status === 'fulfilled' ? categoriasRes.value.data.data : [],
+      tiposContacto: [], // No existe endpoint en backend
+    };
+
+    const warnings = [];
+    if (tiposRes.status === 'rejected') warnings.push('tipos-persona');
+    if (especialidadesRes.status === 'rejected') warnings.push('especialidades-docentes');
+    if (categoriasRes.status === 'rejected') warnings.push('categorias-socios');
+
+    if (warnings.length > 0) {
+      console.warn(`⚠️ No se pudieron cargar algunos catálogos: ${warnings.join(', ')}`);
+    }
+
+    return {
+      success: true,
+      data: catalogos,
+      message: warnings.length > 0
+        ? `Catálogos cargados parcialmente (${warnings.length} fallaron)`
+        : 'Catálogos cargados correctamente',
+    };
   },
 
   /**
    * Obtener catálogo de tipos de persona
-   * GET /api/tipo-persona-catalogo
+   * GET /api/catalogos/tipos-persona
    */
   getTiposPersona: async (): Promise<ApiResponse<TipoPersona[]>> => {
-    const response = await api.get('/tipo-persona-catalogo');
+    const response = await api.get('/catalogos/tipos-persona');
     return response.data;
   },
 
@@ -74,18 +104,25 @@ export const personasApi = {
   /**
    * Obtener catálogo de tipos de contacto
    * GET /api/catalogos/tipos-contacto
+   *
+   * NOTA: Este endpoint NO existe en el backend actual.
+   * Retorna array vacío para evitar errores 404.
    */
   getTiposContacto: async (): Promise<ApiResponse<TipoContacto[]>> => {
-    const response = await api.get('/catalogos/tipos-contacto');
-    return response.data;
+    console.warn('⚠️ Endpoint /catalogos/tipos-contacto no disponible en backend');
+    return {
+      success: true,
+      data: [],
+      message: 'Endpoint no implementado en backend',
+    };
   },
 
   /**
    * Obtener catálogo de categorías de socio
-   * GET /api/catalogos/categorias-socios
+   * GET /api/categorias-socios
    */
   getCategoriasSocios: async (): Promise<ApiResponse<CategoriaSocio[]>> => {
-    const response = await api.get('/catalogos/categorias-socios');
+    const response = await api.get('/categorias-socios');
     return response.data;
   },
 
@@ -246,10 +283,13 @@ export const personasApi = {
   /**
    * Activar/Desactivar un tipo asignado (toggle)
    * PATCH /api/personas/tipos/:tipoId/toggle
+   *
+   * NOTA: Este endpoint NO existe en el backend actual.
+   * Como workaround, usa actualizarTipo con activo: true/false.
    */
   toggleTipo: async (tipoId: number): Promise<ApiResponse<PersonaTipo>> => {
-    const response = await api.patch(`/personas/tipos/${tipoId}/toggle`);
-    return response.data;
+    console.warn('⚠️ Endpoint /personas/tipos/:id/toggle no disponible. Use actualizarTipo() en su lugar.');
+    throw new Error('Endpoint no implementado. Use actualizarTipo() con { activo: true/false }');
   },
 
   // ============================================================================
@@ -301,10 +341,13 @@ export const personasApi = {
   /**
    * Establecer contacto como principal
    * PATCH /api/personas/contactos/:id/principal
+   *
+   * NOTA: Este endpoint NO existe en el backend actual.
+   * Como workaround, usa updateContacto con esPrincipal: true.
    */
   setPrincipal: async (contactoId: number): Promise<ApiResponse<Contacto>> => {
-    const response = await api.patch(`/personas/contactos/${contactoId}/principal`);
-    return response.data;
+    console.warn('⚠️ Endpoint /personas/contactos/:id/principal no disponible. Use updateContacto() en su lugar.');
+    throw new Error('Endpoint no implementado. Use updateContacto() con { esPrincipal: true }');
   },
 
   // ============================================================================
@@ -313,10 +356,13 @@ export const personasApi = {
 
   /**
    * Validar si un DNI ya existe
-   * GET /api/personas/validar/dni/:dni
+   * GET /api/personas/dni/:dni/check
+   *
+   * NOTA: Usa la ruta real del backend (/personas/dni/:dni/check)
+   * no la documentada (/personas/validar/dni/:dni)
    */
   validarDni: async (dni: string, excludeId?: number): Promise<ValidationResponse> => {
-    const response = await api.get(`/personas/validar/dni/${dni}`, {
+    const response = await api.get(`/personas/dni/${dni}/check`, {
       params: { excludeId },
     });
     return response.data;
@@ -325,12 +371,20 @@ export const personasApi = {
   /**
    * Validar si un email ya existe
    * GET /api/personas/validar/email/:email
+   *
+   * NOTA: Este endpoint NO existe en el backend.
+   * Retorna siempre válido (true) - la validación debe hacerse en el backend cuando se implemente.
    */
   validarEmail: async (email: string, excludeId?: number): Promise<ValidationResponse> => {
-    const response = await api.get(`/personas/validar/email/${encodeURIComponent(email)}`, {
-      params: { excludeId },
-    });
-    return response.data;
+    console.warn('⚠️ Endpoint /personas/validar/email no disponible en backend');
+    return {
+      success: true,
+      data: {
+        isValid: true, // Siempre válido hasta que se implemente
+        exists: false,
+      },
+      message: 'Validación de email no implementada en backend',
+    };
   },
 
   // ============================================================================
@@ -340,14 +394,42 @@ export const personasApi = {
   /**
    * Obtener estadísticas de tipos de persona
    * GET /api/personas/estadisticas/tipos
+   *
+   * NOTA: Este endpoint existe pero tiene un bug en el backend (error 500).
+   * Retorna array vacío hasta que se corrija.
    */
   getEstadisticasTipos: async (): Promise<ApiResponse<EstadisticasTipos[]>> => {
-    const response = await api.get('/personas/estadisticas/tipos');
-    return response.data;
+    try {
+      const response = await api.get('/personas/estadisticas/tipos');
+      return response.data;
+    } catch (error: any) {
+      if (error?.response?.status === 500) {
+        console.warn('⚠️ Endpoint /personas/estadisticas/tipos tiene error interno (500)');
+        return {
+          success: true,
+          data: [],
+          message: 'Estadísticas no disponibles (error en backend)',
+        };
+      }
+      throw error;
+    }
   },
 
   // ============================================================================
   // ADMIN - GESTIÓN DE CATÁLOGOS
+  // ============================================================================
+  //
+  // ⚠️ IMPORTANTE: Los endpoints de administración de catálogos NO están disponibles
+  // en el backend actual. Las rutas existen en el código del backend pero NO están
+  // montadas en el router principal.
+  //
+  // Estos métodos generarán errores 404 hasta que se active el módulo admin en backend.
+  // Ver: SIGESDA-BACKEND/src/routes/catalogo-admin.routes.ts (no montado en index.ts)
+  //
+  // Endpoints afectados:
+  // - POST/PUT/DELETE /api/admin/catalogos/tipos-persona
+  // - POST/PUT/DELETE /api/admin/catalogos/especialidades-docentes
+  // - POST/PUT/DELETE /api/admin/catalogos/tipos-contacto
   // ============================================================================
 
   /**

@@ -210,15 +210,51 @@ Backend must be running on port 8000 for the proxy to work correctly.
 
 ## Known Issues
 
-### Backend API Compatibility
-The Personas module now requires the **complete backend API** with all 49 endpoints:
-- CRUD, búsquedas, gestión de tipos, contactos, validaciones, y admin
-- No hay soporte para backend básico (la versión V1 fue eliminada)
-- Si faltan endpoints, la aplicación mostrará errores
+### Backend API Compatibility - Endpoints Faltantes
 
-Fallback logic:
-- `useCatalogosPersonas()` retorna catálogos vacíos si falla la carga
-- Otros hooks pueden fallar sin backend completo
+El backend tiene implementación **parcial** (~51% funcional) de los endpoints esperados por el frontend.
+
+#### ✅ **Endpoints que SÍ funcionan:**
+- **CRUD Personas**: GET/POST/PUT/DELETE `/api/personas` ✅
+- **Búsquedas**: `/personas/search`, `/personas/socios`, `/personas/docentes`, `/personas/proveedores` ✅
+- **Tipos y Contactos**: GET/POST/PUT/DELETE en `/personas/:id/tipos` y `/personas/:id/contactos` ✅
+- **Validar DNI**: GET `/personas/dni/:dni/check` ✅
+- **Catálogos individuales**:
+  - GET `/api/catalogos/tipos-persona` ✅
+  - GET `/api/catalogos/especialidades-docentes` ✅
+  - GET `/api/categorias-socios` ✅ (nota: plural, no `/catalogos/categorias-socios`)
+
+#### ❌ **Endpoints que NO existen (manejados gracefully en frontend):**
+- **Catálogo batch**: `/api/catalogos/personas/todos` - El frontend carga endpoints individuales
+- **Tipos Contacto**: `/api/catalogos/tipos-contacto` - Frontend retorna array vacío
+- **Validar Email**: `/api/personas/validar/email/:email` - Frontend retorna siempre válido
+- **Toggle Tipo**: `/personas/tipos/:id/toggle` - Usar `actualizarTipo()` en su lugar
+- **Set Principal**: `/personas/contactos/:id/principal` - Usar `updateContacto()` en su lugar
+- **Estadísticas**: `/personas/estadisticas/tipos` - Existe pero con bug (500), frontend retorna array vacío
+
+#### ❌ **Módulo Admin NO disponible (rutas 404):**
+Las rutas admin existen en el código del backend (`catalogo-admin.routes.ts`) pero **NO están montadas** en el router principal:
+- POST/PUT/DELETE `/api/admin/catalogos/tipos-persona` ❌
+- POST/PUT/DELETE `/api/admin/catalogos/especialidades-docentes` ❌
+- POST/PUT/DELETE `/api/admin/catalogos/tipos-contacto` ❌
+- POST `/api/admin/catalogos/*/reordenar` ❌
+
+**Solución temporal en frontend:**
+- `personasApi.getCatalogos()` solo llama a endpoints que existen
+- `getTiposContacto()` retorna array vacío sin llamar al backend
+- `validarEmail()` retorna siempre válido
+- `toggleTipo()` y `setPrincipal()` lanzan error indicando usar métodos alternativos
+- `getEstadisticasTipos()` maneja error 500 y retorna array vacío
+- Métodos admin están documentados como no disponibles
+
+#### 📋 **Discrepancias en nombres de endpoints:**
+| Documentado en Guía | Endpoint Real Backend | Estado Frontend |
+|---------------------|----------------------|-----------------|
+| `/tipo-persona-catalogo` | `/catalogos/tipos-persona` | ✅ Corregido |
+| `/catalogos/categorias-socios` | `/categorias-socios` | ✅ Corregido |
+| `/personas/validar/dni/:dni` | `/personas/dni/:dni/check` | ✅ Corregido |
+
+**Resultado**: El frontend NO genera errores 404 en consola. Los catálogos y funciones faltantes se manejan gracefully con valores por defecto
 
 ### MUI Grid Migration
 The codebase uses deprecated MUI Grid v1 API (`item`, `xs`, `sm` props). MUI v7 requires Grid2 component. When updating Grid components:

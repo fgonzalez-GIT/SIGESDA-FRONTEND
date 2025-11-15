@@ -60,16 +60,15 @@ export const useCatalogosPersonas = (): UseCatalogosPersonasResult => {
       const response = await personasApi.getCatalogos();
       setCatalogos(response.data);
     } catch (err) {
-      // Si el endpoint no existe (404), inicializar con catálogos vacíos
-      // para que la aplicación pueda funcionar sin bloquear la UI
-      console.warn('⚠️ Endpoint de catálogos no disponible, usando valores por defecto:', err);
+      // Error inesperado - getCatalogos() ya maneja 404s gracefully
+      console.error('❌ Error crítico al cargar catálogos:', err);
       setCatalogos({
         tiposPersona: [],
         categoriasSocio: [],
         especialidadesDocentes: [],
         tiposContacto: [],
       });
-      // No establecer error para no bloquear la UI
+      setError(err instanceof Error ? err.message : 'Error al cargar catálogos');
     } finally {
       setLoading(false);
     }
