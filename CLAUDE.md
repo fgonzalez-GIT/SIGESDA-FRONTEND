@@ -82,15 +82,32 @@ b) **Context API (src/providers/)** - For globally shared catalogs:
 **5. Personas Module Architecture**
 The Personas module implements a **multi-type system** where a person can have multiple types (SOCIO, DOCENTE, PROVEEDOR, NO_SOCIO) simultaneously:
 
-- **V2 API** (`personasApi.ts`) with discriminated unions for type-specific fields
+- **Unified V2 Implementation** - V1 (basic) has been removed
+- **API** (`personasApi.ts`) with 49 endpoints including:
+  - CRUD personas (5 endpoints)
+  - Búsquedas especializadas (4): socios, docentes, proveedores, search
+  - Gestión de tipos (5): getTipos, asignarTipo, actualizarTipo, desasignarTipo, toggleTipo
+  - Gestión de contactos (5): CRUD + setPrincipal
+  - Validaciones (2): validarDni (async), validarEmail
+  - Admin catálogos (12): CRUD TiposPersona, EspecialidadesDocentes, TiposContacto + reordenar
 - **Zod discriminated unions** for type-safe validation per person type
 - Each type has specific requirements:
   - `SOCIO`: requires `categoriaId`
   - `DOCENTE`: requires `especialidadId`, `honorariosPorHora`
   - `PROVEEDOR`: requires `cuit`, `razonSocial`
-  - `NO_SOCIO`: basic type with no additional fields
-- **Admin pages** for managing catalogs: TiposPersona, EspecialidadesDocente, TiposContacto
-- **Contactos** system with principal contact validation
+  - `NO_SOCIO`: basic type with no additional fields (default on creation)
+- **Admin pages** accessible from sidebar submenu:
+  - `/admin/personas/tipos` - Gestión de Tipos de Persona
+  - `/admin/personas/especialidades` - Especialidades Docentes
+  - `/admin/personas/tipos-contacto` - Tipos de Contacto
+- **PersonaFormV2** with:
+  - TipoPersonaMultiSelect (Autocomplete multi-selection)
+  - Async DNI validation (500ms debounce)
+  - Dynamic fields based on selected types
+  - Exclusion validation: SOCIO ↔ NO_SOCIO
+  - Supports both creation and editing
+- **PersonaDetallePage** with tabs: Datos Generales, Tipos, Contactos, Familiares
+- **Contactos** system with principal contact validation (max 1 principal per person)
 
 **6. Actividades Module Architecture**
 Two versions coexist:
@@ -156,10 +173,23 @@ Backend must be running on port 8000 for the proxy to work correctly.
 ## Domain-Specific Notes
 
 ### Personas
-- V2 API supports multiple types per person
-- Use discriminated unions for type-specific validation
-- Contact validation: max 1 principal contact per person
-- Admin catalogs are manageable via UI
+- **Unified V2 implementation** - V1 (basic) version has been completely removed
+- **Multi-type system**: A person can have multiple types simultaneously (e.g., SOCIO + DOCENTE)
+- **Routes**:
+  - `/personas` - List with PersonaFormV2 for create/edit
+  - `/personas/:id` - Detail page with tabs (Datos, Tipos, Contactos, Familiares)
+  - Admin routes accessible from Sidebar → Personas submenu
+- **Components**:
+  - `PersonaFormV2` - Main form with TipoPersonaMultiSelect
+  - `PersonaDetallePage` - Tabbed detail view
+  - Admin pages in `src/pages/Personas/Admin/`
+- **Validations**:
+  - Async DNI validation (prevents duplicates)
+  - Exclusion: SOCIO and NO_SOCIO are mutually exclusive
+  - At least 1 type required
+  - Max 1 principal contact per person
+- **State**: Uses Redux (personasSlice) + useCatalogosPersonas hook
+- **Backend**: Requires complete API with 49 endpoints (no basic backend support)
 
 ### Actividades
 - Prefer V2 pages and implementations
@@ -181,11 +211,14 @@ Backend must be running on port 8000 for the proxy to work correctly.
 ## Known Issues
 
 ### Backend API Compatibility
-Some frontend API calls may fail if backend endpoints are not implemented:
-- `/api/catalogos/personas/todos` (404) - The `usePersonas` hook has fallback logic with default values
-- Some endpoints may return 500 errors if backend database schema is incomplete
+The Personas module now requires the **complete backend API** with all 49 endpoints:
+- CRUD, búsquedas, gestión de tipos, contactos, validaciones, y admin
+- No hay soporte para backend básico (la versión V1 fue eliminada)
+- Si faltan endpoints, la aplicación mostrará errores
 
-The application is designed to handle these gracefully with fallback data and error handling.
+Fallback logic:
+- `useCatalogosPersonas()` retorna catálogos vacíos si falla la carga
+- Otros hooks pueden fallar sin backend completo
 
 ### MUI Grid Migration
 The codebase uses deprecated MUI Grid v1 API (`item`, `xs`, `sm` props). MUI v7 requires Grid2 component. When updating Grid components:
