@@ -410,6 +410,28 @@ export interface UpdateEspecialidadDocenteDTO {
 }
 
 /**
+ * DTO para crear un tipo de contacto (admin)
+ */
+export interface CreateTipoContactoDTO {
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  icono?: string;
+  orden?: number;
+}
+
+/**
+ * DTO para actualizar un tipo de contacto (admin)
+ */
+export interface UpdateTipoContactoDTO {
+  nombre?: string;
+  descripcion?: string;
+  icono?: string;
+  activo?: boolean;
+  orden?: number;
+}
+
+/**
  * DTO para reordenar catálogos
  */
 export interface ReorderCatalogoDTO {

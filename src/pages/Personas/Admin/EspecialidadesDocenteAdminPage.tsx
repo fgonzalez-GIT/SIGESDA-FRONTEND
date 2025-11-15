@@ -142,7 +142,7 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
 
       if (selectedEspecialidad) {
         // Actualizar especialidad existente
-        await personasApi.updateEspecialidadDocente(
+        await personasApi.admin.updateEspecialidad(
           selectedEspecialidad.id,
           data as UpdateEspecialidadDocenteFormData
         );
@@ -154,7 +154,7 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
         );
       } else {
         // Crear nueva especialidad
-        await personasApi.createEspecialidadDocente(data as CreateEspecialidadDocenteFormData);
+        await personasApi.admin.createEspecialidad(data as CreateEspecialidadDocenteFormData);
         dispatch(
           showNotification({
             message: 'Especialidad creada exitosamente',
@@ -194,7 +194,7 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
 
     try {
       setSubmitting(true);
-      await personasApi.deleteEspecialidadDocente(especialidadToDelete.id);
+      await personasApi.admin.deleteEspecialidad(especialidadToDelete.id);
 
       dispatch(
         showNotification({

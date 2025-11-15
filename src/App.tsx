@@ -9,7 +9,10 @@ import { CatalogosProvider } from './providers/CatalogosProvider';
 // Pages
 import Dashboard from './pages/Dashboard/Dashboard';
 import PersonasPage from './pages/Personas/PersonasPage';
-import PersonaDetallePageBasic from './pages/Personas/PersonaDetallePageBasic';
+import PersonaDetallePage from './pages/Personas/PersonaDetallePage';
+import TiposPersonaAdminPage from './pages/Personas/Admin/TiposPersonaAdminPage';
+import EspecialidadesDocenteAdminPage from './pages/Personas/Admin/EspecialidadesDocenteAdminPage';
+import TiposContactoAdminPage from './pages/Personas/Admin/TiposContactoAdminPage';
 import AulasPage from './pages/Aulas/AulasPage';
 import CuotasPage from './pages/Cuotas/CuotasPage';
 import MediosPagoPage from './pages/MediosPago/MediosPagoPage';
@@ -39,9 +42,14 @@ function App() {
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<Dashboard />} />
 
-                {/* Personas - Versión Básica */}
+                {/* Personas */}
                 <Route path="/personas" element={<PersonasPage />} />
-                <Route path="/personas/:id" element={<PersonaDetallePageBasic />} />
+                <Route path="/personas/:id" element={<PersonaDetallePage />} />
+
+                {/* Admin - Catálogos de Personas */}
+                <Route path="/admin/personas/tipos" element={<TiposPersonaAdminPage />} />
+                <Route path="/admin/personas/especialidades" element={<EspecialidadesDocenteAdminPage />} />
+                <Route path="/admin/personas/tipos-contacto" element={<TiposContactoAdminPage />} />
 
                 {/* Actividades */}
                 <Route path="/actividades" element={<ActividadesPage />} />

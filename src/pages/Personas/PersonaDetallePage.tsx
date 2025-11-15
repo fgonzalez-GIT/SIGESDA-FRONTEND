@@ -75,7 +75,7 @@ const PersonaDetallePage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate('/personas-v2');
+    navigate('/personas');
   };
 
   const handleEdit = () => {

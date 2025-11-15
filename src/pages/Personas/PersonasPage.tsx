@@ -18,21 +18,21 @@ import {
   PersonasFilters,
   LoadingSkeleton,
 } from '../../components/personas/v2';
-import { PersonaFormBasic } from '../../components/personas/basic/PersonaFormBasic';
-import { usePersonas } from '../../hooks/usePersonas';
-import personasApiBasic from '../../services/personasApi.basic';
+import { PersonaFormV2 } from '../../components/personas/v2/PersonaFormV2';
+import { usePersonas, useCatalogosPersonas } from '../../hooks/usePersonas';
+import { personasApi } from '../../services/personasApi';
 import type {
   Persona,
   PersonasQueryParams,
+  CreatePersonaDTO,
 } from '../../types/persona.types';
-import type { CreatePersonaBasicFormData } from '../../schemas/persona.basic.schema';
 import { useAppDispatch } from '../../hooks/redux';
 import { showNotification } from '../../store/slices/uiSlice';
 
 /**
- * Página principal del Módulo Personas - Versión Básica
- * Compatible con Backend Básico (6 endpoints)
- * Lista de personas con filtros, paginación y CRUD básico
+ * Página principal del Módulo Personas - Versión V2
+ * Lista de personas con filtros, paginación y CRUD completo
+ * Soporta múltiples tipos de persona, contactos y validaciones avanzadas
  */
 const PersonasPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -44,8 +44,9 @@ const PersonasPage: React.FC = () => {
     limit: 20,
   });
 
-  // Estado de personas
+  // Estado de personas y catálogos
   const { personas, pagination, loading, fetchPersonas, refetch } = usePersonas(filters);
+  const { catalogos, loading: catalogosLoading } = useCatalogosPersonas();
 
   // Estados de UI
   const [formOpen, setFormOpen] = useState(false);
@@ -100,11 +101,11 @@ const PersonasPage: React.FC = () => {
     setSelectedPersona(null);
   };
 
-  const handleFormSubmit = async (data: CreatePersonaBasicFormData) => {
+  const handleFormSubmit = async (data: CreatePersonaDTO) => {
     try {
       if (selectedPersona) {
         // Actualizar persona existente
-        await personasApiBasic.update(selectedPersona.id, data);
+        await personasApi.update(selectedPersona.id, data);
         dispatch(
           showNotification({
             message: 'Persona actualizada exitosamente',
@@ -113,7 +114,7 @@ const PersonasPage: React.FC = () => {
         );
       } else {
         // Crear nueva persona
-        await personasApiBasic.create(data);
+        await personasApi.create(data);
         dispatch(
           showNotification({
             message: 'Persona creada exitosamente',
@@ -153,7 +154,7 @@ const PersonasPage: React.FC = () => {
 
     try {
       setDeleting(true);
-      await personasApiBasic.delete(personaToDelete.id);
+      await personasApi.delete(personaToDelete.id);
 
       dispatch(
         showNotification({
@@ -194,7 +195,7 @@ const PersonasPage: React.FC = () => {
             Gestión de Personas
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            CRUD básico de personas
+            Gestión completa de personas con múltiples tipos, contactos y validaciones
           </Typography>
         </Box>
         <Button
@@ -210,7 +211,7 @@ const PersonasPage: React.FC = () => {
       {/* Filtros */}
       <PersonasFilters
         filters={filters}
-        catalogos={null}
+        catalogos={catalogos}
         onFilterChange={handleFilterChange}
         onClearFilters={handleClearFilters}
         resultCount={personas.length}
@@ -253,12 +254,13 @@ const PersonasPage: React.FC = () => {
       )}
 
       {/* Formulario */}
-      <PersonaFormBasic
+      <PersonaFormV2
         open={formOpen}
         onClose={handleFormClose}
         onSubmit={handleFormSubmit}
         persona={selectedPersona}
-        loading={loading}
+        catalogos={catalogos}
+        loading={loading || catalogosLoading}
       />
 
       {/* Diálogo de confirmación de eliminación */}

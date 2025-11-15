@@ -64,17 +64,17 @@ const menuItems: MenuItem[] = [
       {
         title: 'Tipos de Persona',
         icon: <AdminPanelSettings fontSize="small" />,
-        path: '/personas/admin/tipos-persona',
+        path: '/admin/personas/tipos',
       },
       {
         title: 'Especialidades',
         icon: <School fontSize="small" />,
-        path: '/personas/admin/especialidades',
+        path: '/admin/personas/especialidades',
       },
       {
         title: 'Tipos de Contacto',
         icon: <ContactPhone fontSize="small" />,
-        path: '/personas/admin/tipos-contacto',
+        path: '/admin/personas/tipos-contacto',
       },
     ],
   },

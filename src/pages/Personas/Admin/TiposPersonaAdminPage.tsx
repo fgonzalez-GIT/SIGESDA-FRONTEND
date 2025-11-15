@@ -193,7 +193,7 @@ const TiposPersonaAdminPage: React.FC = () => {
 
       if (selectedTipo) {
         // Actualizar tipo existente
-        await personasApi.updateTipoPersona(
+        await personasApi.admin.updateTipoPersona(
           selectedTipo.id,
           data as UpdateTipoPersonaFormData
         );
@@ -205,7 +205,7 @@ const TiposPersonaAdminPage: React.FC = () => {
         );
       } else {
         // Crear nuevo tipo
-        await personasApi.createTipoPersona(data as CreateTipoPersonaFormData);
+        await personasApi.admin.createTipoPersona(data as CreateTipoPersonaFormData);
         dispatch(
           showNotification({
             message: 'Tipo de persona creado exitosamente',
@@ -245,7 +245,7 @@ const TiposPersonaAdminPage: React.FC = () => {
 
     try {
       setSubmitting(true);
-      await personasApi.deleteTipoPersona(tipoToDelete.id);
+      await personasApi.admin.deleteTipoPersona(tipoToDelete.id);
 
       dispatch(
         showNotification({

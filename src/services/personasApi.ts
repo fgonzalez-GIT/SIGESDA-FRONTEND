@@ -445,6 +445,47 @@ export const personasApi = {
       );
       return response.data;
     },
+
+    /**
+     * Crear un nuevo tipo de contacto
+     * POST /api/admin/catalogos/tipos-contacto
+     */
+    createTipoContacto: async (
+      tipo: CreateTipoContactoDTO
+    ): Promise<ApiResponse<TipoContacto>> => {
+      const response = await api.post('/admin/catalogos/tipos-contacto', tipo);
+      return response.data;
+    },
+
+    /**
+     * Actualizar un tipo de contacto
+     * PUT /api/admin/catalogos/tipos-contacto/:id
+     */
+    updateTipoContacto: async (
+      id: number,
+      tipo: UpdateTipoContactoDTO
+    ): Promise<ApiResponse<TipoContacto>> => {
+      const response = await api.put(`/admin/catalogos/tipos-contacto/${id}`, tipo);
+      return response.data;
+    },
+
+    /**
+     * Eliminar un tipo de contacto
+     * DELETE /api/admin/catalogos/tipos-contacto/:id
+     */
+    deleteTipoContacto: async (id: number): Promise<ApiResponse<null>> => {
+      const response = await api.delete(`/admin/catalogos/tipos-contacto/${id}`);
+      return response.data;
+    },
+
+    /**
+     * Reordenar tipos de contacto
+     * POST /api/admin/catalogos/tipos-contacto/reordenar
+     */
+    reorderTiposContacto: async (data: ReorderCatalogoDTO): Promise<ApiResponse<null>> => {
+      const response = await api.post('/admin/catalogos/tipos-contacto/reordenar', data);
+      return response.data;
+    },
   },
 };
 

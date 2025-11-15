@@ -111,11 +111,8 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
   const tiposWatch = watch('tipos');
 
   // ============================================================================
-  // VALIDACIÓN ASÍNCRONA DE DNI - DESHABILITADA TEMPORALMENTE
+  // VALIDACIÓN ASÍNCRONA DE DNI
   // ============================================================================
-  // Para reactivar, descomentar este bloque y las llamadas en el TextField DNI
-  // ============================================================================
-  /*
   const validateDniAsync = useCallback(
     debounce(async (dni: string) => {
       if (!dni || dni.length < 7 || dni.length > 8) {
@@ -150,7 +147,6 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
     }, 500),
     [persona?.id]
   );
-  */
 
   useEffect(() => {
     if (persona) {
@@ -295,17 +291,17 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
   };
 
   const handleFormSubmit = async (data: CreatePersonaFormData) => {
-    // VALIDACIÓN DNI DESHABILITADA TEMPORALMENTE
-    // if (dniError) {
-    //   return;
-    // }
+    // Validar que no haya error de DNI
+    if (dniError) {
+      return;
+    }
 
     try {
       setSubmitting(true);
       await onSubmit(data as CreatePersonaDTO);
       reset();
-      setSelectedTipos([]);
-      // setDniError(null);
+      setSelectedTipos(['NO_SOCIO']);
+      setDniError(null);
       onClose();
     } catch (error) {
       console.error('Error en formulario:', error);
@@ -561,11 +557,6 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                         label="DNI *"
                         size="small"
                         inputProps={{ maxLength: 8 }}
-                        error={!!errors.dni}
-                        helperText={errors.dni?.message || '7 u 8 dígitos'}
-                        // VALIDACIÓN ASÍNCRONA DESHABILITADA
-                        // Para reactivar, descomentar el código comentado arriba
-                        /*
                         error={!!errors.dni || !!dniError}
                         helperText={
                           errors.dni?.message ||
@@ -590,7 +581,6 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                             <CircularProgress size={20} />
                           ) : null,
                         }}
-                        */
                       />
                     )}
                   />
@@ -719,8 +709,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
             type="submit"
             variant="contained"
             startIcon={submitting || loading ? <CircularProgress size={20} /> : <SaveIcon />}
-            disabled={submitting || loading}
-            // VALIDACIÓN DNI DESHABILITADA: disabled={submitting || loading || !!dniError || dniValidating}
+            disabled={submitting || loading || !!dniError || dniValidating}
           >
             {submitting || loading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear'}
           </Button>
