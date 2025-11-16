@@ -236,7 +236,9 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
 
       // Inicializar campos específicos según el tipo
       if (codigoUpper === 'SOCIO') {
-        newTipo.categoriaId = '';
+        // Buscar "General" como categoría predeterminada
+        const generalCat = catalogos?.categoriasSocio?.find(c => c.codigo === 'GENERAL');
+        newTipo.categoriaId = generalCat?.id || '';
       } else if (codigoUpper === 'DOCENTE') {
         // Buscar "General" como especialidad predeterminada
         const generalEsp = catalogos?.especialidadesDocentes?.find(e => e.codigo === 'GENERAL');
@@ -277,7 +279,9 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
 
       // Inicializar campos específicos según el tipo
       if (codigoUpper === 'SOCIO') {
-        newTipo.categoriaId = '';
+        // Buscar "General" como categoría predeterminada
+        const generalCat = catalogos?.categoriasSocio?.find(c => c.codigo === 'GENERAL');
+        newTipo.categoriaId = generalCat?.id || '';
       } else if (codigoUpper === 'DOCENTE') {
         // Buscar "General" como especialidad predeterminada
         const generalEsp = catalogos?.especialidadesDocentes?.find(e => e.codigo === 'GENERAL');
@@ -338,9 +342,10 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                         <MenuItem value="">Seleccionar categoría</MenuItem>
                         {catalogos?.categoriasSocio
                           .filter((c) => c.activa)
+                          .sort((a, b) => a.orden - b.orden)
                           .map((cat) => (
                             <MenuItem key={cat.id} value={cat.id}>
-                              {cat.nombre} - ${cat.montoCuota}
+                              {cat.nombre}{cat.montoCuota && Number(cat.montoCuota) > 0 ? ` - $${cat.montoCuota}` : ''}
                             </MenuItem>
                           ))}
                       </Select>
