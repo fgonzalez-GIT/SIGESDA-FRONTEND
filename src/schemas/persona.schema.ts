@@ -32,7 +32,7 @@ const personaTipoBaseSchema = z.object({
 
 export const createTipoSocioSchema = personaTipoBaseSchema.extend({
   tipoPersonaCodigo: z.literal('SOCIO'),
-  categoriaId: z.string().min(1),
+  categoriaId: z.number().int().positive('Categoría requerida'),
 });
 
 export const createTipoDocenteSchema = personaTipoBaseSchema.extend({
@@ -67,7 +67,7 @@ export const createPersonaTipoSchema = z.discriminatedUnion('tipoPersonaCodigo',
 ]);
 
 export const updatePersonaTipoSchema = z.object({
-  categoriaId: z.string().min(1).optional(),
+  categoriaId: z.number().int().positive().optional(),
   especialidadId: z.number().int().positive().optional(),
   honorariosPorHora: z.number().min(0).max(1000000).multipleOf(0.01).optional(),
   cuit: z.string().regex(cuitRegex).length(11).optional(),

@@ -45,7 +45,7 @@ export interface EspecialidadDocente {
  * Categoría de Socio (ya existente en el sistema)
  */
 export interface CategoriaSocio {
-  id: string;                  // CUID
+  id: number;                  // Int autoincrement
   codigo: string;
   nombre: string;
   descripcion?: string;
@@ -91,7 +91,7 @@ export interface PersonaTipo {
   tipoPersonaCodigo: string;
 
   // Campos específicos según el tipo
-  categoriaId?: string;        // Para SOCIO (CUID)
+  categoriaId?: number;        // Para SOCIO (Int)
   numeroSocio?: number;        // Auto-generado para SOCIO
   especialidadId?: number;     // Para DOCENTE
   honorariosPorHora?: number;  // Para DOCENTE
@@ -179,7 +179,7 @@ export interface CreatePersonaTipoDTO {
   tipoPersonaCodigo: string;
 
   // Campos condicionales según el tipo
-  categoriaId?: string;        // Obligatorio si tipo === 'SOCIO'
+  categoriaId?: number;        // Obligatorio si tipo === 'SOCIO'
   especialidadId?: number;     // Obligatorio si tipo === 'DOCENTE'
   honorariosPorHora?: number;  // Obligatorio si tipo === 'DOCENTE'
   cuit?: string;               // Obligatorio si tipo === 'PROVEEDOR' (11 dígitos)
@@ -242,7 +242,7 @@ export interface UpdatePersonaDTO {
  * DTO para actualizar un tipo asignado
  */
 export interface UpdatePersonaTipoDTO {
-  categoriaId?: string;
+  categoriaId?: number;
   especialidadId?: number;
   honorariosPorHora?: number;
   cuit?: string;
@@ -279,7 +279,7 @@ export interface PersonasQueryParams {
   search?: string;             // Búsqueda en nombre, apellido, DNI
   tiposCodigos?: string[];     // Filtrar por múltiples tipos ['SOCIO', 'DOCENTE']
   estado?: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO';
-  categoriaId?: string;        // Filtrar socios por categoría
+  categoriaId?: number;        // Filtrar socios por categoría
   especialidadId?: number;     // Filtrar docentes por especialidad
 
   // Opciones de inclusión

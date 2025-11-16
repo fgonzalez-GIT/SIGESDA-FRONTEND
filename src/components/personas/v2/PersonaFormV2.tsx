@@ -238,7 +238,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
       if (codigoUpper === 'SOCIO') {
         // Buscar "General" como categoría predeterminada
         const generalCat = catalogos?.categoriasSocio?.find(c => c.codigo === 'GENERAL');
-        newTipo.categoriaId = generalCat?.id || '';
+        newTipo.categoriaId = generalCat?.id || 0;
       } else if (codigoUpper === 'DOCENTE') {
         // Buscar "General" como especialidad predeterminada
         const generalEsp = catalogos?.especialidadesDocentes?.find(e => e.codigo === 'GENERAL');
@@ -281,7 +281,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
       if (codigoUpper === 'SOCIO') {
         // Buscar "General" como categoría predeterminada
         const generalCat = catalogos?.categoriasSocio?.find(c => c.codigo === 'GENERAL');
-        newTipo.categoriaId = generalCat?.id || '';
+        newTipo.categoriaId = generalCat?.id || 0;
       } else if (codigoUpper === 'DOCENTE') {
         // Buscar "General" como especialidad predeterminada
         const generalEsp = catalogos?.especialidadesDocentes?.find(e => e.codigo === 'GENERAL');
