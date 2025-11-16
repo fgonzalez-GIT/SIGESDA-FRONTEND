@@ -11,9 +11,9 @@ const telefonoRegex = /^[\d\s\-\+\(\)]+$/;
 export const createContactoSchema = z.object({
   tipoContactoId: z.number().int().positive('Tipo de contacto requerido'),
   valor: z.string().min(1, 'Valor requerido').max(200).trim(),
-  descripcion: z.string().max(200).optional().or(z.literal('')),
+  descripcion: z.string().max(200).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
   esPrincipal: z.boolean().default(false),
-  observaciones: z.string().max(200).optional().or(z.literal('')),
+  observaciones: z.string().max(200).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
 });
 
 export const updateContactoSchema = z.object({
@@ -27,7 +27,7 @@ export const updateContactoSchema = z.object({
 
 const personaTipoBaseSchema = z.object({
   tipoPersonaCodigo: z.string().min(1).trim(),
-  observaciones: z.string().max(500).optional().or(z.literal('')),
+  observaciones: z.string().max(500).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
 });
 
 export const createTipoSocioSchema = personaTipoBaseSchema.extend({
@@ -37,7 +37,8 @@ export const createTipoSocioSchema = personaTipoBaseSchema.extend({
 
 export const createTipoDocenteSchema = personaTipoBaseSchema.extend({
   tipoPersonaCodigo: z.literal('DOCENTE'),
-  especialidadId: z.number().int().positive('Especialidad requerida para docente'),
+  // Permitir 0 temporalmente en el formulario, validación real al enviar
+  especialidadId: z.number().int().nonnegative('Especialidad requerida para docente'),
   honorariosPorHora: z.number()
     .min(0, 'Honorarios no pueden ser negativos')
     .max(1000000, 'Honorarios demasiado altos')
@@ -56,19 +57,13 @@ export const createTipoNoSocioSchema = personaTipoBaseSchema.extend({
   tipoPersonaCodigo: z.literal('NO_SOCIO'),
 });
 
+// Discriminated union para validación estricta de tipos de persona
+// Solo acepta los 4 tipos definidos: SOCIO, DOCENTE, PROVEEDOR, NO_SOCIO
 export const createPersonaTipoSchema = z.discriminatedUnion('tipoPersonaCodigo', [
   createTipoSocioSchema,
   createTipoDocenteSchema,
   createTipoProveedorSchema,
   createTipoNoSocioSchema,
-  personaTipoBaseSchema.extend({
-    tipoPersonaCodigo: z.string().min(1),
-    categoriaId: z.string().optional(),
-    especialidadId: z.number().optional(),
-    honorariosPorHora: z.number().optional(),
-    cuit: z.string().optional(),
-    razonSocial: z.string().optional(),
-  }),
 ]);
 
 export const updatePersonaTipoSchema = z.object({
@@ -85,11 +80,12 @@ export const createPersonaSchema = z.object({
   nombre: z.string().min(2).max(100).trim(),
   apellido: z.string().min(2).max(100).trim(),
   dni: z.string().regex(dniRegex).min(7).max(8),
-  email: z.string().regex(emailRegex).max(200).trim().optional().or(z.literal('')),
-  telefono: z.string().regex(telefonoRegex).max(50).optional().or(z.literal('')),
-  direccion: z.string().max(300).trim().optional().or(z.literal('')),
-  fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
-  observaciones: z.string().max(1000).optional().or(z.literal('')),
+  // Transformar strings vacíos a undefined para campos opcionales
+  email: z.string().regex(emailRegex).max(200).trim().optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  telefono: z.string().regex(telefonoRegex).max(50).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  direccion: z.string().max(300).trim().optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  observaciones: z.string().max(1000).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
   tipos: z.array(createPersonaTipoSchema).optional().default([]),
   contactos: z.array(createContactoSchema).optional().default([]),
 }).refine(data => data.tipos && data.tipos.length > 0, {
@@ -106,6 +102,16 @@ export const createPersonaSchema = z.object({
   return true;
 }, {
   message: 'Una persona no puede ser SOCIO y NO_SOCIO simultáneamente',
+  path: ['tipos'],
+}).refine(data => {
+  // Validación DOCENTE: especialidadId debe ser > 0 al enviar
+  if (data.tipos && data.tipos.length > 0) {
+    const docentes = data.tipos.filter((t: any) => t.tipoPersonaCodigo?.toUpperCase() === 'DOCENTE');
+    return docentes.every((d: any) => d.especialidadId && d.especialidadId > 0);
+  }
+  return true;
+}, {
+  message: 'Debe seleccionar una especialidad para el tipo DOCENTE',
   path: ['tipos'],
 }).refine(data => {
   if (data.contactos && data.contactos.length > 0) {

@@ -238,12 +238,15 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
       if (codigoUpper === 'SOCIO') {
         newTipo.categoriaId = '';
       } else if (codigoUpper === 'DOCENTE') {
-        newTipo.especialidadId = undefined;
+        // No incluir especialidadId si no tiene valor (evita errores de validación)
+        // Se asignará después en el formulario específico de docente
+        newTipo.especialidadId = 0; // 0 no es válido pero el schema lo rechazará mostrando error
         newTipo.honorariosPorHora = 0;
       } else if (codigoUpper === 'PROVEEDOR') {
         newTipo.cuit = '';
         newTipo.razonSocial = '';
       }
+      // NO_SOCIO no requiere campos adicionales
 
       setValue('tipos', [...tiposToAdd, newTipo]);
       setSelectedTipos([...selectedToKeep, codigoTipo]);
@@ -276,12 +279,14 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
       if (codigoUpper === 'SOCIO') {
         newTipo.categoriaId = '';
       } else if (codigoUpper === 'DOCENTE') {
-        newTipo.especialidadId = undefined;
+        // No incluir especialidadId si no tiene valor (evita errores de validación)
+        newTipo.especialidadId = 0; // 0 no es válido pero el schema lo rechazará mostrando error
         newTipo.honorariosPorHora = 0;
       } else if (codigoUpper === 'PROVEEDOR') {
         newTipo.cuit = '';
         newTipo.razonSocial = '';
       }
+      // NO_SOCIO no requiere campos adicionales
 
       updatedTipos.push(newTipo);
     });
