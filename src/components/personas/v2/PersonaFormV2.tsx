@@ -238,9 +238,9 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
       if (codigoUpper === 'SOCIO') {
         newTipo.categoriaId = '';
       } else if (codigoUpper === 'DOCENTE') {
-        // No incluir especialidadId si no tiene valor (evita errores de validación)
-        // Se asignará después en el formulario específico de docente
-        newTipo.especialidadId = 0; // 0 no es válido pero el schema lo rechazará mostrando error
+        // Buscar "General" como especialidad predeterminada
+        const generalEsp = catalogos?.especialidadesDocentes?.find(e => e.codigo === 'GENERAL');
+        newTipo.especialidadId = generalEsp?.id || 0;
         newTipo.honorariosPorHora = 0;
       } else if (codigoUpper === 'PROVEEDOR') {
         newTipo.cuit = '';
@@ -279,8 +279,9 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
       if (codigoUpper === 'SOCIO') {
         newTipo.categoriaId = '';
       } else if (codigoUpper === 'DOCENTE') {
-        // No incluir especialidadId si no tiene valor (evita errores de validación)
-        newTipo.especialidadId = 0; // 0 no es válido pero el schema lo rechazará mostrando error
+        // Buscar "General" como especialidad predeterminada
+        const generalEsp = catalogos?.especialidadesDocentes?.find(e => e.codigo === 'GENERAL');
+        newTipo.especialidadId = generalEsp?.id || 0;
         newTipo.honorariosPorHora = 0;
       } else if (codigoUpper === 'PROVEEDOR') {
         newTipo.cuit = '';
@@ -361,7 +362,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
               Campos de Docente
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <Controller
                   name={`tipos.${index}.especialidadId` as any}
                   control={control}
@@ -377,6 +378,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                         <MenuItem value="">Seleccionar especialidad</MenuItem>
                         {catalogos?.especialidadesDocentes
                           .filter((e) => e.activo)
+                          .sort((a, b) => a.orden - b.orden)
                           .map((esp) => (
                             <MenuItem key={esp.id} value={esp.id}>
                               {esp.nombre}
@@ -390,7 +392,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                   )}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <Controller
                   name={`tipos.${index}.honorariosPorHora` as any}
                   control={control}
