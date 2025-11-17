@@ -309,14 +309,16 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
     try {
       setSubmitting(true);
 
-      // Transformar CUIT: eliminar guiones para enviar al backend (backend espera 11 dígitos)
-      const dataToSend = {
+      // Transformar datos antes de enviar
+      const dataToSend: any = {
         ...data,
+        // Limpiar fechaNacimiento si está vacío (evitar error de validación datetime)
+        fechaNacimiento: data.fechaNacimiento || undefined,
         tipos: data.tipos?.map((tipo: any) => {
           if (tipo.tipoPersonaCodigo === 'PROVEEDOR' && tipo.cuit) {
             return {
               ...tipo,
-              cuit: tipo.cuit.replace(/-/g, ''), // Remover guiones
+              cuit: tipo.cuit.replace(/-/g, ''), // Remover guiones del CUIT
             };
           }
           return tipo;
