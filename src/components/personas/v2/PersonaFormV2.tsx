@@ -308,7 +308,22 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
 
     try {
       setSubmitting(true);
-      await onSubmit(data as CreatePersonaDTO);
+
+      // Transformar CUIT: eliminar guiones para enviar al backend (backend espera 11 dígitos)
+      const dataToSend = {
+        ...data,
+        tipos: data.tipos?.map((tipo: any) => {
+          if (tipo.tipoPersonaCodigo === 'PROVEEDOR' && tipo.cuit) {
+            return {
+              ...tipo,
+              cuit: tipo.cuit.replace(/-/g, ''), // Remover guiones
+            };
+          }
+          return tipo;
+        }),
+      };
+
+      await onSubmit(dataToSend as CreatePersonaDTO);
       reset();
       setSelectedTipos(['NO_SOCIO']);
       setDniError(null);
@@ -436,10 +451,40 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                       fullWidth
                       size="small"
                       label="CUIT *"
-                      placeholder="11 dígitos"
-                      inputProps={{ maxLength: 11 }}
+                      placeholder="XX-XXXXXXXX-X"
+                      inputProps={{ maxLength: 13 }}
                       error={!!errors.tipos?.[index]?.cuit}
-                      helperText={errors.tipos?.[index]?.cuit?.message || '11 dígitos sin guiones'}
+                      helperText={errors.tipos?.[index]?.cuit?.message || 'Formato: XX-XXXXXXXX-X'}
+                      onChange={(e) => {
+                        // Formato CUIT: XX-XXXXXXXX-X (solo números y guiones)
+                        let value = e.target.value.replace(/[^0-9-]/g, '');
+
+                        // Eliminar guiones para trabajar solo con números
+                        const onlyNumbers = value.replace(/-/g, '');
+
+                        // Formatear con guiones en posiciones correctas
+                        if (onlyNumbers.length <= 2) {
+                          value = onlyNumbers;
+                        } else if (onlyNumbers.length <= 10) {
+                          value = `${onlyNumbers.slice(0, 2)}-${onlyNumbers.slice(2)}`;
+                        } else {
+                          value = `${onlyNumbers.slice(0, 2)}-${onlyNumbers.slice(2, 10)}-${onlyNumbers.slice(10, 11)}`;
+                        }
+
+                        // Actualizar campo CUIT
+                        field.onChange(value);
+
+                        // Extraer DNI (dígitos centrales) y actualizar campo DNI
+                        if (onlyNumbers.length >= 10) {
+                          const dniFromCuit = onlyNumbers.slice(2, 10);
+                          setValue('dni', dniFromCuit);
+                          // Disparar validación de DNI
+                          if (dniFromCuit.length >= 7 && dniFromCuit.length <= 8) {
+                            setDniError(null);
+                            validateDniAsync(dniFromCuit);
+                          }
+                        }
+                      }}
                     />
                   )}
                 />

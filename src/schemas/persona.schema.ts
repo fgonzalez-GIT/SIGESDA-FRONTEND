@@ -4,7 +4,7 @@ import { z } from 'zod';
 // Los mensajes de error personalizados se agregan en las validaciones, no en la construcción
 
 const dniRegex = /^\d{7,8}$/;
-const cuitRegex = /^\d{11}$/;
+const cuitRegex = /^(\d{2}-\d{8}-\d{1}|\d{11})$/; // Acepta XX-XXXXXXXX-X o 11 dígitos sin guiones
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const telefonoRegex = /^[\d\s\-\+\(\)]+$/;
 
@@ -48,8 +48,9 @@ export const createTipoDocenteSchema = personaTipoBaseSchema.extend({
 export const createTipoProveedorSchema = personaTipoBaseSchema.extend({
   tipoPersonaCodigo: z.literal('PROVEEDOR'),
   cuit: z.string()
-    .length(11, 'CUIT debe tener exactamente 11 dígitos')
-    .regex(cuitRegex, 'CUIT debe contener solo números'),
+    .min(11, 'CUIT debe tener 11 dígitos')
+    .max(13, 'CUIT debe tener formato XX-XXXXXXXX-X')
+    .regex(cuitRegex, 'CUIT debe tener formato XX-XXXXXXXX-X'),
   razonSocial: z.string().min(3, 'Razón social muy corta').max(200).trim(),
 });
 
@@ -70,7 +71,7 @@ export const updatePersonaTipoSchema = z.object({
   categoriaId: z.number().int().positive().optional(),
   especialidadId: z.number().int().positive().optional(),
   honorariosPorHora: z.number().min(0).max(1000000).multipleOf(0.01).optional(),
-  cuit: z.string().regex(cuitRegex).length(11).optional(),
+  cuit: z.string().min(11).max(13).regex(cuitRegex).optional(),
   razonSocial: z.string().min(3).max(200).trim().optional(),
   activo: z.boolean().optional(),
   observaciones: z.string().max(500).optional().or(z.literal('')),
