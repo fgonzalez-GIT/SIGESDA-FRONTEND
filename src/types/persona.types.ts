@@ -56,6 +56,20 @@ export interface CategoriaSocio {
 }
 
 /**
+ * Razón Social (catálogo dinámico para proveedores)
+ */
+export interface RazonSocial {
+  id: number;
+  codigo: string;              // 'SA', 'SRL', 'MONOTRIBUTO', etc.
+  nombre: string;
+  descripcion?: string;
+  activo: boolean;
+  orden: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
  * Tipo de Contacto (catálogo)
  */
 export interface TipoContacto {
@@ -76,6 +90,7 @@ export interface CatalogosPersonas {
   especialidadesDocentes: EspecialidadDocente[];
   categoriasSocio: CategoriaSocio[];
   tiposContacto: TipoContacto[];
+  razonesSociales: RazonSocial[];
 }
 
 // ============================================================================
@@ -96,7 +111,7 @@ export interface PersonaTipo {
   especialidadId?: number;     // Para DOCENTE
   honorariosPorHora?: number;  // Para DOCENTE
   cuit?: string;               // Para PROVEEDOR (11 dígitos)
-  razonSocial?: string;        // Para PROVEEDOR
+  razonSocialId?: number;      // Para PROVEEDOR (Int)
 
   // Metadatos
   fechaAsignacion: string;     // ISO 8601
@@ -109,6 +124,7 @@ export interface PersonaTipo {
   tipoPersona?: TipoPersona;
   categoria?: CategoriaSocio;
   especialidad?: EspecialidadDocente;
+  razonSocial?: RazonSocial;
 }
 
 /**
@@ -183,7 +199,7 @@ export interface CreatePersonaTipoDTO {
   especialidadId?: number;     // Obligatorio si tipo === 'DOCENTE'
   honorariosPorHora?: number;  // Obligatorio si tipo === 'DOCENTE'
   cuit?: string;               // Obligatorio si tipo === 'PROVEEDOR' (11 dígitos)
-  razonSocial?: string;        // Obligatorio si tipo === 'PROVEEDOR'
+  razonSocialId?: number;      // Obligatorio si tipo === 'PROVEEDOR'
 
   observaciones?: string;
 }
@@ -246,7 +262,7 @@ export interface UpdatePersonaTipoDTO {
   especialidadId?: number;
   honorariosPorHora?: number;
   cuit?: string;
-  razonSocial?: string;
+  razonSocialId?: number;
   activo?: boolean;
   observaciones?: string;
 }

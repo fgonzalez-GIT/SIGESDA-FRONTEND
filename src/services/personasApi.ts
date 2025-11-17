@@ -10,6 +10,7 @@ import {
   TipoPersona,
   EspecialidadDocente,
   CategoriaSocio,
+  RazonSocial,
   TipoContacto,
   PersonaTipo,
   CreatePersonaTipoDTO,
@@ -45,16 +46,18 @@ export const personasApi = {
    * - GET /api/catalogos/tipos-persona ✅
    * - GET /api/catalogos/especialidades-docentes ✅
    * - GET /api/categorias-socios ✅
+   * - GET /api/catalogos/razones-sociales ✅
    * - GET /api/catalogos/tipos-contacto ❌ (no existe, se retorna array vacío)
    */
   getCatalogos: async (): Promise<CatalogosResponse> => {
     console.info('📦 Cargando catálogos de personas desde endpoints individuales...');
 
     // Cargar solo los catálogos que existen en el backend
-    const [tiposRes, especialidadesRes, categoriasRes] = await Promise.allSettled([
+    const [tiposRes, especialidadesRes, categoriasRes, razonesRes] = await Promise.allSettled([
       api.get('/catalogos/tipos-persona'),           // ✅ Existe
       api.get('/catalogos/especialidades-docentes'), // ✅ Existe
       api.get('/categorias-socios'),                 // ✅ Existe (ruta diferente)
+      api.get('/catalogos/razones-sociales'),        // ✅ Existe (nuevo)
     ]);
 
     // Construir respuesta con datos disponibles
@@ -62,6 +65,7 @@ export const personasApi = {
       tiposPersona: tiposRes.status === 'fulfilled' ? tiposRes.value.data.data : [],
       especialidadesDocentes: especialidadesRes.status === 'fulfilled' ? especialidadesRes.value.data.data : [],
       categoriasSocio: categoriasRes.status === 'fulfilled' ? categoriasRes.value.data.data : [],
+      razonesSociales: razonesRes.status === 'fulfilled' ? razonesRes.value.data.data : [],
       tiposContacto: [], // No existe endpoint en backend
     };
 
@@ -69,6 +73,7 @@ export const personasApi = {
     if (tiposRes.status === 'rejected') warnings.push('tipos-persona');
     if (especialidadesRes.status === 'rejected') warnings.push('especialidades-docentes');
     if (categoriasRes.status === 'rejected') warnings.push('categorias-socios');
+    if (razonesRes.status === 'rejected') warnings.push('razones-sociales');
 
     if (warnings.length > 0) {
       console.warn(`⚠️ No se pudieron cargar algunos catálogos: ${warnings.join(', ')}`);

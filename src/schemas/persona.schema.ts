@@ -51,7 +51,7 @@ export const createTipoProveedorSchema = personaTipoBaseSchema.extend({
     .min(11, 'CUIT debe tener 11 dígitos')
     .max(13, 'CUIT debe tener formato XX-XXXXXXXX-X')
     .regex(cuitRegex, 'CUIT debe tener formato XX-XXXXXXXX-X'),
-  razonSocial: z.string().min(3, 'Razón social muy corta').max(200).trim(),
+  razonSocialId: z.number().int().positive('Razón social requerida'),
 });
 
 export const createTipoNoSocioSchema = personaTipoBaseSchema.extend({
@@ -72,7 +72,7 @@ export const updatePersonaTipoSchema = z.object({
   especialidadId: z.number().int().positive().optional(),
   honorariosPorHora: z.number().min(0).max(1000000).multipleOf(0.01).optional(),
   cuit: z.string().min(11).max(13).regex(cuitRegex).optional(),
-  razonSocial: z.string().min(3).max(200).trim().optional(),
+  razonSocialId: z.number().int().positive().optional(),
   activo: z.boolean().optional(),
   observaciones: z.string().max(500).optional().or(z.literal('')),
 });
