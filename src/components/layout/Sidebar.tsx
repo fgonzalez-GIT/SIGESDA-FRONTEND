@@ -67,14 +67,19 @@ const menuItems: MenuItem[] = [
         path: '/admin/personas/tipos',
       },
       {
-        title: 'Especialidades',
-        icon: <School fontSize="small" />,
-        path: '/admin/personas/especialidades',
-      },
-      {
         title: 'Tipos de Contacto',
         icon: <ContactPhone fontSize="small" />,
         path: '/admin/personas/tipos-contacto',
+      },
+      {
+        title: 'Categorías de Socios',
+        icon: <Category fontSize="small" />,
+        path: '/categorias',
+      },
+      {
+        title: 'Especialidades Docentes',
+        icon: <School fontSize="small" />,
+        path: '/admin/personas/especialidades',
       },
     ],
   },
@@ -119,12 +124,6 @@ const menuItems: MenuItem[] = [
     icon: <AccountBalance />,
     path: '/cuotas',
     color: '#1976d2',
-  },
-  {
-    title: 'Categorías',
-    icon: <Category />,
-    path: '/categorias',
-    color: '#e91e63',
   },
   {
     title: 'Tipos de Actividad',
