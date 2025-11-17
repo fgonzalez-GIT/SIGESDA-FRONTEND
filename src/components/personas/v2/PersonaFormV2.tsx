@@ -165,7 +165,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
           tipo.honorariosPorHora = pt.honorariosPorHora || 0;
         } else if (codigoUpper === 'PROVEEDOR') {
           tipo.cuit = pt.cuit || '';
-          tipo.razonSocial = pt.razonSocial || '';
+          tipo.razonSocialId = pt.razonSocialId || 0;
         }
 
         return tipo;
@@ -246,7 +246,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
         newTipo.honorariosPorHora = 0;
       } else if (codigoUpper === 'PROVEEDOR') {
         newTipo.cuit = '';
-        newTipo.razonSocial = '';
+        newTipo.razonSocialId = 0;
       }
       // NO_SOCIO no requiere campos adicionales
 
@@ -289,7 +289,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
         newTipo.honorariosPorHora = 0;
       } else if (codigoUpper === 'PROVEEDOR') {
         newTipo.cuit = '';
-        newTipo.razonSocial = '';
+        newTipo.razonSocialId = 0;
       }
       // NO_SOCIO no requiere campos adicionales
 
@@ -491,17 +491,35 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Controller
-                  name={`tipos.${index}.razonSocial` as any}
+                  name={`tipos.${index}.razonSocialId` as any}
                   control={control}
                   render={({ field }) => (
-                    <TextField
-                      {...field}
+                    <FormControl
                       fullWidth
                       size="small"
-                      label="Razón Social *"
-                      error={!!errors.tipos?.[index]?.razonSocial}
-                      helperText={errors.tipos?.[index]?.razonSocial?.message}
-                    />
+                      error={!!errors.tipos?.[index]?.razonSocialId}
+                    >
+                      <InputLabel>Razón Social *</InputLabel>
+                      <Select
+                        {...field}
+                        label="Razón Social *"
+                      >
+                        <MenuItem value={0}>Seleccionar razón social</MenuItem>
+                        {catalogos?.razonesSociales
+                          ?.filter((r) => r.activo)
+                          .sort((a, b) => a.orden - b.orden)
+                          .map((razon) => (
+                            <MenuItem key={razon.id} value={razon.id}>
+                              {razon.nombre}
+                            </MenuItem>
+                          ))}
+                      </Select>
+                      {errors.tipos?.[index]?.razonSocialId && (
+                        <FormHelperText>
+                          {errors.tipos?.[index]?.razonSocialId?.message}
+                        </FormHelperText>
+                      )}
+                    </FormControl>
                   )}
                 />
               </Grid>
