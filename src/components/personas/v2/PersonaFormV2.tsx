@@ -348,7 +348,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
               Campos de Socio
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Controller
                   name={`tipos.${index}.categoriaId` as any}
                   control={control}
@@ -384,7 +384,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
               Campos de Docente
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Controller
                   name={`tipos.${index}.especialidadId` as any}
                   control={control}
@@ -414,7 +414,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                   )}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Controller
                   name={`tipos.${index}.honorariosPorHora` as any}
                   control={control}
@@ -443,7 +443,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
               Campos de Proveedor
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name={`tipos.${index}.cuit` as any}
                   control={control}
@@ -491,7 +491,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                   )}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name={`tipos.${index}.razonSocialId` as any}
                   control={control}
@@ -591,7 +591,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                 Datos Personales
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Controller
                     name="nombre"
                     control={control}
@@ -607,7 +607,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Controller
                     name="apellido"
                     control={control}
@@ -623,7 +623,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Controller
                     name="dni"
                     control={control}
@@ -662,7 +662,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Controller
                     name="fechaNacimiento"
                     control={control}
@@ -691,7 +691,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                 Contacto
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Controller
                     name="email"
                     control={control}
@@ -708,7 +708,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Controller
                     name="telefono"
                     control={control}
@@ -724,7 +724,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                     )}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Controller
                     name="direccion"
                     control={control}

@@ -201,7 +201,7 @@ export const AgregarContactoModal: React.FC<AgregarContactoModalProps> = ({
         <DialogContent dividers>
           <Grid container spacing={2}>
             {/* Tipo de contacto */}
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Controller
                 name="tipoContactoId"
                 control={control}
@@ -234,7 +234,7 @@ export const AgregarContactoModal: React.FC<AgregarContactoModalProps> = ({
             </Grid>
 
             {/* Valor */}
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Controller
                 name="valor"
                 control={control}
@@ -254,7 +254,7 @@ export const AgregarContactoModal: React.FC<AgregarContactoModalProps> = ({
             </Grid>
 
             {/* Descripción */}
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Controller
                 name="descripcion"
                 control={control}
@@ -274,7 +274,7 @@ export const AgregarContactoModal: React.FC<AgregarContactoModalProps> = ({
             </Grid>
 
             {/* Es principal */}
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Controller
                 name="esPrincipal"
                 control={control}
