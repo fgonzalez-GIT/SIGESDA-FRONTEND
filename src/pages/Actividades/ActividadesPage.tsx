@@ -28,9 +28,6 @@ import {
   Pagination,
   ToggleButtonGroup,
   ToggleButton,
-  Stack,
-  Checkbox,
-  FormControlLabel,
   Chip,
 } from '@mui/material';
 import {
@@ -64,9 +61,6 @@ export const ActividadesPage: React.FC = () => {
   const [filters, setFilters] = useState<ActividadesQueryParams>({
     page: 1,
     limit: 12,
-    incluirRelaciones: true,
-    orderBy: 'nombre',
-    orderDir: 'asc',
   });
 
   // ============================================
@@ -110,9 +104,6 @@ export const ActividadesPage: React.FC = () => {
     setFilters({
       page: 1,
       limit: 12,
-      incluirRelaciones: true,
-      orderBy: 'nombre',
-      orderDir: 'asc',
     });
     setTabValue(0);
   };
@@ -157,10 +148,7 @@ export const ActividadesPage: React.FC = () => {
     const value = filters[key as keyof ActividadesQueryParams];
     return value !== undefined &&
            key !== 'page' &&
-           key !== 'limit' &&
-           key !== 'incluirRelaciones' &&
-           key !== 'orderBy' &&
-           key !== 'orderDir';
+           key !== 'limit';
   }).length;
 
   // ============================================
@@ -289,47 +277,35 @@ export const ActividadesPage: React.FC = () => {
                 </FormControl>
               </Grid>
 
-              {/* Filtro por día */}
+              {/* Filtro por búsqueda de texto */}
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Día de Semana</InputLabel>
-                  <Select
-                    value={filters.diaSemanaId || ''}
-                    onChange={(e) => handleFilterChange('diaSemanaId', e.target.value || undefined)}
-                    label="Día de Semana"
-                  >
-                    <MenuItem value="">Todos los días</MenuItem>
-                    {catalogos?.diasSemana.map((dia) => (
-                      <MenuItem key={dia.id} value={dia.id}>
-                        {dia.nombre}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Buscar"
+                  placeholder="Código o nombre..."
+                  value={filters.search || ''}
+                  onChange={(e) => handleFilterChange('search', e.target.value || undefined)}
+                />
               </Grid>
 
-              {/* Checkboxes */}
-              <Grid size={{ xs: 12 }}>
-                <Stack direction="row" spacing={2}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={filters.conCupo || false}
-                        onChange={(e) => handleFilterChange('conCupo', e.target.checked || undefined)}
-                      />
-                    }
-                    label="Solo con cupo disponible"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={filters.vigentes || false}
-                        onChange={(e) => handleFilterChange('vigentes', e.target.checked || undefined)}
-                      />
-                    }
-                    label="Solo vigentes"
-                  />
-                </Stack>
+              {/* Filtro activa (boolean) */}
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Estado Activo</InputLabel>
+                  <Select
+                    value={filters.activa === undefined ? '' : filters.activa.toString()}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      handleFilterChange('activa', val === '' ? undefined : val === 'true');
+                    }}
+                    label="Estado Activo"
+                  >
+                    <MenuItem value="">Todas</MenuItem>
+                    <MenuItem value="true">Solo activas</MenuItem>
+                    <MenuItem value="false">Solo inactivas</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
 
               {/* Botón limpiar filtros */}
@@ -420,11 +396,11 @@ export const ActividadesPage: React.FC = () => {
             ¿Está seguro que desea eliminar la actividad <strong>"{actividadToDelete?.nombre}"</strong>?
             <br />
             Esta acción no se puede deshacer.
-            {actividadToDelete?._count_participantes && actividadToDelete._count_participantes > 0 && (
+            {actividadToDelete?._count?.participacion_actividades && actividadToDelete._count.participacion_actividades > 0 && (
               <>
                 <br /><br />
                 <Alert severity="warning">
-                  Esta actividad tiene {actividadToDelete._count_participantes} participante(s) inscrito(s).
+                  Esta actividad tiene {actividadToDelete._count.participacion_actividades} participante(s) inscrito(s).
                 </Alert>
               </>
             )}

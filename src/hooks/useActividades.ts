@@ -8,29 +8,47 @@ import type {
   Actividad,
   ActividadesQueryParams,
   PaginatedResponse,
-  CatalogosCompletos,
   CreateActividadDTO,
   UpdateActividadDTO,
   HorarioActividad,
   DocenteActividad,
   ParticipacionActividad,
   EstadisticasActividad,
+  TipoActividad,
+  CategoriaActividad,
+  EstadoActividad,
+  DiaSemana,
+  RolDocente,
 } from '../types/actividad.types';
 import {
-  actividadesApi,
   listarActividades,
   obtenerActividadPorId,
   crearActividad,
   actualizarActividad,
   eliminarActividad,
+  obtenerTiposActividades,
+  obtenerCategoriasActividades,
+  obtenerEstadosActividades,
+  obtenerDiasSemana,
+  obtenerRolesDocentes,
+  obtenerEstadisticas,
+  listarParticipantes,
 } from '../services/actividadesApi';
 
 // ============================================
 // HOOK: useCatalogos
 // ============================================
 
+interface Catalogos {
+  tiposActividades: TipoActividad[];
+  categoriasActividades: CategoriaActividad[];
+  estadosActividades: EstadoActividad[];
+  diasSemana: DiaSemana[];
+  rolesDocentes: RolDocente[];
+}
+
 interface UseCatalogosResult {
-  catalogos: CatalogosCompletos | null;
+  catalogos: Catalogos | null;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -38,7 +56,7 @@ interface UseCatalogosResult {
 
 /**
  * Hook para cargar los catálogos necesarios para crear/editar actividades
- * Se debe llamar una sola vez al inicio de la aplicación
+ * Carga todos los catálogos en paralelo según la nueva API
  *
  * @example
  * ```tsx
@@ -46,12 +64,12 @@ interface UseCatalogosResult {
  *
  * if (loading) return <div>Cargando catálogos...</div>;
  *
- * console.log(catalogos.tipos); // Array de tipos
- * console.log(catalogos.categorias); // Array de categorías
+ * console.log(catalogos.tiposActividades); // Array de tipos
+ * console.log(catalogos.categoriasActividades); // Array de categorías
  * ```
  */
 export const useCatalogos = (): UseCatalogosResult => {
-  const [catalogos, setCatalogos] = useState<CatalogosCompletos | null>(null);
+  const [catalogos, setCatalogos] = useState<Catalogos | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,8 +77,29 @@ export const useCatalogos = (): UseCatalogosResult => {
     try {
       setLoading(true);
       setError(null);
-      const data = await actividadesApi.obtenerTodosCatalogos();
-      setCatalogos(data);
+
+      // Cargar todos los catálogos en paralelo
+      const [
+        tiposActividades,
+        categoriasActividades,
+        estadosActividades,
+        diasSemana,
+        rolesDocentes,
+      ] = await Promise.all([
+        obtenerTiposActividades(),
+        obtenerCategoriasActividades(),
+        obtenerEstadosActividades(),
+        obtenerDiasSemana(),
+        obtenerRolesDocentes(),
+      ]);
+
+      setCatalogos({
+        tiposActividades,
+        categoriasActividades,
+        estadosActividades,
+        diasSemana,
+        rolesDocentes,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar catálogos');
       console.error('Error cargando catálogos:', err);
@@ -317,6 +356,7 @@ interface UseHorariosActividadResult {
 
 /**
  * Hook para obtener los horarios de una actividad específica
+ * Los horarios vienen incluidos en la actividad al obtenerla por ID
  */
 export const useHorariosActividad = (actividadId: number | null): UseHorariosActividadResult => {
   const [horarios, setHorarios] = useState<HorarioActividad[]>([]);
@@ -332,8 +372,9 @@ export const useHorariosActividad = (actividadId: number | null): UseHorariosAct
     try {
       setLoading(true);
       setError(null);
-      const data = await actividadesApi.obtenerHorariosActividad(actividadId);
-      setHorarios(data);
+      // Los horarios vienen en la respuesta de obtenerActividadPorId
+      const actividad = await obtenerActividadPorId(actividadId);
+      setHorarios(actividad.horarios_actividades || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar horarios');
       console.error('Error cargando horarios:', err);
@@ -362,6 +403,7 @@ interface UseDocentesActividadResult {
 
 /**
  * Hook para obtener los docentes asignados a una actividad
+ * Los docentes vienen incluidos en la actividad al obtenerla por ID
  */
 export const useDocentesActividad = (actividadId: number | null): UseDocentesActividadResult => {
   const [docentes, setDocentes] = useState<DocenteActividad[]>([]);
@@ -377,8 +419,9 @@ export const useDocentesActividad = (actividadId: number | null): UseDocentesAct
     try {
       setLoading(true);
       setError(null);
-      const data = await actividadesApi.obtenerDocentesActividad(actividadId);
-      setDocentes(data);
+      // Los docentes vienen en la respuesta de obtenerActividadPorId
+      const actividad = await obtenerActividadPorId(actividadId);
+      setDocentes(actividad.docentes_actividades || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar docentes');
       console.error('Error cargando docentes:', err);
@@ -400,20 +443,34 @@ export const useDocentesActividad = (actividadId: number | null): UseDocentesAct
 
 interface UseParticipantesActividadResult {
   participantes: ParticipacionActividad[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
   loading: boolean;
   error: string | null;
+  fetchParticipantes: (page?: number, limit?: number, activa?: boolean) => Promise<void>;
   refetch: () => Promise<void>;
 }
 
 /**
- * Hook para obtener los participantes de una actividad
+ * Hook para obtener los participantes de una actividad con paginación
+ * Usa el nuevo endpoint GET /api/actividades/:actividadId/participantes
  */
 export const useParticipantesActividad = (actividadId: number | null): UseParticipantesActividadResult => {
   const [participantes, setParticipantes] = useState<ParticipacionActividad[]>([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 0,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchParticipantes = useCallback(async () => {
+  const fetchParticipantes = useCallback(async (page = 1, limit = 20, activa?: boolean) => {
     if (!actividadId) {
       setParticipantes([]);
       return;
@@ -422,8 +479,14 @@ export const useParticipantesActividad = (actividadId: number | null): UsePartic
     try {
       setLoading(true);
       setError(null);
-      const data = await actividadesApi.obtenerParticipantes(actividadId);
-      setParticipantes(data);
+      const data = await listarParticipantes(actividadId, { page, limit, activa });
+      setParticipantes(data.data);
+      setPagination({
+        page: data.page,
+        limit: data.limit,
+        total: data.total,
+        pages: data.pages,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar participantes');
       console.error('Error cargando participantes:', err);
@@ -432,11 +495,13 @@ export const useParticipantesActividad = (actividadId: number | null): UsePartic
     }
   }, [actividadId]);
 
+  const refetch = useCallback(() => fetchParticipantes(pagination.page, pagination.limit), [fetchParticipantes, pagination]);
+
   useEffect(() => {
     fetchParticipantes();
   }, [fetchParticipantes]);
 
-  return { participantes, loading, error, refetch: fetchParticipantes };
+  return { participantes, pagination, loading, error, fetchParticipantes, refetch };
 };
 
 // ============================================
@@ -452,6 +517,7 @@ interface UseEstadisticasActividadResult {
 
 /**
  * Hook para obtener estadísticas de una actividad
+ * Usa el endpoint GET /api/actividades/:id/estadisticas
  */
 export const useEstadisticasActividad = (actividadId: number | null): UseEstadisticasActividadResult => {
   const [estadisticas, setEstadisticas] = useState<EstadisticasActividad | null>(null);
@@ -467,7 +533,7 @@ export const useEstadisticasActividad = (actividadId: number | null): UseEstadis
     try {
       setLoading(true);
       setError(null);
-      const data = await actividadesApi.obtenerEstadisticasActividad(actividadId);
+      const data = await obtenerEstadisticas(actividadId);
       setEstadisticas(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar estadísticas');

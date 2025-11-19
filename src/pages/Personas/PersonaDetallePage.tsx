@@ -26,9 +26,9 @@ import { TipoItem } from '../../components/personas/v2/tipos';
 import { AsignarTipoModal } from '../../components/personas/v2/tipos/AsignarTipoModal';
 import { FamiliaresTab } from '../../components/personas/v2/familiares';
 import { personasApi } from '../../services/personasApi';
-import { handleApiError } from '../../utils/errorHandling';
 import { useAppDispatch } from '../../hooks/redux';
 import { setTiposAsignados, removerTipo } from '../../store/slices/personasSlice';
+import { showNotification } from '../../store/slices/uiSlice';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -88,6 +88,12 @@ const PersonaDetallePage: React.FC = () => {
   };
 
   const handleAsignarTipoSuccess = () => {
+    dispatch(
+      showNotification({
+        message: 'Tipo asignado exitosamente',
+        severity: 'success',
+      })
+    );
     refetch(); // Recargar persona completa con nuevos tipos
   };
 
@@ -101,9 +107,21 @@ const PersonaDetallePage: React.FC = () => {
     try {
       await personasApi.desasignarTipo(personaId, tipoId);
       dispatch(removerTipo(tipoId));
+      dispatch(
+        showNotification({
+          message: 'Tipo desasignado exitosamente',
+          severity: 'success',
+        })
+      );
       refetch();
     } catch (err: any) {
-      handleApiError(err);
+      console.error('Error al desasignar tipo:', err);
+      dispatch(
+        showNotification({
+          message: 'No es posible realizar la acción en este momento',
+          severity: 'error',
+        })
+      );
     } finally {
       setLoadingAction(false);
     }
@@ -115,9 +133,21 @@ const PersonaDetallePage: React.FC = () => {
     setLoadingAction(true);
     try {
       await personasApi.toggleTipo(tipoId);
+      dispatch(
+        showNotification({
+          message: 'Tipo actualizado exitosamente',
+          severity: 'success',
+        })
+      );
       refetch();
     } catch (err: any) {
-      handleApiError(err);
+      console.error('Error al actualizar tipo:', err);
+      dispatch(
+        showNotification({
+          message: 'No es posible realizar la acción en este momento',
+          severity: 'error',
+        })
+      );
     } finally {
       setLoadingAction(false);
     }

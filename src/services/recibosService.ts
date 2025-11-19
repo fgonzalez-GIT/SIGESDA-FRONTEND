@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Recibo, GenerarReciboRequest, PagarReciboRequest, RecibosFilters } from '../store/slices/recibosSlice';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api';
 
 const recibosAPI = axios.create({
   baseURL: `${API_BASE_URL}/recibos`,

@@ -125,10 +125,10 @@ export const ActividadDetalleV2Page: React.FC = () => {
 
   const handleDesasignarClick = (docente: any) => {
     setDocenteADesasignar({
-      docenteId: docente.docente_id,
-      rolId: docente.rol_docente_id,
+      docenteId: docente.id, // ID de la asignación (DocenteActividad.id)
+      rolId: docente.rolDocenteId,
       nombre: `${docente.personas?.nombre} ${docente.personas?.apellido}`,
-      rol: docente.roles_docentes?.nombre || '',
+      rol: docente.rolesDocentes?.nombre || '',
     });
     setConfirmarDesasignarDialog(true);
   };
@@ -138,11 +138,8 @@ export const ActividadDetalleV2Page: React.FC = () => {
 
     setDesasignandoDocente(true);
     try {
-      await desasignarDocente(
-        Number(id),
-        docenteADesasignar.docenteId,
-        docenteADesasignar.rolId
-      );
+      // desasignarDocente solo necesita el ID de la asignación
+      await desasignarDocente(docenteADesasignar.docenteId);
 
       // Refetch docentes
       refetchDocentes();
@@ -266,12 +263,12 @@ export const ActividadDetalleV2Page: React.FC = () => {
             <Typography variant="h4" component="h1">
               {actividad.nombre}
             </Typography>
-            {actividad.estados_actividades && (
-              <EstadoBadge estado={actividad.estados_actividades} size="medium" />
+            {actividad.estadosActividades && (
+              <EstadoBadge estado={actividad.estadosActividades} size="medium" />
             )}
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Código: {actividad.codigo_actividad}
+            Código: {actividad.codigoActividad}
           </Typography>
         </Box>
         <Box display="flex" gap={1}>
@@ -308,7 +305,7 @@ export const ActividadDetalleV2Page: React.FC = () => {
                     Tipo
                   </Typography>
                   <Typography variant="body1">
-                    {actividad.tipos_actividades?.nombre || 'N/A'}
+                    {actividad.tiposActividades?.nombre || 'N/A'}
                   </Typography>
                 </Box>
                 <Box>
@@ -316,7 +313,7 @@ export const ActividadDetalleV2Page: React.FC = () => {
                     Categoría
                   </Typography>
                   <Typography variant="body1">
-                    {actividad.categorias_actividades?.nombre || 'N/A'}
+                    {actividad.categoriasActividades?.nombre || 'N/A'}
                   </Typography>
                 </Box>
               </Box>
@@ -338,7 +335,7 @@ export const ActividadDetalleV2Page: React.FC = () => {
                     Desde
                   </Typography>
                   <Typography variant="body1">
-                    {formatDate(actividad.fecha_desde)}
+                    {formatDate(actividad.fechaDesde)}
                   </Typography>
                 </Box>
                 <Box>
@@ -346,7 +343,7 @@ export const ActividadDetalleV2Page: React.FC = () => {
                     Hasta
                   </Typography>
                   <Typography variant="body1">
-                    {actividad.fecha_hasta ? formatDate(actividad.fecha_hasta) : 'Sin fecha de fin'}
+                    {actividad.fechaHasta ? formatDate(actividad.fechaHasta) : 'Sin fecha de fin'}
                   </Typography>
                 </Box>
               </Box>
@@ -362,10 +359,10 @@ export const ActividadDetalleV2Page: React.FC = () => {
                 <PeopleIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
                 Cupo
               </Typography>
-              {actividad.cupo_maximo ? (
+              {actividad.capacidadMaxima ? (
                 <Box>
                   <Typography variant="h4" color="primary">
-                    {estadisticas?.cupoDisponible || 0} / {actividad.cupo_maximo}
+                    {estadisticas?.cupoDisponible || 0} / {actividad.capacidadMaxima}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     Cupo disponible
@@ -508,7 +505,7 @@ export const ActividadDetalleV2Page: React.FC = () => {
                         secondary={
                           <>
                             <Typography component="span" variant="body2" color="text.primary">
-                              {docente.roles_docentes?.nombre}
+                              {docente.rolesDocentes?.nombre}
                             </Typography>
                             {docente.observaciones && ` — ${docente.observaciones}`}
                           </>
@@ -558,7 +555,7 @@ export const ActividadDetalleV2Page: React.FC = () => {
                 </Typography>
               ) : (
                 <List>
-                  {participantes.filter(p => p.activo).map((participante) => (
+                  {participantes.filter(p => p.activa).map((participante) => (
                     <ListItem key={participante.id} divider>
                       <ListItemAvatar>
                         <Avatar>
@@ -569,8 +566,8 @@ export const ActividadDetalleV2Page: React.FC = () => {
                         primary={`${participante.personas?.nombre} ${participante.personas?.apellido}`}
                         secondary={
                           <>
-                            Inscrito: {formatDate(participante.fecha_inicio)}
-                            {participante.precio_especial && ` — Precio especial: $${participante.precio_especial}`}
+                            Inscrito: {formatDate(participante.fechaInicio)}
+                            {participante.precioEspecial && ` — Precio especial: $${participante.precioEspecial}`}
                             {participante.observaciones && ` — ${participante.observaciones}`}
                           </>
                         }
@@ -617,8 +614,8 @@ export const ActividadDetalleV2Page: React.FC = () => {
           setAsignarDocenteDialog(false);
         }}
         docentesExistentes={docentes.map((d) => ({
-          docente_id: d.docente_id,
-          rol_docente_id: d.rol_docente_id,
+          docente_id: d.docenteId,
+          rol_docente_id: d.rolDocenteId,
         }))}
       />
 
@@ -673,15 +670,15 @@ export const ActividadDetalleV2Page: React.FC = () => {
         actividadId={Number(id)}
         actividadNombre={actividad?.nombre}
         costoActividad={actividad?.costo || 0}
-        cupoMaximo={actividad?.cupo_maximo || null}
-        cupoActual={participantes.filter(p => p.activo).length}
-        fechaInicioActividad={actividad?.fecha_desde}
+        cupoMaximo={actividad?.capacidadMaxima || null}
+        cupoActual={participantes.filter(p => p.activa).length}
+        fechaInicioActividad={actividad?.fechaDesde}
         onSuccess={() => {
           refetchParticipantes();
           setInscribirParticipanteDialog(false);
         }}
         participantesExistentes={participantes.map((p) => ({
-          persona_id: p.persona_id,
+          persona_id: p.personaId,
         }))}
       />
 

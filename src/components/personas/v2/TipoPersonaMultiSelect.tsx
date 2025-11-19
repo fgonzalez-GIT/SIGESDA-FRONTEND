@@ -169,7 +169,7 @@ export const TipoPersonaMultiSelect: React.FC<TipoPersonaMultiSelectProps> = ({
       sx={{
         minWidth: 300,
       }}
-      disableCloseOnSelect
+      disableCloseOnSelect={false}
       limitTags={3}
     />
   );

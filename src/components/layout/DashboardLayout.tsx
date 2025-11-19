@@ -4,6 +4,7 @@ import { useAppSelector, useAppDispatch } from '../../hooks/redux';
 import { toggleSidebar } from '../../store/slices/uiSlice';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import GlobalNotification from '../common/GlobalNotification';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -41,6 +42,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <Toolbar />
         {children}
       </Box>
+      <GlobalNotification />
     </Box>
   );
 };

@@ -106,14 +106,9 @@ export const ContactosTab: React.FC<ContactosTabProps> = ({ personaId, catalogos
     } catch (error: any) {
       console.error('Error al guardar contacto:', error);
 
-      let errorMessage = 'Error al guardar el contacto';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
       dispatch(
         showNotification({
-          message: errorMessage,
+          message: 'No es posible realizar la acción en este momento',
           severity: 'error',
         })
       );
@@ -150,14 +145,9 @@ export const ContactosTab: React.FC<ContactosTabProps> = ({ personaId, catalogos
     } catch (error: any) {
       console.error('Error al eliminar contacto:', error);
 
-      let errorMessage = 'Error al eliminar el contacto';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
       dispatch(
         showNotification({
-          message: errorMessage,
+          message: 'No es posible realizar la acción en este momento',
           severity: 'error',
         })
       );
@@ -181,14 +171,9 @@ export const ContactosTab: React.FC<ContactosTabProps> = ({ personaId, catalogos
     } catch (error: any) {
       console.error('Error al establecer contacto principal:', error);
 
-      let errorMessage = 'Error al establecer contacto principal';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
       dispatch(
         showNotification({
-          message: errorMessage,
+          message: 'No es posible realizar la acción en este momento',
           severity: 'error',
         })
       );

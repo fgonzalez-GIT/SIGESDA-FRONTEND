@@ -8,7 +8,7 @@ import {
   FamiliaresFilters
 } from '../store/slices/familiaresSlice';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api';
 
 const familiaresAPI = axios.create({
   baseURL: `${API_BASE_URL}/familiares`,

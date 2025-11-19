@@ -94,15 +94,15 @@ export const ActividadFormPage: React.FC = () => {
   useEffect(() => {
     if (isEditing && actividad) {
       setFormData({
-        codigoActividad: actividad.codigo_actividad,
+        codigoActividad: actividad.codigoActividad,
         nombre: actividad.nombre,
-        tipoActividadId: actividad.tipo_actividad_id,
-        categoriaId: actividad.categoria_id,
-        estadoId: actividad.estado_id,
+        tipoActividadId: actividad.tipoActividadId,
+        categoriaId: actividad.categoriaId,
+        estadoId: actividad.estadoId,
         descripcion: actividad.descripcion || '',
-        fechaDesde: actividad.fecha_desde ? new Date(actividad.fecha_desde) : null,
-        fechaHasta: actividad.fecha_hasta ? new Date(actividad.fecha_hasta) : null,
-        cupoMaximo: actividad.cupo_maximo?.toString() || '',
+        fechaDesde: actividad.fechaDesde ? new Date(actividad.fechaDesde) : null,
+        fechaHasta: actividad.fechaHasta ? new Date(actividad.fechaHasta) : null,
+        cupoMaximo: actividad.capacidadMaxima?.toString() || '',
         costo: actividad.costo.toString(),
         observaciones: actividad.observaciones || '',
       });
@@ -110,9 +110,9 @@ export const ActividadFormPage: React.FC = () => {
       if (actividad.horarios_actividades) {
         setHorarios(
           actividad.horarios_actividades.map((h) => ({
-            diaSemanaId: h.dia_semana_id,
-            horaInicio: h.hora_inicio.slice(0, 5),
-            horaFin: h.hora_fin.slice(0, 5),
+            diaSemanaId: h.diaSemanaId,
+            horaInicio: h.horaInicio.slice(0, 5),
+            horaFin: h.horaFin.slice(0, 5),
             activo: h.activo,
           }))
         );

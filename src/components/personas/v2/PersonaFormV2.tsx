@@ -55,6 +55,16 @@ interface PersonaFormV2Props {
 }
 
 /**
+ * Convierte fecha ISO del backend al formato yyyy-MM-dd para input HTML5
+ * @param isoDate - Fecha en formato ISO 8601 (ej: "1985-03-15T00:00:00.000Z")
+ * @returns Fecha en formato yyyy-MM-dd (ej: "1985-03-15") o string vacío
+ */
+const isoToDateInput = (isoDate?: string | null): string => {
+  if (!isoDate) return '';
+  return isoDate.split('T')[0];
+};
+
+/**
  * Formulario para crear/editar personas con React Hook Form + Zod
  * Soporta múltiples tipos y validaciones dinámicas
  *
@@ -162,7 +172,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
           tipo.categoriaId = pt.categoriaId;
         } else if (codigoUpper === 'DOCENTE') {
           tipo.especialidadId = pt.especialidadId;
-          tipo.honorariosPorHora = pt.honorariosPorHora || 0;
+          tipo.honorariosPorHora = Number(pt.honorariosPorHora) || 0;
         } else if (codigoUpper === 'PROVEEDOR') {
           tipo.cuit = pt.cuit || '';
           tipo.razonSocialId = pt.razonSocialId || 0;
@@ -178,7 +188,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
         email: persona.email || '',
         telefono: persona.telefono || '',
         direccion: persona.direccion || '',
-        fechaNacimiento: persona.fechaNacimiento || '',
+        fechaNacimiento: isoToDateInput(persona.fechaNacimiento),
         observaciones: persona.observaciones || '',
         tipos: tiposExistentes,
         contactos: [],
@@ -421,6 +431,11 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                   render={({ field }) => (
                     <TextField
                       {...field}
+                      value={field.value ?? 0}
+                      onChange={(e) => {
+                        const numValue = parseFloat(e.target.value);
+                        field.onChange(isNaN(numValue) ? 0 : numValue);
+                      }}
                       fullWidth
                       size="small"
                       label="Honorarios por hora *"
@@ -475,17 +490,6 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
 
                         // Actualizar campo CUIT
                         field.onChange(value);
-
-                        // Extraer DNI (dígitos centrales) y actualizar campo DNI
-                        if (onlyNumbers.length >= 10) {
-                          const dniFromCuit = onlyNumbers.slice(2, 10);
-                          setValue('dni', dniFromCuit);
-                          // Disparar validación de DNI
-                          if (dniFromCuit.length >= 7 && dniFromCuit.length <= 8) {
-                            setDniError(null);
-                            validateDniAsync(dniFromCuit);
-                          }
-                        }
                       }}
                     />
                   )}

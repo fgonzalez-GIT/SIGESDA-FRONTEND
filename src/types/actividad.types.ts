@@ -1,7 +1,9 @@
 /**
- * Tipos TypeScript para API de Actividades 
+ * Tipos TypeScript para API de Actividades
  * Basados en la documentación oficial del backend
- * @see /docs/API_ACTIVIDADES_V2.md
+ * @see SIGESDA-BACKEND/docs/API_ACTIVIDADES_GUIA.md
+ *
+ * IMPORTANTE: Los campos usan camelCase según respuesta real de la API
  */
 
 // ============================================
@@ -15,8 +17,6 @@ export interface TipoActividad {
   descripcion: string | null;
   activo: boolean;
   orden: number;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface CategoriaActividad {
@@ -26,186 +26,200 @@ export interface CategoriaActividad {
   descripcion: string | null;
   activo: boolean;
   orden: number;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface EstadoActividad {
   id: number;
-  codigo: 'ACTIVA' | 'INACTIVA' | 'FINALIZADA' | 'CANCELADA';
+  codigo: string;
   nombre: string;
   descripcion: string | null;
   activo: boolean;
   orden: number;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface DiaSemana {
   id: number;
-  codigo: 'LUN' | 'MAR' | 'MIE' | 'JUE' | 'VIE' | 'SAB' | 'DOM';
+  codigo: string;
   nombre: string;
+  nombreCorto: string;
   orden: number;
+  activo: boolean;
 }
 
 export interface RolDocente {
   id: number;
-  codigo: 'PROFESOR' | 'AYUDANTE' | 'INVITADO' | 'COORDINADOR';
+  codigo: string;
   nombre: string;
   descripcion: string | null;
-  activo: boolean;
   orden: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface CatalogosCompletos {
-  tipos: TipoActividad[];
-  categorias: CategoriaActividad[];
-  estados: EstadoActividad[];
-  diasSemana: DiaSemana[];
-  rolesDocentes: RolDocente[];
+  activo: boolean;
 }
 
 // ============================================
-// ACTIVIDADES
+// ESTRUCTURAS ANIDADAS EN ACTIVIDADES
 // ============================================
 
+/**
+ * Horario de una actividad
+ * Según guía: líneas 218-231
+ */
 export interface HorarioActividad {
   id: number;
-  actividad_id: number;
-  dia_semana_id: number;
-  hora_inicio: string; // Format: "HH:MM:SS"
-  hora_fin: string; // Format: "HH:MM:SS"
+  diaSemanaId: number;
+  horaInicio: string; // "HH:MM:SS"
+  horaFin: string; // "HH:MM:SS"
   activo: boolean;
-  created_at: string;
-  updated_at: string;
-  dias_semana?: DiaSemana;
-  reservas_aulas_actividades?: ReservaAulaActividad[];
+  diasSemana?: DiaSemana;
 }
 
-export interface DocenteActividad {
+/**
+ * Persona simplificada (incluida en relaciones)
+ * Según guía: líneas 240-245, 419-421
+ */
+export interface PersonaSimple {
   id: number;
-  actividad_id: number;
-  docente_id: number; // FK a Persona.id (no es CUID, es Int)
-  rol_docente_id: number;
-  fecha_asignacion: string;
-  fecha_desasignacion: string | null;
-  activo: boolean;
-  observaciones: string | null;
-  created_at: string;
-  updated_at: string;
-  personas?: Persona;
-  roles_docentes?: RolDocente;
-}
-
-export interface ParticipacionActividad {
-  id: number;
-  persona_id: number; // FK a Persona.id (Int)
-  actividad_id: number;
-  fecha_inicio: string;
-  fecha_fin: string | null;
-  precio_especial: number | null;
-  activo: boolean;
-  observaciones: string | null;
-  created_at: string;
-  updated_at: string;
-  personas?: Persona;
-}
-
-export interface ReservaAulaActividad {
-  id: number;
-  horario_actividad_id: number;
-  aula_id: string; // CUID
-  fecha_reserva: string;
-  activo: boolean;
-  observaciones: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Persona {
-  persona_id: string; // CUID
   nombre: string;
   apellido: string;
-  rut?: string;
-  email?: string;
-  telefono?: string;
-  fecha_nacimiento?: string;
-  tipo_persona?: string;
+  email?: string | null;
+  telefono?: string | null;
+  especialidad?: string | null; // Solo para docentes
 }
 
+/**
+ * Docente asignado a una actividad
+ * Según guía: líneas 232-252
+ */
+export interface DocenteActividad {
+  id: number;
+  docenteId: number;
+  rolDocenteId: number;
+  fechaAsignacion: string; // ISO 8601
+  fechaDesasignacion?: string | null; // ISO 8601
+  activo: boolean;
+  observaciones?: string | null;
+  personas?: PersonaSimple;
+  rolesDocentes?: RolDocente;
+}
+
+/**
+ * Participante inscrito en una actividad
+ * Según guía: líneas 431-444
+ */
+export interface ParticipacionActividad {
+  id: number;
+  personaId: number;
+  fechaInicio: string; // ISO 8601
+  fechaFin?: string | null; // ISO 8601
+  precioEspecial?: number | null;
+  activa: boolean;
+  observaciones?: string | null;
+  personas?: PersonaSimple;
+}
+
+// ============================================
+// ACTIVIDAD PRINCIPAL
+// ============================================
+
+/**
+ * Actividad completa
+ * Según guía: líneas 185-254 (respuesta CREATE)
+ * y líneas 342-452 (respuesta GET detalle)
+ */
 export interface Actividad {
   id: number;
-  codigo_actividad: string;
-  nombre: string;
-  tipo_actividad_id: number;
-  categoria_id: number;
-  estado_id: number;
-  descripcion: string | null;
-  fecha_desde: string; // ISO 8601
-  fecha_hasta: string | null; // ISO 8601
-  cupo_maximo: number | null;
-  costo: number;
-  observaciones: string | null;
-  created_at: string;
-  updated_at: string;
-
-  // Relaciones opcionales
-  tipos_actividades?: TipoActividad;
-  categorias_actividades?: CategoriaActividad;
-  estados_actividades?: EstadoActividad;
-  horarios_actividades?: HorarioActividad[];
-  docentes_actividades?: DocenteActividad[];
-  participaciones_actividades?: ParticipacionActividad[];
-  reservas_aulas_actividades?: ReservaAulaActividad[];
-
-  // Campo calculado
-  _count_participantes?: number;
-}
-
-// ============================================
-// DTOs - REQUEST/RESPONSE
-// ============================================
-
-export interface CreateActividadDTO {
   codigoActividad: string;
   nombre: string;
   tipoActividadId: number;
   categoriaId: number;
-  estadoId?: number; // Default: 1 (ACTIVA)
+  estadoId: number;
   descripcion?: string | null;
   fechaDesde: string; // ISO 8601
   fechaHasta?: string | null; // ISO 8601
-  cupoMaximo?: number | null;
-  costo?: number; // Default: 0
+  capacidadMaxima?: number | null; // Nota: API usa "capacidadMaxima"
+  costo: number;
+  activa: boolean; // Campo para soft delete
   observaciones?: string | null;
-  horarios?: CreateHorarioDTO[];
-  docentes?: AsignarDocenteDTO[];
-  reservasAulas?: CreateReservaAulaDTO[];
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+
+  // Relaciones opcionales (incluidas según endpoint)
+  tiposActividades?: TipoActividad;
+  categoriasActividades?: CategoriaActividad;
+  estadosActividades?: EstadoActividad;
+  horarios_actividades?: HorarioActividad[]; // Nota: nombre con guion bajo
+  docentes_actividades?: DocenteActividad[];
+  participacion_actividades?: ParticipacionActividad[];
+
+  // Conteos opcionales (línea 311-315)
+  _count?: {
+    horarios_actividades?: number;
+    docentes_actividades?: number;
+    participacion_actividades?: number;
+  };
 }
 
+// ============================================
+// DTOs - CREATE/UPDATE
+// ============================================
+
+/**
+ * DTO para crear actividad
+ * Según guía: líneas 138-171
+ */
+export interface CreateActividadDTO {
+  codigoActividad: string;          // REQUERIDO, único, max 50
+  nombre: string;                   // REQUERIDO
+  tipoActividadId: number;          // REQUERIDO
+  categoriaId: number;              // REQUERIDO
+  estadoId: number;                 // REQUERIDO
+  descripcion?: string;             // OPCIONAL
+  fechaDesde: string;               // REQUERIDO, ISO 8601
+  fechaHasta?: string;              // OPCIONAL, ISO 8601
+  cupoMaximo?: number;              // OPCIONAL (se convierte a capacidadMaxima)
+  costo?: number;                   // OPCIONAL (default: 0)
+  observaciones?: string;           // OPCIONAL
+
+  // Anidados opcionales
+  horarios?: CreateHorarioDTO[];
+  docentes?: AsignarDocenteDTO[];
+}
+
+/**
+ * DTO para actualizar actividad
+ * Según guía: líneas 473-501
+ *
+ * CAMPOS NO ACTUALIZABLES:
+ * - codigoActividad (inmutable)
+ * - tipoActividadId (inmutable)
+ * - categoriaId (inmutable)
+ * - fechaDesde (inmutable)
+ */
 export interface UpdateActividadDTO {
-  codigoActividad?: string;
   nombre?: string;
-  tipoActividadId?: number;
-  categoriaId?: number;
-  estadoId?: number;
   descripcion?: string;
-  fechaDesde?: string;
+  estadoId?: number;
   fechaHasta?: string;
-  cupoMaximo?: number;
+  capacidadMaxima?: number;
   costo?: number;
+  activa?: boolean; // Para activar/desactivar
   observaciones?: string;
 }
 
+/**
+ * DTO para crear horario
+ * Según guía: líneas 546-553
+ */
 export interface CreateHorarioDTO {
-  diaSemanaId: number;
-  horaInicio: string; // Format: "HH:MM" or "HH:MM:SS"
-  horaFin: string; // Format: "HH:MM" or "HH:MM:SS"
-  activo?: boolean; // Default: true
+  diaSemanaId: number;      // REQUERIDO (1-7)
+  horaInicio: string;       // REQUERIDO "HH:MM" o "HH:MM:SS"
+  horaFin: string;          // REQUERIDO "HH:MM" o "HH:MM:SS"
+  activo?: boolean;         // OPCIONAL (default: true)
 }
 
+/**
+ * DTO para actualizar horario
+ * Según guía: líneas 583-591
+ */
 export interface UpdateHorarioDTO {
   diaSemanaId?: number;
   horaInicio?: string;
@@ -213,165 +227,189 @@ export interface UpdateHorarioDTO {
   activo?: boolean;
 }
 
+/**
+ * DTO para asignar docente
+ * Según guía: líneas 671-677
+ */
 export interface AsignarDocenteDTO {
-  docenteId: number; // FK a Persona.id (Int)
-  rolDocenteId: number;
-  observaciones?: string;
+  docenteId: number;                    // REQUERIDO (persona con tipo DOCENTE)
+  rolDocenteId: number;                 // REQUERIDO
+  fechaAsignacion?: string;             // OPCIONAL (default: now)
+  observaciones?: string;               // OPCIONAL
 }
 
-export interface CreateReservaAulaDTO {
-  horarioActividadId: number;
-  aulaId: string; // CUID
-  fechaReserva: string; // ISO 8601
-  observaciones?: string;
-}
-
-export interface CambiarEstadoDTO {
-  nuevoEstadoId: number;
-  observaciones?: string;
-}
-
-export interface DuplicarActividadDTO {
-  nuevoCodigoActividad: string;
-  nuevoNombre: string;
-  nuevaFechaDesde: string; // ISO 8601
-  nuevaFechaHasta?: string; // ISO 8601
-  copiarHorarios?: boolean; // Default: true
-  copiarDocentes?: boolean; // Default: false
-  copiarReservasAulas?: boolean; // Default: false
+/**
+ * DTO para inscribir participante
+ * Según guía: líneas 749-756
+ */
+export interface InscribirParticipanteDTO {
+  personaId: number;                    // REQUERIDO
+  fechaInicio?: string;                 // OPCIONAL (default: now)
+  precioEspecial?: number;              // OPCIONAL
+  observaciones?: string;               // OPCIONAL
 }
 
 // ============================================
-// FILTROS Y QUERY PARAMS
+// QUERY PARAMS Y FILTROS
 // ============================================
 
+/**
+ * Parámetros de consulta para listar actividades
+ * Según guía: líneas 270-283
+ */
 export interface ActividadesQueryParams {
   // Paginación
-  page?: number;
-  limit?: number;
+  page?: number;        // default: 1
+  limit?: number;       // default: 20, max: 100
 
   // Filtros
   tipoActividadId?: number;
   categoriaId?: number;
   estadoId?: number;
-  diaSemanaId?: number; // 1-7
-  docenteId?: string; // CUID
-  aulaId?: string; // CUID
-  conCupo?: boolean;
-  vigentes?: boolean;
-  costoDesde?: number;
-  costoHasta?: number;
-  search?: string;
+  activa?: boolean;
+  search?: string;      // Buscar en código o nombre
+  fechaDesde?: string;  // Filtrar >= fecha
+  fechaHasta?: string;  // Filtrar <= fecha
+}
 
-  // Opciones
-  incluirRelaciones?: boolean; // Default: true
-  orderBy?: 'nombre' | 'codigo' | 'fechaDesde' | 'costo' | 'cupoMaximo' | 'created_at';
-  orderDir?: 'asc' | 'desc';
+/**
+ * Parámetros para buscar por horario
+ * Según guía: líneas 886-895
+ */
+export interface BuscarPorHorarioParams {
+  diaSemanaId: number;      // REQUERIDO (1-7)
+  horaInicio?: string;      // OPCIONAL "HH:MM"
+  horaFin?: string;         // OPCIONAL "HH:MM"
+  soloActivas?: boolean;    // OPCIONAL (default: true)
+}
+
+/**
+ * Parámetros para listar participantes
+ * Según guía: líneas 799-806
+ */
+export interface ParticipantesQueryParams {
+  page?: number;
+  limit?: number;
+  activa?: boolean;
 }
 
 // ============================================
-// RESPUESTAS DE API
+// RESPONSES
 // ============================================
 
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
-}
-
+/**
+ * Respuesta paginada genérica
+ * Según guía: líneas 286-323
+ * NOTA: La API real devuelve "pages" no "totalPages"
+ */
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
   page: number;
   limit: number;
-  pages: number;
+  pages: number; // Backend usa "pages" (verificado en respuesta real)
 }
 
-export interface ActividadesListResponse extends ApiResponse<PaginatedResponse<Actividad>> {}
-
-export interface ActividadResponse extends ApiResponse<Actividad> {}
-
-export interface CatalogosResponse extends ApiResponse<CatalogosCompletos> {}
-
-// ============================================
-// ESTADÍSTICAS Y REPORTES
-// ============================================
-
+/**
+ * Estadísticas de una actividad
+ * Según guía: líneas 866-880
+ */
 export interface EstadisticasActividad {
-  actividadId: number;
-  nombreActividad: string;
-  totalParticipantes: number;
-  totalHorarios: number;
-  totalDocentes: number;
-  totalReservasAulas: number;
-  cupoMaximo: number | null;
-  cupoDisponible: number | null;
-  porcentajeOcupacion: number;
-  costo: number;
-  estado: string;
-  vigente: boolean;
-  fechaDesde: string;
-  fechaHasta: string | null;
+  totalParticipantes: number;      // Participantes activos
+  totalHorarios: number;           // Horarios activos
+  totalDocentes: number;           // Docentes activos
+  cupoMaximo: number;
+  cupoDisponible: number;          // cupoMaximo - totalParticipantes
+  porcentajeOcupacion: number;     // (totalParticipantes/cupoMaximo) * 100
+  estaLlena: boolean;              // totalParticipantes >= cupoMaximo
 }
 
-export interface ResumenPorTipo {
-  tipo: TipoActividad;
-  totalActividades: number;
-  actividades: Array<{
-    id: number;
-    codigo: string;
-    nombre: string;
-    cupoMaximo: number | null;
-    costo: number;
-  }>;
-}
-
-export interface HorarioSemanalActividad {
+/**
+ * Actividad con horarios filtrados
+ * Según guía: líneas 900-918
+ */
+export interface ActividadConHorarios {
   id: number;
-  codigo: string;
+  codigoActividad: string;
   nombre: string;
-  tipo: string;
-  horarios: Array<{
+  horarios_actividades: Array<{
+    diaSemanaId: number;
     horaInicio: string;
     horaFin: string;
-    aula?: string;
-  }>;
-  docentes: Array<{
-    nombre: string;
-    rol: string;
+    diasSemana: {
+      nombre: string;
+    };
   }>;
 }
-
-export interface HorarioSemanal {
-  dia: DiaSemana;
-  actividades: HorarioSemanalActividad[];
-}
-
-export interface HorarioSemanalResponse extends ApiResponse<{
-  horarioSemanal: HorarioSemanal[];
-  generadoEn: string;
-}> {}
 
 // ============================================
 // DOCENTES DISPONIBLES
 // ============================================
 
+/**
+ * Docente disponible para asignar
+ * Según guía: líneas 634-660
+ */
 export interface DocenteDisponible {
-  persona_id: string;
+  id: number;
   nombre: string;
   apellido: string;
-  email: string | null;
-  telefono: string | null;
-  tipo_persona: string;
+  email?: string | null;
+  telefono?: string | null;
+  persona_tipo: Array<{
+    tipoPersonaId: number;
+    activo: boolean;
+    especialidad?: string | null;
+    honorariosPorHora?: number | null;
+    disponibilidad?: string | null;
+    tiposPersona: {
+      id: number;
+      codigo: string;
+      nombre: string;
+    };
+  }>;
 }
 
 // ============================================
-// UTILIDADES
+// DISPONIBILIDAD DE AULAS
 // ============================================
 
 /**
- * Formatea una hora de formato "HH:MM:SS" a "HH:MM"
+ * DTO para verificar disponibilidad de aula
+ * Según guía: líneas 928-939
+ */
+export interface VerificarDisponibilidadAulaDTO {
+  aulaId: string;                          // CUID del aula
+  diaSemanaId: number;                     // 1-7
+  horaInicio: string;                      // "HH:MM"
+  horaFin: string;                         // "HH:MM"
+  fechaVigenciaDesde: string;              // ISO 8601
+  fechaVigenciaHasta?: string;             // OPCIONAL, ISO 8601
+  horarioExcluidoId?: number;              // OPCIONAL (para edición)
+}
+
+/**
+ * Respuesta de verificación de disponibilidad
+ * Según guía: líneas 941-959
+ */
+export interface DisponibilidadAulaResponse {
+  disponible: boolean;
+  conflictos: Array<{
+    actividadId: number;
+    nombreActividad: string;
+    horarioId: number;
+    diaSemana: string;
+    horaInicio: string;
+    horaFin: string;
+  }>;
+}
+
+// ============================================
+// UTILIDADES Y HELPERS
+// ============================================
+
+/**
+ * Formatea una hora de "HH:MM:SS" a "HH:MM"
  */
 export const formatTime = (time: string | null | undefined): string => {
   if (!time) return '';
@@ -379,7 +417,7 @@ export const formatTime = (time: string | null | undefined): string => {
 };
 
 /**
- * Convierte una fecha ISO 8601 a formato "YYYY-MM-DD"
+ * Convierte fecha ISO 8601 a "YYYY-MM-DD"
  */
 export const formatDate = (date: string | null | undefined): string => {
   if (!date) return '';
@@ -387,27 +425,27 @@ export const formatDate = (date: string | null | undefined): string => {
 };
 
 /**
- * Verifica si una actividad está vigente según sus fechas
+ * Verifica si una actividad está vigente
  */
 export const isActividadVigente = (actividad: Actividad): boolean => {
   const now = new Date();
-  const desde = new Date(actividad.fecha_desde);
-  const hasta = actividad.fecha_hasta ? new Date(actividad.fecha_hasta) : null;
+  const desde = new Date(actividad.fechaDesde);
+  const hasta = actividad.fechaHasta ? new Date(actividad.fechaHasta) : null;
 
   return desde <= now && (!hasta || hasta >= now);
 };
 
 /**
- * Calcula el cupo disponible de una actividad
+ * Calcula el cupo disponible
  */
 export const getCupoDisponible = (actividad: Actividad): number | null => {
-  if (!actividad.cupo_maximo) return null;
-  const participantes = actividad._count_participantes || 0;
-  return Math.max(0, actividad.cupo_maximo - participantes);
+  if (!actividad.capacidadMaxima) return null;
+  const participantes = actividad._count?.participacion_actividades || 0;
+  return Math.max(0, actividad.capacidadMaxima - participantes);
 };
 
 /**
- * Verifica si una actividad tiene cupo disponible
+ * Verifica si tiene cupo disponible
  */
 export const hasCupoDisponible = (actividad: Actividad): boolean => {
   const cupoDisponible = getCupoDisponible(actividad);

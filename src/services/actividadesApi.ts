@@ -1,106 +1,98 @@
 /**
- * Servicio API para Actividades V2.0
+ * Servicio API para Actividades
  * Basado en la documentación oficial del backend
- * @see /docs/API_ACTIVIDADES_V2.md
+ * @see SIGESDA-BACKEND/docs/API_ACTIVIDADES_GUIA.md
  */
 
 import { api } from './api';
 import type {
   Actividad,
   ActividadesQueryParams,
-  ApiResponse,
   PaginatedResponse,
-  CatalogosCompletos,
   CreateActividadDTO,
   UpdateActividadDTO,
   CreateHorarioDTO,
   UpdateHorarioDTO,
   AsignarDocenteDTO,
-  CambiarEstadoDTO,
-  DuplicarActividadDTO,
+  InscribirParticipanteDTO,
   HorarioActividad,
   DocenteActividad,
   ParticipacionActividad,
   EstadisticasActividad,
-  ResumenPorTipo,
-  HorarioSemanal,
   DocenteDisponible,
   TipoActividad,
   CategoriaActividad,
   EstadoActividad,
   DiaSemana,
   RolDocente,
+  BuscarPorHorarioParams,
+  ParticipantesQueryParams,
+  ActividadConHorarios,
+  VerificarDisponibilidadAulaDTO,
+  DisponibilidadAulaResponse,
 } from '../types/actividad.types';
-
-const BASE_URL = '/actividades';
 
 // ============================================
 // CATÁLOGOS
 // ============================================
 
 /**
- * Obtiene todos los catálogos en una sola petición (optimizado)
- */
-export const obtenerTodosCatalogos = async (): Promise<CatalogosCompletos> => {
-  const response = await api.get<ApiResponse<CatalogosCompletos>>(`${BASE_URL}/catalogos/todos`);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener catálogos');
-  }
-  return response.data.data;
-};
-
-/**
- * Obtiene los tipos de actividades
+ * Obtiene todos los tipos de actividades
+ * GET /api/catalogos/tipos-actividades
+ * Guía línea 48-68
  */
 export const obtenerTiposActividades = async (): Promise<TipoActividad[]> => {
-  const response = await api.get<ApiResponse<TipoActividad[]>>(`${BASE_URL}/catalogos/tipos`);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener tipos');
-  }
+  const response = await api.get<{ success: boolean; data: TipoActividad[] }>(
+    '/catalogos/tipos-actividades'
+  );
   return response.data.data;
 };
 
 /**
- * Obtiene las categorías de actividades
+ * Obtiene todas las categorías de actividades
+ * GET /api/catalogos/categorias-actividades
+ * Guía línea 70-75
  */
 export const obtenerCategoriasActividades = async (): Promise<CategoriaActividad[]> => {
-  const response = await api.get<ApiResponse<CategoriaActividad[]>>(`${BASE_URL}/catalogos/categorias`);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener categorías');
-  }
+  const response = await api.get<{ success: boolean; data: CategoriaActividad[] }>(
+    '/catalogos/categorias-actividades'
+  );
   return response.data.data;
 };
 
 /**
- * Obtiene los estados de actividades
+ * Obtiene todos los estados de actividades
+ * GET /api/catalogos/estados-actividades
+ * Guía línea 77-82
  */
 export const obtenerEstadosActividades = async (): Promise<EstadoActividad[]> => {
-  const response = await api.get<ApiResponse<EstadoActividad[]>>(`${BASE_URL}/catalogos/estados`);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener estados');
-  }
+  const response = await api.get<{ success: boolean; data: EstadoActividad[] }>(
+    '/catalogos/estados-actividades'
+  );
   return response.data.data;
 };
 
 /**
  * Obtiene los días de la semana
+ * GET /api/catalogos/dias-semana
+ * Guía línea 84-104
  */
 export const obtenerDiasSemana = async (): Promise<DiaSemana[]> => {
-  const response = await api.get<ApiResponse<DiaSemana[]>>(`${BASE_URL}/catalogos/dias-semana`);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener días de semana');
-  }
+  const response = await api.get<{ success: boolean; data: DiaSemana[] }>(
+    '/catalogos/dias-semana'
+  );
   return response.data.data;
 };
 
 /**
  * Obtiene los roles de docentes
+ * GET /api/catalogos/roles-docentes
+ * Guía línea 106-126
  */
 export const obtenerRolesDocentes = async (): Promise<RolDocente[]> => {
-  const response = await api.get<ApiResponse<RolDocente[]>>(`${BASE_URL}/catalogos/roles-docentes`);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener roles de docentes');
-  }
+  const response = await api.get<{ success: boolean; data: RolDocente[] }>(
+    '/catalogos/roles-docentes'
+  );
   return response.data.data;
 };
 
@@ -110,73 +102,71 @@ export const obtenerRolesDocentes = async (): Promise<RolDocente[]> => {
 
 /**
  * Crea una nueva actividad con horarios, docentes y reservas opcionales
+ * POST /api/actividades
+ * Guía línea 131-264
  */
 export const crearActividad = async (data: CreateActividadDTO): Promise<Actividad> => {
-  const response = await api.post<ApiResponse<Actividad>>(BASE_URL, data);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al crear actividad');
-  }
+  const response = await api.post<{ success: boolean; data: Actividad }>('/actividades', data);
   return response.data.data;
 };
 
 /**
  * Lista actividades con filtros y paginación
+ * GET /api/actividades?page=1&limit=20&tipoActividadId=1&activa=true
+ * Guía línea 267-324
  */
 export const listarActividades = async (
   params?: ActividadesQueryParams
 ): Promise<PaginatedResponse<Actividad>> => {
-  const response = await api.get<ApiResponse<PaginatedResponse<Actividad>>>(BASE_URL, { params });
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al listar actividades');
-  }
+  const response = await api.get<{ success: boolean; data: PaginatedResponse<Actividad> }>(
+    '/actividades',
+    { params }
+  );
   return response.data.data;
 };
 
 /**
- * Obtiene una actividad por ID
+ * Obtiene el detalle completo de una actividad por ID
+ * GET /api/actividades/:id
+ * Guía línea 328-461
  */
 export const obtenerActividadPorId = async (id: number): Promise<Actividad> => {
-  const response = await api.get<ApiResponse<Actividad>>(`${BASE_URL}/${id}`);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener actividad');
-  }
+  const response = await api.get<{ success: boolean; data: Actividad }>(`/actividades/${id}`);
   return response.data.data;
 };
 
 /**
- * Obtiene una actividad por código
- */
-export const obtenerActividadPorCodigo = async (codigo: string): Promise<Actividad> => {
-  const response = await api.get<ApiResponse<Actividad>>(`${BASE_URL}/codigo/${codigo}`);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener actividad');
-  }
-  return response.data.data;
-};
-
-/**
- * Actualiza una actividad existente (campos opcionales)
+ * Actualiza una actividad existente
+ * PUT /api/actividades/:id
+ *
+ * IMPORTANTE: Campos NO actualizables según guía línea 487-492:
+ * - codigoActividad (inmutable)
+ * - tipoActividadId (inmutable)
+ * - categoriaId (inmutable)
+ * - fechaDesde (inmutable)
+ *
+ * Guía línea 464-502
  */
 export const actualizarActividad = async (
   id: number,
   data: UpdateActividadDTO
 ): Promise<Actividad> => {
-  const response = await api.patch<ApiResponse<Actividad>>(`${BASE_URL}/${id}`, data);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al actualizar actividad');
-  }
+  const response = await api.put<{ success: boolean; data: Actividad }>(
+    `/actividades/${id}`,
+    data
+  );
   return response.data.data;
 };
 
 /**
- * Elimina una actividad
- * No se puede eliminar si tiene participantes activos
+ * Elimina una actividad (Soft Delete)
+ * DELETE /api/actividades/:id
+ *
+ * IMPORTANTE: No se puede eliminar si tiene participantes activos
+ * Guía línea 505-534
  */
 export const eliminarActividad = async (id: number): Promise<void> => {
-  const response = await api.delete<ApiResponse<void>>(`${BASE_URL}/${id}`);
-  if (!response.data.success) {
-    throw new Error(response.data.error || 'Error al eliminar actividad');
-  }
+  await api.delete(`/actividades/${id}`);
 };
 
 // ============================================
@@ -184,58 +174,44 @@ export const eliminarActividad = async (id: number): Promise<void> => {
 // ============================================
 
 /**
- * Obtiene los horarios de una actividad
- */
-export const obtenerHorariosActividad = async (actividadId: number): Promise<HorarioActividad[]> => {
-  const response = await api.get<ApiResponse<HorarioActividad[]>>(`${BASE_URL}/${actividadId}/horarios`);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener horarios');
-  }
-  return response.data.data;
-};
-
-/**
  * Agrega un horario a una actividad
+ * POST /api/actividades/:actividadId/horarios
+ * Guía línea 539-574
  */
 export const agregarHorario = async (
   actividadId: number,
   data: CreateHorarioDTO
 ): Promise<HorarioActividad> => {
-  const response = await api.post<ApiResponse<HorarioActividad>>(
-    `${BASE_URL}/${actividadId}/horarios`,
+  const response = await api.post<{ success: boolean; data: HorarioActividad }>(
+    `/actividades/${actividadId}/horarios`,
     data
   );
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al agregar horario');
-  }
   return response.data.data;
 };
 
 /**
  * Actualiza un horario existente
+ * PUT /api/actividades/horarios/:horarioId
+ * Guía línea 577-602
  */
 export const actualizarHorario = async (
   horarioId: number,
   data: UpdateHorarioDTO
 ): Promise<HorarioActividad> => {
-  const response = await api.patch<ApiResponse<HorarioActividad>>(
-    `${BASE_URL}/horarios/${horarioId}`,
+  const response = await api.put<{ success: boolean; data: HorarioActividad }>(
+    `/actividades/horarios/${horarioId}`,
     data
   );
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al actualizar horario');
-  }
   return response.data.data;
 };
 
 /**
  * Elimina un horario
+ * DELETE /api/actividades/horarios/:horarioId
+ * Guía línea 605-618
  */
 export const eliminarHorario = async (horarioId: number): Promise<void> => {
-  const response = await api.delete<ApiResponse<void>>(`${BASE_URL}/horarios/${horarioId}`);
-  if (!response.data.success) {
-    throw new Error(response.data.error || 'Error al eliminar horario');
-  }
+  await api.delete(`/actividades/horarios/${horarioId}`);
 };
 
 // ============================================
@@ -243,190 +219,160 @@ export const eliminarHorario = async (horarioId: number): Promise<void> => {
 // ============================================
 
 /**
- * Obtiene los docentes asignados a una actividad
+ * Obtiene docentes disponibles para asignar
+ * GET /api/actividades/docentes/disponibles?especialidad=Piano
+ * Guía línea 623-661
  */
-export const obtenerDocentesActividad = async (actividadId: number): Promise<DocenteActividad[]> => {
-  const response = await api.get<ApiResponse<DocenteActividad[]>>(`${BASE_URL}/${actividadId}/docentes`);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener docentes');
-  }
+export const obtenerDocentesDisponibles = async (
+  especialidad?: string
+): Promise<DocenteDisponible[]> => {
+  const response = await api.get<{ success: boolean; data: DocenteDisponible[] }>(
+    '/actividades/docentes/disponibles',
+    { params: { especialidad } }
+  );
   return response.data.data;
 };
 
 /**
  * Asigna un docente a una actividad
+ * POST /api/actividades/:actividadId/docentes
+ *
+ * Validaciones:
+ * - La persona debe tener tipo DOCENTE activo
+ * - No puede haber asignaciones duplicadas
+ *
+ * Guía línea 664-718
  */
 export const asignarDocente = async (
   actividadId: number,
   data: AsignarDocenteDTO
 ): Promise<DocenteActividad> => {
-  const response = await api.post<ApiResponse<DocenteActividad>>(
-    `${BASE_URL}/${actividadId}/docentes`,
+  const response = await api.post<{ success: boolean; data: DocenteActividad }>(
+    `/actividades/${actividadId}/docentes`,
     data
   );
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al asignar docente');
-  }
   return response.data.data;
 };
 
 /**
  * Desasigna un docente de una actividad (soft delete)
+ * DELETE /api/actividades/docentes/:asignacionId
+ *
+ * Nota: Establece fechaDesasignacion y activo = false
+ * Guía línea 721-737
  */
-export const desasignarDocente = async (
+export const desasignarDocente = async (asignacionId: number): Promise<void> => {
+  await api.delete(`/actividades/docentes/${asignacionId}`);
+};
+
+// ============================================
+// GESTIÓN DE PARTICIPANTES
+// ============================================
+
+/**
+ * Agrega un participante a una actividad
+ * POST /api/actividades/:actividadId/participantes
+ *
+ * Validaciones:
+ * - La actividad debe tener cupo disponible
+ * - La persona no puede estar ya inscrita (activa)
+ * - No se puede agregar si la actividad está inactiva
+ *
+ * Guía línea 742-793
+ */
+export const agregarParticipante = async (
   actividadId: number,
-  docenteId: number,
-  rolDocenteId: number
-): Promise<DocenteActividad> => {
-  const response = await api.delete<ApiResponse<DocenteActividad>>(
-    `${BASE_URL}/${actividadId}/docentes/${docenteId}/rol/${rolDocenteId}`
-  );
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al desasignar docente');
-  }
-  return response.data.data;
-};
-
-/**
- * Obtiene docentes disponibles para asignar
- */
-export const obtenerDocentesDisponibles = async (): Promise<DocenteDisponible[]> => {
-  const response = await api.get<ApiResponse<DocenteDisponible[]>>(`${BASE_URL}/docentes/disponibles`);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener docentes disponibles');
-  }
-  return response.data.data;
-};
-
-// ============================================
-// PARTICIPANTES
-// ============================================
-
-/**
- * Obtiene los participantes de una actividad
- */
-export const obtenerParticipantes = async (actividadId: number): Promise<ParticipacionActividad[]> => {
-  const response = await api.get<ApiResponse<ParticipacionActividad[]>>(
-    `${BASE_URL}/${actividadId}/participantes`
-  );
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener participantes');
-  }
-  return response.data.data;
-};
-
-/**
- * Inscribir participante con validación de cupos
- * Retorna los cupos disponibles actualizados
- */
-export const inscribirParticipante = async (
-  actividadId: number,
-  personaId: number
-): Promise<{ cuposDisponibles: number; participacion: ParticipacionActividad }> => {
-  const response = await api.post<ApiResponse<{ cuposDisponibles: number; participacion: ParticipacionActividad }>>(
-    `${BASE_URL}/${actividadId}/participantes`,
-    { personaId }
-  );
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al inscribir participante');
-  }
-  return response.data.data;
-};
-
-// ============================================
-// ESTADÍSTICAS
-// ============================================
-
-/**
- * Obtiene estadísticas de una actividad específica
- */
-export const obtenerEstadisticasActividad = async (actividadId: number): Promise<EstadisticasActividad> => {
-  const response = await api.get<ApiResponse<EstadisticasActividad>>(
-    `${BASE_URL}/${actividadId}/estadisticas`
-  );
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener estadísticas');
-  }
-  return response.data.data;
-};
-
-// ============================================
-// REPORTES
-// ============================================
-
-/**
- * Obtiene resumen de actividades agrupadas por tipo
- */
-export const obtenerResumenPorTipo = async (): Promise<ResumenPorTipo[]> => {
-  const response = await api.get<ApiResponse<ResumenPorTipo[]>>(`${BASE_URL}/reportes/por-tipo`);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener resumen');
-  }
-  return response.data.data;
-};
-
-/**
- * Genera horario semanal completo con todas las actividades
- */
-export const obtenerHorarioSemanal = async (): Promise<{
-  horarioSemanal: HorarioSemanal[];
-  generadoEn: string;
-}> => {
-  const response = await api.get<ApiResponse<{
-    horarioSemanal: HorarioSemanal[];
-    generadoEn: string;
-  }>>(`${BASE_URL}/reportes/horario-semanal`);
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al obtener horario semanal');
-  }
-  return response.data.data;
-};
-
-// ============================================
-// OPERACIONES ESPECIALES
-// ============================================
-
-/**
- * Cambia el estado de una actividad
- */
-export const cambiarEstadoActividad = async (
-  actividadId: number,
-  data: CambiarEstadoDTO
-): Promise<Actividad> => {
-  const response = await api.patch<ApiResponse<Actividad>>(
-    `${BASE_URL}/${actividadId}/estado`,
+  data: InscribirParticipanteDTO
+): Promise<ParticipacionActividad> => {
+  const response = await api.post<{ success: boolean; data: ParticipacionActividad }>(
+    `/actividades/${actividadId}/participantes`,
     data
   );
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al cambiar estado');
-  }
   return response.data.data;
 };
 
 /**
- * Duplica una actividad existente con nuevo código y fechas
+ * Lista participantes de una actividad con paginación
+ * GET /api/actividades/:actividadId/participantes?page=1&limit=20&activa=true
+ * Guía línea 796-836
  */
-export const duplicarActividad = async (
+export const listarParticipantes = async (
   actividadId: number,
-  data: DuplicarActividadDTO
-): Promise<Actividad> => {
-  const response = await api.post<ApiResponse<Actividad>>(
-    `${BASE_URL}/${actividadId}/duplicar`,
+  params?: ParticipantesQueryParams
+): Promise<PaginatedResponse<ParticipacionActividad>> => {
+  const response = await api.get<{
+    success: boolean;
+    data: PaginatedResponse<ParticipacionActividad>;
+  }>(`/actividades/${actividadId}/participantes`, { params });
+  return response.data.data;
+};
+
+/**
+ * Quita un participante (dar de baja)
+ * DELETE /api/actividades/:actividadId/participantes/:participanteId
+ *
+ * Nota: Establece fechaFin = now() y activa = false
+ * Guía línea 839-855
+ */
+export const quitarParticipante = async (
+  actividadId: number,
+  participanteId: number
+): Promise<void> => {
+  await api.delete(`/actividades/${actividadId}/participantes/${participanteId}`);
+};
+
+// ============================================
+// CONSULTAS ESPECIALES
+// ============================================
+
+/**
+ * Obtiene estadísticas de una actividad
+ * GET /api/actividades/:id/estadisticas
+ * Guía línea 860-881
+ */
+export const obtenerEstadisticas = async (id: number): Promise<EstadisticasActividad> => {
+  const response = await api.get<{ success: boolean; data: EstadisticasActividad }>(
+    `/actividades/${id}/estadisticas`
+  );
+  return response.data.data;
+};
+
+/**
+ * Busca actividades por día y hora
+ * GET /api/actividades/por-horario?diaSemanaId=1&horaInicio=18:00&horaFin=20:00
+ * Guía línea 884-919
+ */
+export const buscarPorHorario = async (
+  params: BuscarPorHorarioParams
+): Promise<ActividadConHorarios[]> => {
+  const response = await api.get<{ success: boolean; data: ActividadConHorarios[] }>(
+    '/actividades/por-horario',
+    { params }
+  );
+  return response.data.data;
+};
+
+/**
+ * Verifica disponibilidad de aula
+ * POST /api/actividades/verificar-disponibilidad-aula
+ * Guía línea 922-960
+ */
+export const verificarDisponibilidadAula = async (
+  data: VerificarDisponibilidadAulaDTO
+): Promise<DisponibilidadAulaResponse> => {
+  const response = await api.post<{ success: boolean; data: DisponibilidadAulaResponse }>(
+    '/actividades/verificar-disponibilidad-aula',
     data
   );
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Error al duplicar actividad');
-  }
   return response.data.data;
 };
 
 // ============================================
-// EXPORTAR TODO
+// EXPORTAR TODO COMO OBJETO
 // ============================================
 
 export const actividadesApi = {
   // Catálogos
-  obtenerTodosCatalogos,
   obtenerTiposActividades,
   obtenerCategoriasActividades,
   obtenerEstadosActividades,
@@ -437,36 +383,28 @@ export const actividadesApi = {
   crearActividad,
   listarActividades,
   obtenerActividadPorId,
-  obtenerActividadPorCodigo,
   actualizarActividad,
   eliminarActividad,
 
   // Horarios
-  obtenerHorariosActividad,
   agregarHorario,
   actualizarHorario,
   eliminarHorario,
 
   // Docentes
-  obtenerDocentesActividad,
+  obtenerDocentesDisponibles,
   asignarDocente,
   desasignarDocente,
-  obtenerDocentesDisponibles,
 
   // Participantes
-  obtenerParticipantes,
-  inscribirParticipante,
+  agregarParticipante,
+  listarParticipantes,
+  quitarParticipante,
 
-  // Estadísticas
-  obtenerEstadisticasActividad,
-
-  // Reportes
-  obtenerResumenPorTipo,
-  obtenerHorarioSemanal,
-
-  // Operaciones especiales
-  cambiarEstadoActividad,
-  duplicarActividad,
+  // Consultas especiales
+  obtenerEstadisticas,
+  buscarPorHorario,
+  verificarDisponibilidadAula,
 };
 
 export default actividadesApi;

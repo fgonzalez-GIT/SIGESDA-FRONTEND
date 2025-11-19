@@ -129,17 +129,9 @@ const PersonasPage: React.FC = () => {
     } catch (error: any) {
       console.error('Error al guardar persona:', error);
 
-      let errorMessage = 'Error al guardar la persona';
-
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
       dispatch(
         showNotification({
-          message: errorMessage,
+          message: 'No es posible realizar la acción en este momento',
           severity: 'error',
         })
       );
@@ -169,15 +161,9 @@ const PersonasPage: React.FC = () => {
     } catch (error: any) {
       console.error('Error al eliminar persona:', error);
 
-      let errorMessage = 'Error al eliminar la persona';
-
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
       dispatch(
         showNotification({
-          message: errorMessage,
+          message: 'No es posible realizar la acción en este momento',
           severity: 'error',
         })
       );

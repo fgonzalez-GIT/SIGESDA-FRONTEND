@@ -55,11 +55,11 @@ export const ActividadCard: React.FC<ActividadCardProps> = ({
               {actividad.nombre}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {actividad.codigo_actividad}
+              {actividad.codigoActividad}
             </Typography>
           </Box>
-          {actividad.estados_actividades && (
-            <EstadoBadge estado={actividad.estados_actividades} />
+          {actividad.estadosActividades && (
+            <EstadoBadge estado={actividad.estadosActividades} />
           )}
         </Box>
 
@@ -83,13 +83,13 @@ export const ActividadCard: React.FC<ActividadCardProps> = ({
         <Stack spacing={1}>
           <Box display="flex" alignItems="center" gap={1}>
             <Chip
-              label={actividad.tipos_actividades?.nombre || 'N/A'}
+              label={actividad.tiposActividades?.nombre || 'N/A'}
               size="small"
               variant="outlined"
               color="primary"
             />
             <Chip
-              label={actividad.categorias_actividades?.nombre || 'N/A'}
+              label={actividad.categoriasActividades?.nombre || 'N/A'}
               size="small"
               variant="outlined"
             />
@@ -102,7 +102,7 @@ export const ActividadCard: React.FC<ActividadCardProps> = ({
               </Typography>
               {actividad.horarios_actividades.slice(0, 2).map((h) => (
                 <Typography key={h.id} variant="body2">
-                  {h.dias_semana?.nombre}: {formatTime(h.hora_inicio)} - {formatTime(h.hora_fin)}
+                  {h.diasSemana?.nombre}: {formatTime(h.horaInicio)} - {formatTime(h.horaFin)}
                 </Typography>
               ))}
               {actividad.horarios_actividades.length > 2 && (
@@ -114,12 +114,12 @@ export const ActividadCard: React.FC<ActividadCardProps> = ({
           )}
 
           <Box display="flex" gap={2} mt={1}>
-            {actividad.cupo_maximo && (
+            {actividad.capacidadMaxima && (
               <Tooltip title="Cupo disponible">
                 <Box display="flex" alignItems="center" gap={0.5}>
                   <PeopleIcon fontSize="small" color={tieneCupo ? 'success' : 'error'} />
                   <Typography variant="body2">
-                    {cupoDisponible} / {actividad.cupo_maximo}
+                    {cupoDisponible} / {actividad.capacidadMaxima}
                   </Typography>
                 </Box>
               </Tooltip>
