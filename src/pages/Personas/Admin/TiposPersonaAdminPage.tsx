@@ -220,16 +220,9 @@ const TiposPersonaAdminPage: React.FC = () => {
     } catch (error: any) {
       console.error('Error al guardar tipo de persona:', error);
 
-      let errorMessage = 'Error al guardar el tipo de persona';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
       dispatch(
         showNotification({
-          message: errorMessage,
+          message: 'No es posible realizar la acción en este momento',
           severity: 'error',
         })
       );
@@ -260,14 +253,9 @@ const TiposPersonaAdminPage: React.FC = () => {
     } catch (error: any) {
       console.error('Error al eliminar tipo de persona:', error);
 
-      let errorMessage = 'Error al eliminar el tipo de persona';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
       dispatch(
         showNotification({
-          message: errorMessage,
+          message: 'No es posible realizar la acción en este momento',
           severity: 'error',
         })
       );

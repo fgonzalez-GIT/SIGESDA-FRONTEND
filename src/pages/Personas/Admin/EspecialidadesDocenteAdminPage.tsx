@@ -169,16 +169,9 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
     } catch (error: any) {
       console.error('Error al guardar especialidad:', error);
 
-      let errorMessage = 'Error al guardar la especialidad';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
       dispatch(
         showNotification({
-          message: errorMessage,
+          message: 'No es posible realizar la acción en este momento',
           severity: 'error',
         })
       );
@@ -209,14 +202,9 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
     } catch (error: any) {
       console.error('Error al eliminar especialidad:', error);
 
-      let errorMessage = 'Error al eliminar la especialidad';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
       dispatch(
         showNotification({
-          message: errorMessage,
+          message: 'No es posible realizar la acción en este momento',
           severity: 'error',
         })
       );

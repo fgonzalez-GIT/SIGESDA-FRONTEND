@@ -121,6 +121,15 @@ export function CatalogoFormDialog<T extends Record<string, any>>({
                   return (
                     <TextField
                       {...formField}
+                      value={field.type === 'number' ? (formField.value ?? '') : formField.value}
+                      onChange={(e) => {
+                        if (field.type === 'number') {
+                          const numValue = parseFloat(e.target.value);
+                          formField.onChange(isNaN(numValue) ? undefined : numValue);
+                        } else {
+                          formField.onChange(e);
+                        }
+                      }}
                       label={field.label}
                       type={field.type === 'number' ? 'number' : 'text'}
                       placeholder={field.placeholder}
