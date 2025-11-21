@@ -54,13 +54,13 @@ export const HorariosListaV2: React.FC<HorariosListaV2Props> = ({
         >
           <Box display="flex" alignItems="center" gap={2}>
             <Chip
-              label={horario.dias_semana?.nombre || 'N/A'}
+              label={horario.diasSemana?.nombre || 'N/A'}
               color="primary"
               variant="outlined"
               size="small"
             />
             <Typography variant={dense ? 'body2' : 'body1'}>
-              {formatTime(horario.hora_inicio)} - {formatTime(horario.hora_fin)}
+              {formatTime(horario.horaInicio)} - {formatTime(horario.horaFin)}
             </Typography>
             {!horario.activo && (
               <Chip

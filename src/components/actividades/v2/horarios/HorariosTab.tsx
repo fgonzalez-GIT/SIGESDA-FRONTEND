@@ -53,10 +53,10 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
 
   // Ordenar horarios por día de la semana y hora de inicio
   const horariosOrdenados = [...horariosActivos].sort((a, b) => {
-    const ordenA = a.dias_semana?.orden || 0;
-    const ordenB = b.dias_semana?.orden || 0;
+    const ordenA = a.diasSemana?.orden || 0;
+    const ordenB = b.diasSemana?.orden || 0;
     if (ordenA !== ordenB) return ordenA - ordenB;
-    return a.hora_inicio.localeCompare(b.hora_inicio);
+    return a.horaInicio.localeCompare(b.horaInicio);
   });
 
   const handleAgregarHorario = () => {
@@ -180,10 +180,10 @@ export const HorariosTab: React.FC<HorariosTabProps> = ({
           <DialogContentText>
             ¿Estás seguro de que deseas eliminar el horario de{' '}
             <strong>
-              {deleteDialog.horario?.dias_semana?.nombre || 'este día'}
+              {deleteDialog.horario?.diasSemana?.nombre || 'este día'}
             </strong>{' '}
-            de {deleteDialog.horario?.hora_inicio.substring(0, 5)} a{' '}
-            {deleteDialog.horario?.hora_fin.substring(0, 5)} hs?
+            de {deleteDialog.horario?.horaInicio.substring(0, 5)} a{' '}
+            {deleteDialog.horario?.horaFin.substring(0, 5)} hs?
           </DialogContentText>
           <DialogContentText sx={{ mt: 2, fontSize: '0.875rem', color: 'text.secondary' }}>
             Esta acción eliminará el horario de la actividad.

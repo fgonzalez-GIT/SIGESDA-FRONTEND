@@ -10,7 +10,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  CircularProgress
+  CircularProgress,
+  Snackbar
 } from '@mui/material';
 import {
   PersonAdd as PersonAddIcon
@@ -31,7 +32,7 @@ interface DocentesTabProps {
       apellido: string;
       especialidad?: string;
     };
-    roles_docentes?: {
+    rolesDocentes?: {
       id: number;
       nombre: string;
       codigo: string;
@@ -59,6 +60,11 @@ export const DocentesTab: React.FC<DocentesTabProps> = ({
   }>({ open: false, docente: null });
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({ open: false, message: '', severity: 'success' });
 
   const docentesActivos = docentes?.filter(d => d.activo) || [];
 
@@ -78,13 +84,15 @@ export const DocentesTab: React.FC<DocentesTabProps> = ({
     setError(null);
 
     try {
-      await actividadesApi.desasignarDocente(
-        actividadId,
-        deleteDialog.docente.persona_id,
-        deleteDialog.docente.rol_docente_id
-      );
+      // El API solo necesita el ID de la asignación (docente_actividad.id)
+      await actividadesApi.desasignarDocente(deleteDialog.docente.id);
 
       handleCloseDeleteDialog();
+      setSnackbar({
+        open: true,
+        message: 'Docente desasignado correctamente',
+        severity: 'success'
+      });
       onRefresh();
     } catch (error: any) {
       setError(error.message || 'Error al desasignar docente');
@@ -99,7 +107,16 @@ export const DocentesTab: React.FC<DocentesTabProps> = ({
 
   const handleAsignarSuccess = () => {
     setAsignarModalOpen(false);
+    setSnackbar({
+      open: true,
+      message: 'Docente asignado correctamente',
+      severity: 'success'
+    });
     onRefresh();
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
   };
 
   return (
@@ -156,6 +173,7 @@ export const DocentesTab: React.FC<DocentesTabProps> = ({
         actividadId={actividadId}
         actividadNombre={actividadNombre}
         onSuccess={handleAsignarSuccess}
+        docentesAsignadosIds={docentesActivos.map(d => d.docenteId)}
       />
 
       {/* Dialog de confirmación de eliminación */}
@@ -200,6 +218,22 @@ export const DocentesTab: React.FC<DocentesTabProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar de notificaciones */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

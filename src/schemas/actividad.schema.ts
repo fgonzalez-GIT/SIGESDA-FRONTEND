@@ -70,11 +70,6 @@ export const asignarDocenteSchema = z.object({
  */
 export const createActividadSchema = z.object({
   // Campos requeridos
-  codigoActividad: z.string()
-    .min(1, 'El código de actividad es requerido')
-    .max(50, 'El código de actividad no puede exceder 50 caracteres')
-    .regex(/^[A-Z0-9-]+$/, 'El código solo puede contener letras mayúsculas, números y guiones'),
-
   nombre: z.string()
     .min(1, 'El nombre es requerido')
     .max(200, 'El nombre no puede exceder 200 caracteres'),

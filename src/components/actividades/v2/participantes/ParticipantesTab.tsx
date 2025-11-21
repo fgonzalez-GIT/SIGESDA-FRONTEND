@@ -64,7 +64,7 @@ export const ParticipantesTab: React.FC<ParticipantesTabProps> = ({
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const participantesActivos = participantes?.filter(p => p.activo) || [];
+  const participantesActivos = participantes?.filter(p => p.activa) || [];
 
   const handleOpenDeleteDialog = (participante: any) => {
     setDeleteDialog({ open: true, participante });
@@ -99,7 +99,7 @@ export const ParticipantesTab: React.FC<ParticipantesTabProps> = ({
   };
 
   // Obtener IDs de participantes ya inscritos
-  const participantesExistentesIds = participantesActivos.map((p) => p.persona_id);
+  const participantesExistentesIds = participantesActivos.map((p) => p.personaId);
 
   // Cálculo de cupo
   const cuposDisponibles = cupoMaximo ? cupoMaximo - cupoActual : null;

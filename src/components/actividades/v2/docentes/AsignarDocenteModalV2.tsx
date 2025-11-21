@@ -40,6 +40,7 @@ interface AsignarDocenteModalV2Props {
   actividadId: number;
   actividadNombre: string;
   onSuccess: () => void;
+  docentesAsignadosIds?: number[];
 }
 
 const steps = ['Seleccionar Docente', 'Asignar Rol', 'Confirmar'];
@@ -55,7 +56,8 @@ export const AsignarDocenteModalV2: React.FC<AsignarDocenteModalV2Props> = ({
   onClose,
   actividadId,
   actividadNombre,
-  onSuccess
+  onSuccess,
+  docentesAsignadosIds = []
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -136,7 +138,7 @@ export const AsignarDocenteModalV2: React.FC<AsignarDocenteModalV2Props> = ({
 
     try {
       await actividadesApi.asignarDocente(actividadId, {
-        docenteId: parseInt(docenteSeleccionado.persona_id),
+        docenteId: docenteSeleccionado.id,
         rolDocenteId: rolSeleccionado,
         observaciones: observaciones || undefined
       });
@@ -150,8 +152,13 @@ export const AsignarDocenteModalV2: React.FC<AsignarDocenteModalV2Props> = ({
     }
   };
 
-  // Filtrar docentes por búsqueda (usando debounced term)
+  // Filtrar docentes: excluir ya asignados y aplicar búsqueda
   const docentesFiltrados = docentes.filter((docente) => {
+    // Excluir docentes ya asignados a esta actividad
+    if (docentesAsignadosIds.includes(docente.id)) {
+      return false;
+    }
+    // Aplicar filtro de búsqueda
     const searchLower = debouncedSearchTerm.toLowerCase();
     return (
       docente.nombre.toLowerCase().includes(searchLower) ||
@@ -198,12 +205,12 @@ export const AsignarDocenteModalV2: React.FC<AsignarDocenteModalV2Props> = ({
         <List sx={{ maxHeight: 400, overflow: 'auto' }}>
           {docentesFiltrados.map((docente) => (
             <ListItem
-              key={docente.persona_id}
+              key={docente.id}
               disablePadding
               sx={{
                 border: '1px solid',
                 borderColor:
-                  docenteSeleccionado?.persona_id === docente.persona_id
+                  docenteSeleccionado?.id === docente.id
                     ? 'primary.main'
                     : 'divider',
                 borderRadius: 1,
@@ -211,7 +218,7 @@ export const AsignarDocenteModalV2: React.FC<AsignarDocenteModalV2Props> = ({
               }}
             >
               <ListItemButton
-                selected={docenteSeleccionado?.persona_id === docente.persona_id}
+                selected={docenteSeleccionado?.id === docente.id}
                 onClick={() => setDocenteSeleccionado(docente)}
                 sx={{
                   '&:hover': {
@@ -241,7 +248,7 @@ export const AsignarDocenteModalV2: React.FC<AsignarDocenteModalV2Props> = ({
                     </>
                   }
                 />
-                {docenteSeleccionado?.persona_id === docente.persona_id && (
+                {docenteSeleccionado?.id === docente.id && (
                   <CheckCircleIcon color="primary" />
                 )}
               </ListItemButton>

@@ -249,7 +249,7 @@ export const ActividadesPage: React.FC = () => {
                     label="Tipo"
                   >
                     <MenuItem value="">Todos los tipos</MenuItem>
-                    {catalogos?.tipos.map((tipo) => (
+                    {catalogos?.tiposActividades?.map((tipo) => (
                       <MenuItem key={tipo.id} value={tipo.id}>
                         {tipo.nombre}
                       </MenuItem>
@@ -268,7 +268,7 @@ export const ActividadesPage: React.FC = () => {
                     label="Categoría"
                   >
                     <MenuItem value="">Todas las categorías</MenuItem>
-                    {catalogos?.categorias.map((cat) => (
+                    {catalogos?.categoriasActividades?.map((cat) => (
                       <MenuItem key={cat.id} value={cat.id}>
                         {cat.nombre}
                       </MenuItem>

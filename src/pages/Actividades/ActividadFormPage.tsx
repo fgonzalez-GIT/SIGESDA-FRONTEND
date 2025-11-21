@@ -46,7 +46,6 @@ import { HorarioSelector } from '../../components/actividades/HorarioSelector';
 import type { CreateActividadDTO, CreateHorarioDTO } from '../../types/actividad.types';
 
 interface FormErrors {
-  codigoActividad?: string;
   nombre?: string;
   tipoActividadId?: string;
   categoriaId?: string;
@@ -70,7 +69,6 @@ export const ActividadFormPage: React.FC = () => {
 
   // Estado del formulario
   const [formData, setFormData] = useState({
-    codigoActividad: '',
     nombre: '',
     tipoActividadId: 0,
     categoriaId: 0,
@@ -94,7 +92,6 @@ export const ActividadFormPage: React.FC = () => {
   useEffect(() => {
     if (isEditing && actividad) {
       setFormData({
-        codigoActividad: actividad.codigoActividad,
         nombre: actividad.nombre,
         tipoActividadId: actividad.tipoActividadId,
         categoriaId: actividad.categoriaId,
@@ -146,8 +143,9 @@ export const ActividadFormPage: React.FC = () => {
       return;
     }
 
-    // Validar que el día sea válido (1-7)
-    if (nuevoHorario.diaSemanaId < 1 || nuevoHorario.diaSemanaId > 7) {
+    // Validar que el día exista en el catálogo y tenga orden válido (1-7)
+    const diaSeleccionado = catalogos?.diasSemana?.find(d => d.id === nuevoHorario.diaSemanaId);
+    if (!diaSeleccionado || diaSeleccionado.orden < 1 || diaSeleccionado.orden > 7) {
       setErrors((prev) => ({ ...prev, horarios: 'El día seleccionado no es válido' }));
       return;
     }
@@ -177,12 +175,6 @@ export const ActividadFormPage: React.FC = () => {
 
     if (step === 0) {
       // Paso 1: Información Básica
-      if (!formData.codigoActividad.trim()) {
-        newErrors.codigoActividad = 'El código es requerido';
-      } else if (!/^[A-Z0-9\-]+$/.test(formData.codigoActividad)) {
-        newErrors.codigoActividad = 'Solo mayúsculas, números y guiones';
-      }
-
       if (!formData.nombre.trim()) {
         newErrors.nombre = 'El nombre es requerido';
       }
@@ -243,8 +235,11 @@ export const ActividadFormPage: React.FC = () => {
       return;
     }
 
-    // Validar que todos los días de semana sean válidos (1-7)
-    const horariosInvalidos = horarios.filter(h => h.diaSemanaId < 1 || h.diaSemanaId > 7);
+    // Validar que todos los días de semana existan en el catálogo y tengan orden válido (1-7)
+    const horariosInvalidos = horarios.filter(h => {
+      const dia = catalogos?.diasSemana?.find(d => d.id === h.diaSemanaId);
+      return !dia || dia.orden < 1 || dia.orden > 7;
+    });
     if (horariosInvalidos.length > 0) {
       setErrors((prev) => ({
         ...prev,
@@ -255,7 +250,6 @@ export const ActividadFormPage: React.FC = () => {
 
     try {
       const data: CreateActividadDTO = {
-        codigoActividad: formData.codigoActividad.toUpperCase(),
         nombre: formData.nombre.trim(),
         tipoActividadId: formData.tipoActividadId,
         categoriaId: formData.categoriaId,
@@ -366,18 +360,6 @@ export const ActividadFormPage: React.FC = () => {
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
-                  label="Código de Actividad *"
-                  value={formData.codigoActividad}
-                  onChange={handleChange('codigoActividad')}
-                  error={!!errors.codigoActividad}
-                  helperText={errors.codigoActividad || 'Ej: CORO-ADU-2025-A (solo mayúsculas, números y guiones)'}
-                  inputProps={{ style: { textTransform: 'uppercase' } }}
-                />
-              </Grid>
-
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
                   label="Nombre de la Actividad *"
                   value={formData.nombre}
                   onChange={handleChange('nombre')}
@@ -395,7 +377,7 @@ export const ActividadFormPage: React.FC = () => {
                     label="Tipo de Actividad *"
                   >
                     <MenuItem value={0}>Seleccione un tipo...</MenuItem>
-                    {catalogos?.tipos.map((tipo) => (
+                    {catalogos?.tiposActividades?.map((tipo) => (
                       <MenuItem key={tipo.id} value={tipo.id}>
                         {tipo.nombre}
                       </MenuItem>
@@ -414,7 +396,7 @@ export const ActividadFormPage: React.FC = () => {
                     label="Categoría *"
                   >
                     <MenuItem value={0}>Seleccione una categoría...</MenuItem>
-                    {catalogos?.categorias.map((cat) => (
+                    {catalogos?.categoriasActividades?.map((cat) => (
                       <MenuItem key={cat.id} value={cat.id}>
                         {cat.nombre}
                       </MenuItem>
@@ -512,7 +494,7 @@ export const ActividadFormPage: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, estadoId: Number(e.target.value) })}
                     label="Estado"
                   >
-                    {catalogos?.estados.map((estado) => (
+                    {catalogos?.estadosActividades?.map((estado) => (
                       <MenuItem key={estado.id} value={estado.id}>
                         {estado.nombre}
                       </MenuItem>

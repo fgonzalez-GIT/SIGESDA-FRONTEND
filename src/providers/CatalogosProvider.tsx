@@ -6,10 +6,18 @@
 import React, { createContext, useContext } from 'react';
 import { Box, CircularProgress, Alert } from '@mui/material';
 import { useCatalogos } from '../hooks/useActividades';
-import type { CatalogosCompletos } from '../types/actividad.types';
+import type { TipoActividad, CategoriaActividad, EstadoActividad, DiaSemana, RolDocente } from '../types/actividad.types';
+
+interface Catalogos {
+  tiposActividades: TipoActividad[];
+  categoriasActividades: CategoriaActividad[];
+  estadosActividades: EstadoActividad[];
+  diasSemana: DiaSemana[];
+  rolesDocentes: RolDocente[];
+}
 
 interface CatalogosContextType {
-  catalogos: CatalogosCompletos | null;
+  catalogos: Catalogos | null;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -28,20 +36,26 @@ interface CatalogosProviderProps {
 export const CatalogosProvider: React.FC<CatalogosProviderProps> = ({ children }) => {
   const { catalogos, loading, error, refetch } = useCatalogos();
 
-  // Filtrar diasSemana para solo incluir IDs válidos (1-7)
-  // El backend tiene duplicados con IDs 8-14 que deben ser ignorados
+  // Tomar solo 7 días de semana (eliminar duplicados si existen)
   const catalogosFiltrados = React.useMemo(() => {
     if (!catalogos) return null;
 
-    const diasFiltrados = catalogos.diasSemana.filter(dia => dia.id <= 7);
+    // Si hay exactamente 7 días, usarlos tal cual
+    // Si hay más (duplicados), tomar solo los primeros 7 únicos por nombre
+    const diasUnicos = catalogos.diasSemana.reduce((acc, dia) => {
+      if (!acc.find(d => d.nombre === dia.nombre) && acc.length < 7) {
+        acc.push(dia);
+      }
+      return acc;
+    }, [] as typeof catalogos.diasSemana);
 
-    // Debug: verificar que el filtrado está funcionando
+    // Debug: verificar los días cargados
     console.log('🔍 Días de semana originales:', catalogos.diasSemana.map(d => ({ id: d.id, nombre: d.nombre })));
-    console.log('✅ Días de semana filtrados:', diasFiltrados.map(d => ({ id: d.id, nombre: d.nombre })));
+    console.log('✅ Días de semana usados:', diasUnicos.map(d => ({ id: d.id, nombre: d.nombre })));
 
     return {
       ...catalogos,
-      diasSemana: diasFiltrados
+      diasSemana: diasUnicos
     };
   }, [catalogos]);
 

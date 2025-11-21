@@ -59,9 +59,9 @@ export const AgregarHorarioModal: React.FC<AgregarHorarioModalProps> = ({
     if (open) {
       if (horarioEditar) {
         // Modo edición
-        setDiaSemanaId(horarioEditar.dia_semana_id);
-        setHoraInicio(horarioEditar.hora_inicio.substring(0, 5)); // HH:MM
-        setHoraFin(horarioEditar.hora_fin.substring(0, 5)); // HH:MM
+        setDiaSemanaId(horarioEditar.diaSemanaId);
+        setHoraInicio(horarioEditar.horaInicio.substring(0, 5)); // HH:MM
+        setHoraFin(horarioEditar.horaFin.substring(0, 5)); // HH:MM
       } else {
         // Modo creación
         setDiaSemanaId(0);

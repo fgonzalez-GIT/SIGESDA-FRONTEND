@@ -24,7 +24,7 @@ interface DocenteItemProps {
       apellido: string;
       especialidad?: string;
     };
-    roles_docentes?: {
+    rolesDocentes?: {
       id: number;
       nombre: string;
       codigo: string;
@@ -42,7 +42,7 @@ export const DocenteItem: React.FC<DocenteItemProps> = React.memo(({ docente, on
     ? `${docente.personas.apellido}, ${docente.personas.nombre}`
     : 'Docente desconocido';
 
-  const rolNombre = docente.roles_docentes?.nombre || 'Sin rol';
+  const rolNombre = docente.rolesDocentes?.nombre || 'Sin rol';
 
   // Color del chip según el rol
   const getRolColor = (rol: string): 'primary' | 'secondary' | 'default' | 'info' => {
@@ -110,7 +110,7 @@ export const DocenteItem: React.FC<DocenteItemProps> = React.memo(({ docente, on
               </Typography>
             )}
             <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
-              Asignado: {new Date(docente.fecha_asignacion).toLocaleDateString('es-ES')}
+              Asignado: {new Date(docente.fechaAsignacion).toLocaleDateString('es-ES')}
             </Typography>
           </Box>
         }

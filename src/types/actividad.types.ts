@@ -167,7 +167,7 @@ export interface Actividad {
  * Según guía: líneas 138-171
  */
 export interface CreateActividadDTO {
-  codigoActividad: string;          // REQUERIDO, único, max 50
+  codigoActividad?: string;         // OPCIONAL, backend lo genera automáticamente
   nombre: string;                   // REQUERIDO
   tipoActividadId: number;          // REQUERIDO
   categoriaId: number;              // REQUERIDO

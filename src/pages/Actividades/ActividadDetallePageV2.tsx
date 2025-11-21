@@ -58,11 +58,11 @@ export const ActividadDetallePageV2: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabValue>('participantes');
 
   // Hooks de datos
-  const { actividad, loading: actividadLoading, error: actividadError } = useActividad(Number(id));
-  const { horarios, loading: horariosLoading } = useHorariosActividad(Number(id));
-  const { docentes, loading: docentesLoading } = useDocentesActividad(Number(id));
-  const { participantes, loading: participantesLoading } = useParticipantesActividad(Number(id));
-  const { estadisticas } = useEstadisticasActividad(Number(id));
+  const { actividad, loading: actividadLoading, error: actividadError, refetch: refetchActividad } = useActividad(Number(id));
+  const { horarios, loading: horariosLoading, refetch: refetchHorarios } = useHorariosActividad(Number(id));
+  const { docentes, loading: docentesLoading, refetch: refetchDocentes } = useDocentesActividad(Number(id));
+  const { participantes, loading: participantesLoading, refetch: refetchParticipantes } = useParticipantesActividad(Number(id));
+  const { estadisticas, refetch: refetchEstadisticas } = useEstadisticasActividad(Number(id));
 
   // ============================================
   // HANDLERS
@@ -76,9 +76,15 @@ export const ActividadDetallePageV2: React.FC = () => {
     setActiveTab(newValue);
   };
 
-  const handleRefreshData = () => {
-    // Trigger de refresco de datos cuando se modifiquen horarios/docentes/participantes
-    window.location.reload();
+  const handleRefreshData = async () => {
+    // Refrescar datos cuando se modifiquen horarios/docentes/participantes
+    await Promise.all([
+      refetchActividad(),
+      refetchHorarios(),
+      refetchDocentes(),
+      refetchParticipantes(),
+      refetchEstadisticas(),
+    ]);
   };
 
   // ============================================
@@ -89,14 +95,14 @@ export const ActividadDetallePageV2: React.FC = () => {
   const clasificacion: ActividadClasificacion | null = actividad
     ? {
         tipo: {
-          id: actividad.tipo_actividad_id,
-          nombre: actividad.tipos_actividades?.nombre || 'Sin tipo',
-          codigo: actividad.tipos_actividades?.codigo || ''
+          id: actividad.tipoActividadId,
+          nombre: actividad.tiposActividades?.nombre || 'Sin tipo',
+          codigo: actividad.tiposActividades?.codigo || ''
         },
         categoria: {
-          id: actividad.categoria_id,
-          nombre: actividad.categorias_actividades?.nombre || 'Sin categoría',
-          codigo: actividad.categorias_actividades?.codigo || ''
+          id: actividad.categoriaId,
+          nombre: actividad.categoriasActividades?.nombre || 'Sin categoría',
+          codigo: actividad.categoriasActividades?.codigo || ''
         }
       }
     : null;
@@ -104,14 +110,14 @@ export const ActividadDetallePageV2: React.FC = () => {
   // Datos de fechas
   const fechas: ActividadFechas | null = actividad
     ? {
-        desde: actividad.fecha_desde,
-        hasta: actividad.fecha_hasta
+        desde: actividad.fechaDesde,
+        hasta: actividad.fechaHasta
       }
     : null;
 
   // Datos de cupos
   const cupoActual = estadisticas?.totalParticipantes || 0;
-  const cupoMaximo = actividad?.cupo_maximo || null;
+  const cupoMaximo = actividad?.capacidadMaxima || null;
   const cuposDisponibles = cupoMaximo ? cupoMaximo - cupoActual : null;
   const porcentajeOcupacion = cupoMaximo ? (cupoActual / cupoMaximo) * 100 : 0;
 
@@ -136,7 +142,7 @@ export const ActividadDetallePageV2: React.FC = () => {
   // Contadores para las pestañas
   const contadorHorarios = horarios?.filter(h => h.activo).length || 0;
   const contadorDocentes = docentes?.filter(d => d.activo).length || 0;
-  const contadorParticipantes = participantes?.filter(p => p.activo).length || 0;
+  const contadorParticipantes = participantes?.filter(p => p.activa).length || 0;
 
   // ============================================
   // ESTADOS DE CARGA Y ERROR
@@ -173,10 +179,10 @@ export const ActividadDetallePageV2: React.FC = () => {
       <ActividadHeader
         actividadId={Number(id)}
         nombre={actividad.nombre}
-        codigo={actividad.codigo_actividad}
+        codigo={actividad.codigoActividad}
         estado={
-          actividad.estados_actividades || {
-            id: actividad.estado_id,
+          actividad.estadosActividades || {
+            id: actividad.estadoId,
             codigo: 'ACTIVA' as const,
             nombre: 'Activa',
             descripcion: null,
@@ -287,7 +293,7 @@ export const ActividadDetallePageV2: React.FC = () => {
             actividadId={Number(id)}
             actividadNombre={actividad.nombre}
             costoActividad={actividad.costo}
-            fechaInicioActividad={actividad.fecha_desde}
+            fechaInicioActividad={actividad.fechaDesde}
             participantes={participantes as any || []}
             loading={participantesLoading}
             cupoMaximo={cupoMaximo}

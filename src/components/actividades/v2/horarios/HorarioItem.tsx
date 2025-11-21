@@ -18,7 +18,7 @@ import type { HorarioActividad } from '../../../../types/actividad.types';
 
 interface HorarioItemProps {
   horario: HorarioActividad & {
-    dias_semana?: {
+    diasSemana?: {
       id: number;
       codigo: string;
       nombre: string;
@@ -43,8 +43,8 @@ export const HorarioItem: React.FC<HorarioItemProps> = React.memo(({
     return hora.substring(0, 5); // HH:MM
   };
 
-  const diaNombre = horario.dias_semana?.nombre || 'Sin día';
-  const diaCodigo = horario.dias_semana?.codigo || '';
+  const diaNombre = horario.diasSemana?.nombre || 'Sin día';
+  const diaCodigo = horario.diasSemana?.codigo || '';
 
   return (
     <ListItem
@@ -79,7 +79,7 @@ export const HorarioItem: React.FC<HorarioItemProps> = React.memo(({
         }
         secondary={
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {formatHora(horario.hora_inicio)} - {formatHora(horario.hora_fin)} hs
+            {formatHora(horario.horaInicio)} - {formatHora(horario.horaFin)} hs
           </Typography>
         }
       />

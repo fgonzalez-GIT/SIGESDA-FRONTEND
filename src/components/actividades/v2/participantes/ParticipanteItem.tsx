@@ -114,7 +114,7 @@ export const ParticipanteItem: React.FC<ParticipanteItemProps> = React.memo(({
               color="text.secondary"
               sx={{ mt: 0.5 }}
             >
-              Inscrito: {new Date(participante.fecha_inicio).toLocaleDateString('es-ES')}
+              Inscrito: {new Date(participante.fechaInicio).toLocaleDateString('es-ES')}
             </Typography>
           </Box>
         }
