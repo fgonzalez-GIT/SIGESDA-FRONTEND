@@ -295,6 +295,9 @@ export const agregarParticipante = async (
  * Lista participantes de una actividad con paginación
  * GET /api/actividades/:actividadId/participantes?page=1&limit=20&activa=true
  * Guía línea 796-836
+ *
+ * NOTA: El backend actual devuelve un array sin paginación, por lo que convertimos
+ * la respuesta al formato esperado
  */
 export const listarParticipantes = async (
   actividadId: number,
@@ -302,9 +305,23 @@ export const listarParticipantes = async (
 ): Promise<PaginatedResponse<ParticipacionActividad>> => {
   const response = await api.get<{
     success: boolean;
-    data: PaginatedResponse<ParticipacionActividad>;
+    data: ParticipacionActividad[] | PaginatedResponse<ParticipacionActividad>;
   }>(`/actividades/${actividadId}/participantes`, { params });
-  return response.data.data;
+
+  // Si el backend devuelve un array (sin paginación), convertir al formato esperado
+  if (Array.isArray(response.data.data)) {
+    const dataArray = response.data.data;
+    return {
+      data: dataArray,
+      page: params?.page || 1,
+      limit: params?.limit || 20,
+      total: dataArray.length,
+      pages: 1
+    };
+  }
+
+  // Si ya viene con paginación, devolverlo tal cual
+  return response.data.data as PaginatedResponse<ParticipacionActividad>;
 };
 
 /**

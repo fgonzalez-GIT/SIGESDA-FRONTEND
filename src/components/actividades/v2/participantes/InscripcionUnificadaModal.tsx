@@ -254,18 +254,21 @@ export const InscripcionUnificadaModal: React.FC<InscripcionUnificadaModalProps>
         const errorDetails = errores.map(e => `- Persona ID ${e.personaId}: ${e.error}`).join('\n');
         setSuccessMessage(`${totalCreadas} persona(s) inscrita(s) exitosamente. ${totalErrores} error(es).`);
         setError(`Algunos participantes no pudieron ser inscritos:\n${errorDetails}`);
+
+        // Si hubo errores parciales, mantener el modal abierto para que el usuario vea los errores
+        setSelectedPeople([]);
+        onSuccess(); // Refrescar la lista inmediatamente
       } else {
         // Todo exitoso
         setSuccessMessage(`¡${totalCreadas} persona(s) inscrita(s) exitosamente!`);
-      }
+        setSelectedPeople([]);
 
-      setSelectedPeople([]);
-
-      // Cerrar modal y refrescar después de 1.5s
-      setTimeout(() => {
+        // Refrescar inmediatamente y cerrar después de mostrar el mensaje brevemente
         onSuccess();
-        onClose();
-      }, 1500);
+        setTimeout(() => {
+          onClose();
+        }, 1000);
+      }
     } catch (err: any) {
       setError(err.message || 'Error al inscribir participantes');
     } finally {

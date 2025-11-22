@@ -3,7 +3,7 @@
  * Basados en la documentación y guía rápida del backend
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type {
   Actividad,
   ActividadesQueryParams,
@@ -470,6 +470,9 @@ export const useParticipantesActividad = (actividadId: number | null): UsePartic
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Ref para mantener los parámetros actuales de paginación
+  const paginationParamsRef = useRef({ page: 1, limit: 20 });
+
   const fetchParticipantes = useCallback(async (page = 1, limit = 20, activa?: boolean) => {
     if (!actividadId) {
       setParticipantes([]);
@@ -479,6 +482,10 @@ export const useParticipantesActividad = (actividadId: number | null): UsePartic
     try {
       setLoading(true);
       setError(null);
+
+      // Actualizar el ref con los parámetros actuales
+      paginationParamsRef.current = { page, limit };
+
       const data = await listarParticipantes(actividadId, { page, limit, activa });
       setParticipantes(data.data);
       setPagination({
@@ -495,7 +502,11 @@ export const useParticipantesActividad = (actividadId: number | null): UsePartic
     }
   }, [actividadId]);
 
-  const refetch = useCallback(() => fetchParticipantes(pagination.page, pagination.limit), [fetchParticipantes, pagination]);
+  const refetch = useCallback(() => {
+    // Usar los valores guardados en el ref para hacer el refetch
+    const { page, limit } = paginationParamsRef.current;
+    return fetchParticipantes(page, limit);
+  }, [fetchParticipantes]);
 
   useEffect(() => {
     fetchParticipantes();

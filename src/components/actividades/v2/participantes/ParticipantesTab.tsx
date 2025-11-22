@@ -94,7 +94,7 @@ export const ParticipantesTab: React.FC<ParticipantesTabProps> = ({
   };
 
   const handleInscripcionSuccess = () => {
-    setInscripcionOpen(false);
+    // El modal maneja su propio cierre, solo refrescamos los datos aquí
     onRefresh();
   };
 
