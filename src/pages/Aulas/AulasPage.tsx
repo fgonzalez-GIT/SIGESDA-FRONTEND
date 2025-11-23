@@ -84,7 +84,7 @@ const AulasPage: React.FC = () => {
 
   // Cargar aulas al montar el componente
   useEffect(() => {
-    dispatch(fetchAulas());
+    dispatch(fetchAulas({}));
   }, [dispatch]);
 
   // Mostrar errores

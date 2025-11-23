@@ -72,17 +72,35 @@ const initialState: AulasState = {
   filters: {},
 };
 
+// Helper: Adapta el formato de equipamiento del backend (string) al frontend (array)
+const normalizeAula = (aula: any): Aula => {
+  return {
+    ...aula,
+    // Si equipamiento viene como string del backend, convertirlo a array
+    equipamiento: typeof aula.equipamiento === 'string'
+      ? aula.equipamiento.split(',').map((item: string) => item.trim()).filter(Boolean)
+      : (aula.equipamiento || []),
+  };
+};
+
 // Async thunks for Aulas
 export const fetchAulas = createAsyncThunk(
   'aulas/fetchAulas',
   async (params: any = {}, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas?` + new URLSearchParams(params || {}));
+      // Construir URL sin el "?" al final si no hay parámetros
+      const queryString = new URLSearchParams(params || {}).toString();
+      const url = `${import.meta.env.VITE_API_URL}/aulas${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Error al cargar aulas');
       }
       const result = await response.json();
-      return result.data || result;
+      const data = result.data || result;
+
+      // Normalizar cada aula para adaptar el formato de equipamiento
+      return Array.isArray(data) ? data.map(normalizeAula) : [];
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -93,18 +111,29 @@ export const createAula = createAsyncThunk(
   'aulas/createAula',
   async (aula: Omit<Aula, 'id' | 'fechaCreacion'>, { rejectWithValue }) => {
     try {
+      // Adaptar el formato para el backend: array → string
+      const aulaToSend = {
+        ...aula,
+        equipamiento: Array.isArray(aula.equipamiento)
+          ? aula.equipamiento.join(', ')
+          : aula.equipamiento
+      };
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(aula),
+        body: JSON.stringify(aulaToSend),
       });
       if (!response.ok) {
         throw new Error('Error al crear aula');
       }
       const result = await response.json();
-      return result.data || result;
+      const data = result.data || result;
+
+      // Normalizar la respuesta del backend
+      return normalizeAula(data);
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
@@ -115,18 +144,29 @@ export const updateAula = createAsyncThunk(
   'aulas/updateAula',
   async (aula: Aula, { rejectWithValue }) => {
     try {
+      // Adaptar el formato para el backend: array → string
+      const aulaToSend = {
+        ...aula,
+        equipamiento: Array.isArray(aula.equipamiento)
+          ? aula.equipamiento.join(', ')
+          : aula.equipamiento
+      };
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/${aula.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(aula),
+        body: JSON.stringify(aulaToSend),
       });
       if (!response.ok) {
         throw new Error('Error al actualizar aula');
       }
       const result = await response.json();
-      return result.data || result;
+      const data = result.data || result;
+
+      // Normalizar la respuesta del backend
+      return normalizeAula(data);
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
     }
