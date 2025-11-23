@@ -58,17 +58,23 @@ function App() {
                 <Route path="/actividades/:id/v1" element={<ActividadDetallePage />} />
                 <Route path="/actividades/:id/editar" element={<ActividadFormPage />} />
 
+                {/* Admin - Catálogos de Actividades */}
+                <Route path="/admin/actividades/tipos" element={<TiposActividadPage />} />
+                <Route path="/admin/actividades/categorias" element={<CategoriasActividadPage />} />
+
                 <Route path="/aulas" element={<AulasPage />} />
                 <Route path="/cuotas" element={<CuotasPage />} />
                 <Route path="/categorias" element={<CategoriasPage />} />
-                <Route path="/tipos-actividad" element={<TiposActividadPage />} />
-                <Route path="/categorias-actividad" element={<CategoriasActividadPage />} />
                 <Route path="/medios-pago" element={<MediosPagoPage />} />
                 <Route path="/recibos" element={<RecibosPage />} />
                 <Route path="/participacion" element={<ParticipacionPage />} />
                 <Route path="/familiares" element={<FamiliaresPage />} />
                 <Route path="/reservas" element={<ReservasPage />} />
                 <Route path="/configuracion" element={<ConfiguracionPage />} />
+
+                {/* Redirects para rutas antiguas (compatibilidad hacia atrás) */}
+                <Route path="/tipos-actividad" element={<Navigate to="/admin/actividades/tipos" replace />} />
+                <Route path="/categorias-actividad" element={<Navigate to="/admin/actividades/categorias" replace />} />
               </Routes>
             </DashboardLayout>
           </Router>

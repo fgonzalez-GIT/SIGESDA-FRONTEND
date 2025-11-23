@@ -44,6 +44,7 @@ import type { ActividadesQueryParams, Actividad } from '../../types/actividad.ty
 
 // Componentes
 import { ActividadCard } from '../../components/actividades/ActividadCard';
+import { ActividadesTable } from '../../components/actividades/ActividadesTable';
 
 export const ActividadesPage: React.FC = () => {
   // ============================================
@@ -364,13 +365,13 @@ export const ActividadesPage: React.FC = () => {
 
       {/* Lista de Actividades - Vista Lista/Tabla */}
       {!loading && viewMode === 'list' && (
-        <Paper>
-          <Box p={2}>
-            <Typography color="text.secondary">
-              Vista de tabla - Próximamente
-            </Typography>
-          </Box>
-        </Paper>
+        <ActividadesTable
+          actividades={actividades}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDelete={handleDeleteClick}
+          onDuplicate={handleDuplicate}
+        />
       )}
 
       {/* Paginación */}

@@ -88,6 +88,18 @@ const menuItems: MenuItem[] = [
     icon: <MusicNote />,
     path: '/actividades',
     color: '#ed6c02',
+    subItems: [
+      {
+        title: 'Tipos de Actividad',
+        icon: <Category fontSize="small" />,
+        path: '/admin/actividades/tipos',
+      },
+      {
+        title: 'Categorías de Actividad',
+        icon: <Category fontSize="small" />,
+        path: '/admin/actividades/categorias',
+      },
+    ],
   },
   {
     title: 'Aulas',
@@ -124,18 +136,6 @@ const menuItems: MenuItem[] = [
     icon: <AccountBalance />,
     path: '/cuotas',
     color: '#1976d2',
-  },
-  {
-    title: 'Tipos de Actividad',
-    icon: <Category />,
-    path: '/tipos-actividad',
-    color: '#00897b',
-  },
-  {
-    title: 'Categorías de Actividad',
-    icon: <Category />,
-    path: '/categorias-actividad',
-    color: '#6a1b9a',
   },
   {
     title: 'Medios de Pago',
