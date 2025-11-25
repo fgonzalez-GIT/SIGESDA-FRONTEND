@@ -124,6 +124,13 @@ const menuItems: MenuItem[] = [
     icon: <CalendarToday />,
     path: '/reservas',
     color: '#303f9f',
+    subItems: [
+      {
+        title: 'Dashboard',
+        icon: <Dashboard fontSize="small" />,
+        path: '/reservas/dashboard',
+      },
+    ],
   },
   {
     title: 'Recibos',

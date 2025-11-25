@@ -42,8 +42,8 @@ import {
   deleteAula,
   setSelectedAula,
   clearError,
-  type Aula
 } from '../../store/slices/aulasSlice';
+import type { Aula, CreateAulaDto, TIPOS_AULA, ESTADOS_AULA } from '@/types/aula.types';
 import { showNotification } from '../../store/slices/uiSlice';
 
 const AulasPage: React.FC = () => {
@@ -127,14 +127,14 @@ const AulasPage: React.FC = () => {
     try {
       if (selectedAula) {
         // Actualizar aula existente
-        await dispatch(updateAula({ ...formData as Aula, id: selectedAula.id, fechaCreacion: selectedAula.fechaCreacion })).unwrap();
+        await dispatch(updateAula({ id: selectedAula.id, data: formData })).unwrap();
         dispatch(showNotification({
           message: 'Aula actualizada exitosamente',
           severity: 'success'
         }));
       } else {
         // Crear nueva aula
-        await dispatch(createAula(formData as Omit<Aula, 'id' | 'fechaCreacion'>)).unwrap();
+        await dispatch(createAula(formData as CreateAulaDto)).unwrap();
         dispatch(showNotification({
           message: 'Aula creada exitosamente',
           severity: 'success'

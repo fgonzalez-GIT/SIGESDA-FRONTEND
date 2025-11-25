@@ -1,12 +1,14 @@
 /**
- * Provider de Catálogos para Actividades V2
+ * Provider de Catálogos para Actividades V2 + Reservas
  * Carga los catálogos una vez al inicio y los hace disponibles globalmente
  */
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Box, CircularProgress, Alert } from '@mui/material';
 import { useCatalogos } from '../hooks/useActividades';
+import estadosReservasApi from '../services/estadosReservasApi';
 import type { TipoActividad, CategoriaActividad, EstadoActividad, DiaSemana, RolDocente } from '../types/actividad.types';
+import type { EstadoReserva } from '../types/reserva.types';
 
 interface Catalogos {
   tiposActividades: TipoActividad[];
@@ -14,6 +16,7 @@ interface Catalogos {
   estadosActividades: EstadoActividad[];
   diasSemana: DiaSemana[];
   rolesDocentes: RolDocente[];
+  estadosReservas: EstadoReserva[]; // NUEVO
 }
 
 interface CatalogosContextType {
@@ -34,9 +37,59 @@ interface CatalogosProviderProps {
  * y los hace disponibles para todos los componentes
  */
 export const CatalogosProvider: React.FC<CatalogosProviderProps> = ({ children }) => {
-  const { catalogos, loading, error, refetch } = useCatalogos();
+  const { catalogos, loading: loadingActividades, error: errorActividades, refetch: refetchActividades } = useCatalogos();
+  const [estadosReservas, setEstadosReservas] = useState<EstadoReserva[]>([]);
+  const [loadingReservas, setLoadingReservas] = useState(true);
+  const [errorReservas, setErrorReservas] = useState<string | null>(null);
 
-  // Tomar solo 7 días de semana (eliminar duplicados si existen)
+  // Cargar estados de reservas al montar
+  useEffect(() => {
+    const loadEstadosReservas = async () => {
+      try {
+        setLoadingReservas(true);
+        const estados = await estadosReservasApi.getAll({
+          activo: true,
+          orderBy: 'orden',
+          orderDir: 'asc'
+        });
+        setEstadosReservas(estados);
+        setErrorReservas(null);
+        console.log('✅ Estados de reservas cargados:', estados.length);
+      } catch (err: any) {
+        console.error('❌ Error al cargar estados de reservas:', err);
+        setErrorReservas(err.response?.data?.message || 'Error al cargar estados de reservas');
+      } finally {
+        setLoadingReservas(false);
+      }
+    };
+
+    loadEstadosReservas();
+  }, []);
+
+  // Función para recargar ambos catálogos
+  const refetch = async () => {
+    await refetchActividades();
+    setLoadingReservas(true);
+    try {
+      const estados = await estadosReservasApi.getAll({
+        activo: true,
+        orderBy: 'orden',
+        orderDir: 'asc'
+      });
+      setEstadosReservas(estados);
+      setErrorReservas(null);
+    } catch (err: any) {
+      setErrorReservas(err.response?.data?.message || 'Error al cargar estados de reservas');
+    } finally {
+      setLoadingReservas(false);
+    }
+  };
+
+  // Combinar loading y error
+  const loading = loadingActividades || loadingReservas;
+  const error = errorActividades || errorReservas;
+
+  // Tomar solo 7 días de semana (eliminar duplicados si existen) + agregar estados de reservas
   const catalogosFiltrados = React.useMemo(() => {
     if (!catalogos) return null;
 
@@ -55,9 +108,10 @@ export const CatalogosProvider: React.FC<CatalogosProviderProps> = ({ children }
 
     return {
       ...catalogos,
-      diasSemana: diasUnicos
+      diasSemana: diasUnicos,
+      estadosReservas, // AGREGAR estados de reservas
     };
-  }, [catalogos]);
+  }, [catalogos, estadosReservas]);
 
   // Mostrar loading mientras carga
   if (loading) {

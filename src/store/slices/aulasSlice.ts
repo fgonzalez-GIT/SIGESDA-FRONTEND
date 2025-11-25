@@ -1,294 +1,118 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import aulasApi from '../../services/aulasApi';
+import type { Aula, CreateAulaDto, UpdateAulaDto, AulasQueryParams } from '@/types/aula.types';
 
-export interface Aula {
-  id: number;
-  nombre: string;
-  descripcion?: string;
-  capacidad: number;
-  ubicacion?: string;
-  equipamiento?: string[];
-  tipo: 'salon' | 'ensayo' | 'auditorio' | 'exterior';
-  estado: 'disponible' | 'ocupado' | 'mantenimiento' | 'fuera_servicio';
-  observaciones?: string;
-  fechaCreacion: string;
-}
-
-export interface ReservaAula {
-  id: number;
-  aulaId: number;
-  actividadId?: number;
-  actividadNombre?: string;
-  personaId?: number;
-  personaNombre?: string;
-  fecha: string; // YYYY-MM-DD
-  horaInicio: string; // HH:mm
-  horaFin: string; // HH:mm
-  motivo: string;
-  estado: 'pendiente' | 'confirmada' | 'cancelada' | 'finalizada';
-  observaciones?: string;
-  fechaCreacion: string;
-}
-
-export interface DisponibilidadAula {
-  aulaId: number;
-  aulaNombre: string;
-  fecha: string;
-  horariosDisponibles: {
-    horaInicio: string;
-    horaFin: string;
-  }[];
-  horariosOcupados: {
-    horaInicio: string;
-    horaFin: string;
-    motivo: string;
-    tipo: 'actividad' | 'reserva' | 'mantenimiento';
-  }[];
-}
+/**
+ * Redux Slice para Aulas
+ *
+ * Gestiona solo las aulas del conservatorio.
+ * Las reservas ahora están en reservasSlice separado.
+ */
 
 interface AulasState {
   aulas: Aula[];
-  reservas: ReservaAula[];
-  disponibilidad: DisponibilidadAula[];
   loading: boolean;
   error: string | null;
   selectedAula: Aula | null;
-  selectedReserva: ReservaAula | null;
-  filters: {
-    tipo?: string;
-    estado?: string;
-    capacidadMin?: number;
-    equipamiento?: string[];
-  };
+  filters: AulasQueryParams;
 }
 
 const initialState: AulasState = {
   aulas: [],
-  reservas: [],
-  disponibilidad: [],
   loading: false,
   error: null,
   selectedAula: null,
-  selectedReserva: null,
   filters: {},
 };
 
-// Helper: Adapta el formato de equipamiento del backend (string) al frontend (array)
-const normalizeAula = (aula: any): Aula => {
-  return {
-    ...aula,
-    // Si equipamiento viene como string del backend, convertirlo a array
-    equipamiento: typeof aula.equipamiento === 'string'
-      ? aula.equipamiento.split(',').map((item: string) => item.trim()).filter(Boolean)
-      : (aula.equipamiento || []),
-  };
-};
+// ==================== ASYNC THUNKS ====================
 
-// Async thunks for Aulas
+/**
+ * Listar Aulas
+ */
 export const fetchAulas = createAsyncThunk(
   'aulas/fetchAulas',
-  async (params: any = {}, { rejectWithValue }) => {
+  async (params?: AulasQueryParams, { rejectWithValue }) => {
     try {
-      // Construir URL sin el "?" al final si no hay parámetros
-      const queryString = new URLSearchParams(params || {}).toString();
-      const url = `${import.meta.env.VITE_API_URL}/aulas${queryString ? `?${queryString}` : ''}`;
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Error al cargar aulas');
-      }
-      const result = await response.json();
-      const data = result.data || result;
-
-      // Normalizar cada aula para adaptar el formato de equipamiento
-      return Array.isArray(data) ? data.map(normalizeAula) : [];
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
+      return await aulasApi.getAll(params);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error al cargar aulas');
     }
   }
 );
 
+/**
+ * Obtener Aula por ID
+ */
+export const fetchAulaById = createAsyncThunk(
+  'aulas/fetchAulaById',
+  async (id: number, { rejectWithValue }) => {
+    try {
+      return await aulasApi.getById(id);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error al cargar aula');
+    }
+  }
+);
+
+/**
+ * Crear Aula
+ */
 export const createAula = createAsyncThunk(
   'aulas/createAula',
-  async (aula: Omit<Aula, 'id' | 'fechaCreacion'>, { rejectWithValue }) => {
+  async (data: CreateAulaDto, { rejectWithValue }) => {
     try {
-      // Adaptar el formato para el backend: array → string
-      const aulaToSend = {
-        ...aula,
-        equipamiento: Array.isArray(aula.equipamiento)
-          ? aula.equipamiento.join(', ')
-          : aula.equipamiento
-      };
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(aulaToSend),
-      });
-      if (!response.ok) {
-        throw new Error('Error al crear aula');
-      }
-      const result = await response.json();
-      const data = result.data || result;
-
-      // Normalizar la respuesta del backend
-      return normalizeAula(data);
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
+      return await aulasApi.create(data);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error al crear aula');
     }
   }
 );
 
+/**
+ * Actualizar Aula
+ */
 export const updateAula = createAsyncThunk(
   'aulas/updateAula',
-  async (aula: Aula, { rejectWithValue }) => {
+  async ({ id, data }: { id: number; data: UpdateAulaDto }, { rejectWithValue }) => {
     try {
-      // Adaptar el formato para el backend: array → string
-      const aulaToSend = {
-        ...aula,
-        equipamiento: Array.isArray(aula.equipamiento)
-          ? aula.equipamiento.join(', ')
-          : aula.equipamiento
-      };
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/${aula.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(aulaToSend),
-      });
-      if (!response.ok) {
-        throw new Error('Error al actualizar aula');
-      }
-      const result = await response.json();
-      const data = result.data || result;
-
-      // Normalizar la respuesta del backend
-      return normalizeAula(data);
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
+      return await aulasApi.update(id, data);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error al actualizar aula');
     }
   }
 );
 
+/**
+ * Eliminar Aula
+ */
 export const deleteAula = createAsyncThunk(
   'aulas/deleteAula',
   async (id: number, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        throw new Error('Error al eliminar aula');
-      }
+      await aulasApi.delete(id);
       return id;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error al eliminar aula');
     }
   }
 );
 
-// Async thunks for Reservas
-export const fetchReservas = createAsyncThunk(
-  'aulas/fetchReservas',
-  async (params: any = {}, { rejectWithValue }) => {
+/**
+ * Obtener Aulas Activas
+ */
+export const fetchAulasActivas = createAsyncThunk(
+  'aulas/fetchAulasActivas',
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/reservas?` + new URLSearchParams(params || {}));
-      if (!response.ok) {
-        throw new Error('Error al cargar reservas');
-      }
-      const result = await response.json();
-      return result.data || result;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
+      return await aulasApi.getActivas();
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error al cargar aulas activas');
     }
   }
 );
 
-export const createReserva = createAsyncThunk(
-  'aulas/createReserva',
-  async (reserva: Omit<ReservaAula, 'id' | 'fechaCreacion'>, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/reservas`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(reserva),
-      });
-      if (!response.ok) {
-        throw new Error('Error al crear reserva');
-      }
-      const result = await response.json();
-      return result.data || result;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
-    }
-  }
-);
-
-export const updateReserva = createAsyncThunk(
-  'aulas/updateReserva',
-  async (reserva: ReservaAula, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/reservas/${reserva.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(reserva),
-      });
-      if (!response.ok) {
-        throw new Error('Error al actualizar reserva');
-      }
-      const result = await response.json();
-      return result.data || result;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
-    }
-  }
-);
-
-export const deleteReserva = createAsyncThunk(
-  'aulas/deleteReserva',
-  async (id: number, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/reservas/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        throw new Error('Error al eliminar reserva');
-      }
-      return id;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
-    }
-  }
-);
-
-// Async thunk for Disponibilidad
-export const checkDisponibilidad = createAsyncThunk(
-  'aulas/checkDisponibilidad',
-  async (params: {
-    aulaId?: number;
-    fecha: string;
-    horaInicio?: string;
-    horaFin?: string;
-  }, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/aulas/disponibilidad?` + new URLSearchParams(params as any));
-      if (!response.ok) {
-        throw new Error('Error al consultar disponibilidad');
-      }
-      const result = await response.json();
-      return result.data || result;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error desconocido');
-    }
-  }
-);
+// ==================== SLICE ====================
 
 const aulasSlice = createSlice({
   name: 'aulas',
@@ -297,17 +121,18 @@ const aulasSlice = createSlice({
     setSelectedAula: (state, action: PayloadAction<Aula | null>) => {
       state.selectedAula = action.payload;
     },
-    setSelectedReserva: (state, action: PayloadAction<ReservaAula | null>) => {
-      state.selectedReserva = action.payload;
-    },
     clearError: (state) => {
       state.error = null;
     },
-    setFilters: (state, action: PayloadAction<Partial<AulasState['filters']>>) => {
+    setFilters: (state, action: PayloadAction<Partial<AulasQueryParams>>) => {
       state.filters = { ...state.filters, ...action.payload };
     },
     clearFilters: (state) => {
       state.filters = {};
+    },
+    clearAulas: (state) => {
+      state.aulas = [];
+      state.selectedAula = null;
     },
   },
   extraReducers: (builder) => {
@@ -322,6 +147,19 @@ const aulasSlice = createSlice({
         state.aulas = action.payload;
       })
       .addCase(fetchAulas.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Fetch aula by ID
+      .addCase(fetchAulaById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAulaById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.selectedAula = action.payload;
+      })
+      .addCase(fetchAulaById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
@@ -345,7 +183,7 @@ const aulasSlice = createSlice({
       })
       .addCase(updateAula.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.aulas.findIndex(a => a.id === action.payload.id);
+        const index = state.aulas.findIndex((a) => a.id === action.payload.id);
         if (index !== -1) {
           state.aulas[index] = action.payload;
         }
@@ -361,53 +199,32 @@ const aulasSlice = createSlice({
       })
       .addCase(deleteAula.fulfilled, (state, action) => {
         state.loading = false;
-        state.aulas = state.aulas.filter(a => a.id !== action.payload);
+        state.aulas = state.aulas.filter((a) => a.id !== action.payload);
       })
       .addCase(deleteAula.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
-      // Fetch reservas
-      .addCase(fetchReservas.pending, (state) => {
+      // Fetch aulas activas
+      .addCase(fetchAulasActivas.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchReservas.fulfilled, (state, action) => {
+      .addCase(fetchAulasActivas.fulfilled, (state, action) => {
         state.loading = false;
-        state.reservas = action.payload;
+        state.aulas = action.payload;
       })
-      .addCase(fetchReservas.rejected, (state, action) => {
+      .addCase(fetchAulasActivas.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-      })
-      // Create reserva
-      .addCase(createReserva.fulfilled, (state, action) => {
-        state.reservas.push(action.payload);
-      })
-      // Update reserva
-      .addCase(updateReserva.fulfilled, (state, action) => {
-        const index = state.reservas.findIndex(r => r.id === action.payload.id);
-        if (index !== -1) {
-          state.reservas[index] = action.payload;
-        }
-      })
-      // Delete reserva
-      .addCase(deleteReserva.fulfilled, (state, action) => {
-        state.reservas = state.reservas.filter(r => r.id !== action.payload);
-      })
-      // Check disponibilidad
-      .addCase(checkDisponibilidad.fulfilled, (state, action) => {
-        state.disponibilidad = action.payload;
       });
   },
 });
 
-export const {
-  setSelectedAula,
-  setSelectedReserva,
-  clearError,
-  setFilters,
-  clearFilters
-} = aulasSlice.actions;
+export const { setSelectedAula, clearError, setFilters, clearFilters, clearAulas } =
+  aulasSlice.actions;
+
+// Re-export Aula type for backward compatibility
+export type { Aula };
 
 export default aulasSlice.reducer;

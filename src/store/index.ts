@@ -3,6 +3,8 @@ import uiReducer from './slices/uiSlice';
 import personasReducer from './slices/personasSlice';
 import actividadesReducer from './slices/actividadesSlice';
 import aulasReducer from './slices/aulasSlice';
+import reservasReducer from './slices/reservasSlice';
+import estadosReservasReducer from './slices/estadosReservasSlice';
 import cuotasReducer from './slices/cuotasSlice';
 import recibosReducer from './slices/recibosSlice';
 import familiaresReducer from './slices/familiaresSlice';
@@ -16,6 +18,8 @@ export const store = configureStore({
     personas: personasReducer,
     actividades: actividadesReducer,
     aulas: aulasReducer,
+    reservas: reservasReducer,
+    estadosReservas: estadosReservasReducer,
     cuotas: cuotasReducer,
     recibos: recibosReducer,
     familiares: familiaresReducer,

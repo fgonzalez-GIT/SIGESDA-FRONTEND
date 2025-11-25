@@ -20,6 +20,8 @@ import RecibosPage from './pages/Recibos/RecibosPage';
 import ParticipacionPage from './pages/Participacion/ParticipacionPage';
 import FamiliaresPage from './pages/Familiares/FamiliaresPage';
 import ReservasPage from './pages/Reservas/ReservasPage';
+import ReservaDetallePage from './pages/Reservas/ReservaDetallePage';
+import DashboardReservasPage from './pages/Reservas/DashboardReservasPage';
 import ConfiguracionPage from './pages/Configuracion/ConfiguracionPage';
 import CategoriasPage from './pages/Categorias/CategoriasPage';
 import TiposActividadPage from './pages/TiposActividad/TiposActividadPage';
@@ -69,7 +71,12 @@ function App() {
                 <Route path="/recibos" element={<RecibosPage />} />
                 <Route path="/participacion" element={<ParticipacionPage />} />
                 <Route path="/familiares" element={<FamiliaresPage />} />
+
+                {/* Reservas */}
                 <Route path="/reservas" element={<ReservasPage />} />
+                <Route path="/reservas/dashboard" element={<DashboardReservasPage />} />
+                <Route path="/reservas/:id" element={<ReservaDetallePage />} />
+
                 <Route path="/configuracion" element={<ConfiguracionPage />} />
 
                 {/* Redirects para rutas antiguas (compatibilidad hacia atrás) */}
