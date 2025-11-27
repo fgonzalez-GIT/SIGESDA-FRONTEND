@@ -31,7 +31,8 @@ import {
   EventAvailable as AvailableIcon,
   EventBusy as BusyIcon,
   Search as SearchIcon,
-  FilterList as FilterListIcon
+  FilterList as FilterListIcon,
+  Visibility as VisibilityIcon
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
@@ -44,9 +45,10 @@ import {
   clearError,
 } from '../../store/slices/aulasSlice';
 import { fetchEquipamientos } from '../../store/slices/equipamientosSlice';
-import type { Aula, CreateAulaDto, AulaEquipamiento } from '@/types/aula.types';
+import type { Aula, CreateAulaDto, AulaEquipamiento, TipoAulaCatalogo, EstadoAulaCatalogo } from '@/types/aula.types';
 import { showNotification } from '../../store/slices/uiSlice';
 import { AulaEquipamientoManager } from '@/components/aulas/AulaEquipamientoManager';
+import { catalogosAulasApi } from '@/services/catalogosAulasApi';
 
 const AulasPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -55,37 +57,52 @@ const AulasPage: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [formData, setFormData] = useState<Partial<CreateAulaDto>>({
     nombre: '',
-    tipo: 'salon',
+    tipoAulaId: undefined, // ID del tipo de aula
     capacidad: 0,
     ubicacion: '',
     equipamientos: [], // Array de equipamientos con cantidad y observaciones
-    estado: 'disponible',
+    estadoAulaId: undefined, // ID del estado de aula
     observaciones: ''
   });
+
+  // Estados para catálogos
+  const [tiposAula, setTiposAula] = useState<TipoAulaCatalogo[]>([]);
+  const [estadosAula, setEstadosAula] = useState<EstadoAulaCatalogo[]>([]);
+  const [loadingCatalogos, setLoadingCatalogos] = useState(false);
 
   // Estados para búsqueda y filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState<string>('');
   const [filterEstado, setFilterEstado] = useState<string>('');
 
-  const tiposAula = [
-    { value: 'salon', label: 'Salón' },
-    { value: 'ensayo', label: 'Sala de Ensayo' },
-    { value: 'auditorio', label: 'Auditorio' },
-    { value: 'exterior', label: 'Exterior' }
-  ];
+  // Estados para dialog de detalle
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [aulaToView, setAulaToView] = useState<Aula | null>(null);
 
-  const estadosAula = [
-    { value: 'disponible', label: 'Disponible' },
-    { value: 'ocupado', label: 'Ocupado' },
-    { value: 'mantenimiento', label: 'En Mantenimiento' },
-    { value: 'fuera_servicio', label: 'Fuera de Servicio' }
-  ];
-
-  // Cargar aulas y equipamientos al montar el componente
+  // Cargar aulas, equipamientos y catálogos al montar el componente
   useEffect(() => {
     dispatch(fetchAulas({}));
     dispatch(fetchEquipamientos({ includeInactive: false }));
+
+    // Cargar catálogos de tipos y estados
+    const loadCatalogos = async () => {
+      setLoadingCatalogos(true);
+      try {
+        const { tipos, estados } = await catalogosAulasApi.getAllCatalogos();
+        setTiposAula(tipos);
+        setEstadosAula(estados);
+      } catch (error) {
+        console.error('Error al cargar catálogos de aulas:', error);
+        dispatch(showNotification({
+          message: 'Error al cargar catálogos',
+          severity: 'warning'
+        }));
+      } finally {
+        setLoadingCatalogos(false);
+      }
+    };
+
+    loadCatalogos();
   }, [dispatch]);
 
   // Mostrar errores
@@ -128,19 +145,19 @@ const AulasPage: React.FC = () => {
         capacidad: aula.capacidad,
         ubicacion: aula.ubicacion,
         equipamientos: equipamientosFormateados,
-        tipo: aula.tipo,
-        estado: aula.estado,
+        tipoAulaId: aula.tipoAulaId || undefined,
+        estadoAulaId: aula.estadoAulaId || undefined,
         observaciones: aula.observaciones,
       });
     } else {
       dispatch(setSelectedAula(null));
       setFormData({
         nombre: '',
-        tipo: 'salon',
+        tipoAulaId: undefined,
         capacidad: 0,
         ubicacion: '',
         equipamientos: [],
-        estado: 'disponible',
+        estadoAulaId: undefined,
         observaciones: ''
       });
     }
@@ -212,6 +229,25 @@ const AulasPage: React.FC = () => {
     }
   };
 
+  // Handlers para dialog de detalle
+  const handleViewClick = (aula: Aula) => {
+    setAulaToView(aula);
+    setDetailDialogOpen(true);
+  };
+
+  const handleDetailDialogClose = () => {
+    setDetailDialogOpen(false);
+    setAulaToView(null);
+  };
+
+  const handleEditFromDetail = () => {
+    if (aulaToView) {
+      setDetailDialogOpen(false);
+      handleOpenDialog(aulaToView);
+      setAulaToView(null);
+    }
+  };
+
   const getEstadoChipColor = (estado: string) => {
     switch (estado) {
       case 'disponible':
@@ -274,10 +310,14 @@ const AulasPage: React.FC = () => {
       )
     },
     {
-      field: 'tipo',
+      field: 'tipoAula',
       headerName: 'Tipo',
       width: 150,
-      valueFormatter: (value) => getTipoLabel(value)
+      renderCell: (params) => {
+        const aula = params.row as Aula;
+        // Mostrar nombre del tipo si está expandido, sino mostrar ID
+        return aula.tipoAula?.nombre || `ID: ${aula.tipoAulaId}` || 'Sin tipo';
+      }
     },
     { field: 'capacidad', headerName: 'Capacidad', width: 100 },
     { field: 'ubicacion', headerName: 'Ubicación', width: 180 },
@@ -326,25 +366,46 @@ const AulasPage: React.FC = () => {
       }
     },
     {
-      field: 'estado',
+      field: 'estadoAula',
       headerName: 'Estado',
       width: 150,
-      renderCell: (params) => (
-        <Chip
-          icon={params.value === 'disponible' ? <AvailableIcon /> : <BusyIcon />}
-          label={getEstadoLabel(params.value)}
-          color={getEstadoChipColor(params.value) as any}
-          variant="outlined"
-          size="small"
-        />
-      )
+      renderCell: (params) => {
+        const aula = params.row as Aula;
+        const estadoNombre = aula.estadoAula?.nombre || 'Sin estado';
+        const estadoCodigo = aula.estadoAula?.codigo || '';
+
+        // Determinar color según código
+        const getColor = (codigo: string) => {
+          if (codigo.includes('DISPONIBLE')) return 'success';
+          if (codigo.includes('RESERVADA')) return 'warning';
+          if (codigo.includes('CERRADA')) return 'error';
+          if (codigo.includes('MANTENIMIENTO')) return 'info';
+          return 'default';
+        };
+
+        return (
+          <Chip
+            icon={estadoCodigo.includes('DISPONIBLE') ? <AvailableIcon /> : <BusyIcon />}
+            label={estadoNombre}
+            color={getColor(estadoCodigo) as any}
+            variant="outlined"
+            size="small"
+          />
+        );
+      }
     },
     {
       field: 'actions',
       type: 'actions',
       headerName: 'Acciones',
-      width: 120,
+      width: 150,
       getActions: (params) => [
+        <GridActionsCellItem
+          icon={<VisibilityIcon />}
+          label="Ver detalles"
+          onClick={() => handleViewClick(params.row)}
+          showInMenu={false}
+        />,
         <GridActionsCellItem
           icon={<EditIcon />}
           label="Editar"
@@ -535,15 +596,22 @@ const AulasPage: React.FC = () => {
               <FormControl fullWidth required>
                 <InputLabel>Tipo de Aula</InputLabel>
                 <Select
-                  value={formData.tipo || 'salon'}
+                  value={formData.tipoAulaId || ''}
                   label="Tipo de Aula"
-                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value as Aula['tipo'] })}
+                  onChange={(e) => setFormData({ ...formData, tipoAulaId: e.target.value as number })}
+                  disabled={loadingCatalogos}
                 >
-                  {tiposAula.map((tipo) => (
-                    <MenuItem key={tipo.value} value={tipo.value}>
-                      {tipo.label}
-                    </MenuItem>
-                  ))}
+                  {loadingCatalogos ? (
+                    <MenuItem value="">Cargando...</MenuItem>
+                  ) : tiposAula.length === 0 ? (
+                    <MenuItem value="">No hay tipos disponibles</MenuItem>
+                  ) : (
+                    tiposAula.map((tipo) => (
+                      <MenuItem key={tipo.id} value={tipo.id}>
+                        {tipo.nombre}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
             </Grid>
@@ -569,15 +637,22 @@ const AulasPage: React.FC = () => {
               <FormControl fullWidth>
                 <InputLabel>Estado</InputLabel>
                 <Select
-                  value={formData.estado || 'disponible'}
+                  value={formData.estadoAulaId || ''}
                   label="Estado"
-                  onChange={(e) => setFormData({ ...formData, estado: e.target.value as Aula['estado'] })}
+                  onChange={(e) => setFormData({ ...formData, estadoAulaId: e.target.value as number })}
+                  disabled={loadingCatalogos}
                 >
-                  {estadosAula.map((estado) => (
-                    <MenuItem key={estado.value} value={estado.value}>
-                      {estado.label}
-                    </MenuItem>
-                  ))}
+                  {loadingCatalogos ? (
+                    <MenuItem value="">Cargando...</MenuItem>
+                  ) : estadosAula.length === 0 ? (
+                    <MenuItem value="">No hay estados disponibles</MenuItem>
+                  ) : (
+                    estadosAula.map((estado) => (
+                      <MenuItem key={estado.id} value={estado.id}>
+                        {estado.nombre}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
             </Grid>
@@ -612,6 +687,150 @@ const AulasPage: React.FC = () => {
           <Button onClick={handleCloseDialog}>Cancelar</Button>
           <Button onClick={handleSave} variant="contained" disabled={loading}>
             {selectedAula ? 'Actualizar' : 'Crear'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog de Detalle (Read-only) */}
+      <Dialog open={detailDialogOpen} onClose={handleDetailDialogClose} maxWidth="md" fullWidth>
+        <DialogTitle>
+          Detalles del Aula
+        </DialogTitle>
+        <DialogContent>
+          {aulaToView && (
+            <Box sx={{ mt: 2 }}>
+              {/* Información General */}
+              <Typography variant="h6" gutterBottom sx={{ mb: 2, fontWeight: 600 }}>
+                Información General
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, mb: 4 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">ID</Typography>
+                  <Typography variant="body1">{aulaToView.id}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Nombre</Typography>
+                  <Typography variant="body1" fontWeight={600}>{aulaToView.nombre}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Tipo</Typography>
+                  <Box sx={{ mt: 0.5 }}>
+                    <Chip
+                      label={aulaToView.tipoAula?.nombre || 'Sin tipo'}
+                      color="primary"
+                      variant="outlined"
+                      size="small"
+                    />
+                  </Box>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Estado</Typography>
+                  <Box sx={{ mt: 0.5 }}>
+                    <Chip
+                      label={aulaToView.estadoAula?.nombre || 'Sin estado'}
+                      color={
+                        aulaToView.estadoAula?.codigo.includes('DISPONIBLE') ? 'success' :
+                        aulaToView.estadoAula?.codigo.includes('RESERVADA') ? 'warning' :
+                        aulaToView.estadoAula?.codigo.includes('CERRADA') ? 'error' :
+                        aulaToView.estadoAula?.codigo.includes('MANTENIMIENTO') ? 'info' :
+                        'default'
+                      }
+                      variant="outlined"
+                      size="small"
+                    />
+                  </Box>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Capacidad</Typography>
+                  <Typography variant="body1">{aulaToView.capacidad} personas</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">Ubicación</Typography>
+                  <Typography variant="body1">{aulaToView.ubicacion || 'No especificada'}</Typography>
+                </Box>
+              </Box>
+
+              {/* Descripción */}
+              {aulaToView.descripcion && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="caption" color="text.secondary">Descripción</Typography>
+                  <Typography variant="body1">{aulaToView.descripcion}</Typography>
+                </Box>
+              )}
+
+              {/* Equipamientos */}
+              <Typography variant="h6" gutterBottom sx={{ mb: 2, fontWeight: 600 }}>
+                Equipamientos Asignados
+              </Typography>
+              {aulaToView.equipamientos && aulaToView.equipamientos.length > 0 ? (
+                <Paper variant="outlined" sx={{ mb: 3 }}>
+                  <Box sx={{ p: 2 }}>
+                    {aulaToView.equipamientos.map((eq, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          py: 1,
+                          borderBottom: index < aulaToView.equipamientos!.length - 1 ? '1px solid' : 'none',
+                          borderColor: 'divider',
+                        }}
+                      >
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body1" fontWeight={500}>{eq.nombre}</Typography>
+                          {eq.descripcion && (
+                            <Typography variant="caption" color="text.secondary">{eq.descripcion}</Typography>
+                          )}
+                        </Box>
+                        <Chip
+                          label={eq.categoriaEquipamiento?.nombre || 'Sin categoría'}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </Box>
+                    ))}
+                  </Box>
+                </Paper>
+              ) : aulaToView.equipamientoIds && aulaToView.equipamientoIds.length > 0 ? (
+                <Alert severity="info" sx={{ mb: 3 }}>
+                  {aulaToView.equipamientoIds.length} equipamiento(s) asignado(s) (detalles no disponibles)
+                </Alert>
+              ) : (
+                <Alert severity="info" sx={{ mb: 3 }}>
+                  No hay equipamientos asignados a esta aula
+                </Alert>
+              )}
+
+              {/* Observaciones */}
+              {aulaToView.observaciones && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="caption" color="text.secondary">Observaciones</Typography>
+                  <Typography variant="body1">{aulaToView.observaciones}</Typography>
+                </Box>
+              )}
+
+              {/* Metadata */}
+              {aulaToView.fechaCreacion && (
+                <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Creada: {new Date(aulaToView.fechaCreacion).toLocaleDateString('es-ES', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDetailDialogClose}>Cerrar</Button>
+          <Button onClick={handleEditFromDetail} variant="contained" startIcon={<EditIcon />}>
+            Editar
           </Button>
         </DialogActions>
       </Dialog>

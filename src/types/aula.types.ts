@@ -5,10 +5,20 @@
  */
 
 import type { Equipamiento } from './equipamiento.types';
+import type { TipoAula as TipoAulaCatalogo, EstadoAula as EstadoAulaCatalogo } from '@/services/catalogosAulasApi';
 
-export type TipoAula = 'salon' | 'ensayo' | 'auditorio' | 'exterior';
+// Re-export interfaces de catálogos
+export type { TipoAula as TipoAulaCatalogo, EstadoAula as EstadoAulaCatalogo } from '@/services/catalogosAulasApi';
 
-export type EstadoAula = 'disponible' | 'ocupado' | 'mantenimiento' | 'fuera_servicio';
+/**
+ * @deprecated Legacy string types - Use TipoAulaCatalogo interface instead
+ */
+export type TipoAulaLegacy = 'salon' | 'ensayo' | 'auditorio' | 'exterior';
+
+/**
+ * @deprecated Legacy string types - Use EstadoAulaCatalogo interface instead
+ */
+export type EstadoAulaLegacy = 'disponible' | 'ocupado' | 'mantenimiento' | 'fuera_servicio';
 
 /**
  * Equipamiento asignado a un aula con cantidad y observaciones
@@ -26,6 +36,17 @@ export interface Aula {
   capacidad: number;
   ubicacion?: string;
 
+  // ==================== TIPO Y ESTADO (IDs + Objetos Expandidos) ====================
+  tipoAulaId?: number | null; // ID del tipo de aula (FK)
+  estadoAulaId?: number | null; // ID del estado de aula (FK)
+
+  tipoAula?: TipoAulaCatalogo | null; // Objeto expandido con relación
+  estadoAula?: EstadoAulaCatalogo | null; // Objeto expandido con relación
+
+  // DEPRECATED: Legacy string fields (backward compatibility)
+  tipo?: TipoAulaLegacy;
+  estado?: EstadoAulaLegacy;
+
   // ==================== EQUIPAMIENTOS ====================
   // NUEVO: IDs de equipamientos asignados (para requests POST/PUT)
   equipamientoIds?: number[];
@@ -37,11 +58,11 @@ export interface Aula {
   // Equipamientos expandidos (para responses GET con include=equipamientos)
   equipamientos?: Equipamiento[];
 
-  // ==================== OTROS CAMPOS ====================
-  tipo: TipoAula;
-  estado: EstadoAula;
+  // ==================== METADATA ====================
   observaciones?: string;
   fechaCreacion: string;
+  createdAt?: string;
+  updatedAt?: string;
   activa?: boolean; // Para compatibilidad con backend
 }
 
@@ -51,8 +72,15 @@ export interface CreateAulaDto {
   capacidad: number; // REQUIRED
   ubicacion?: string;
   equipamientos?: AulaEquipamiento[]; // Array de equipamientos con cantidad y observaciones
-  tipo: TipoAula; // REQUIRED
-  estado?: EstadoAula; // default disponible
+
+  // Usar IDs numéricos (recomendado)
+  tipoAulaId?: number; // ID del tipo de aula
+  estadoAulaId?: number; // ID del estado de aula (default: disponible)
+
+  // O usar códigos string (backend convierte automáticamente)
+  tipo?: string; // Código del tipo (ej: 'ensayo', 'teoria')
+  estado?: string; // Código del estado (ej: 'disponible', 'reservada')
+
   observaciones?: string;
 }
 
@@ -62,8 +90,15 @@ export interface UpdateAulaDto {
   capacidad?: number;
   ubicacion?: string;
   equipamientos?: AulaEquipamiento[]; // Array de equipamientos con cantidad y observaciones
-  tipo?: TipoAula;
-  estado?: EstadoAula;
+
+  // Usar IDs numéricos (recomendado)
+  tipoAulaId?: number; // ID del tipo de aula
+  estadoAulaId?: number; // ID del estado de aula
+
+  // O usar códigos string (backend convierte automáticamente)
+  tipo?: string; // Código del tipo
+  estado?: string; // Código del estado
+
   observaciones?: string;
 }
 
