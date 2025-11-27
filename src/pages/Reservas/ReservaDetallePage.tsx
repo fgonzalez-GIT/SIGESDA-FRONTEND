@@ -6,7 +6,6 @@ import {
   Paper,
   Tabs,
   Tab,
-  Grid2 as Grid,
   Chip,
   Button,
   CircularProgress,
@@ -16,6 +15,7 @@ import {
   DialogTitle,
   DialogContent,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import {
   ArrowBack as ArrowBackIcon,
   Room as RoomIcon,

@@ -11,6 +11,7 @@ import familiaresReducer from './slices/familiaresSlice';
 import categoriasReducer from './slices/categoriasSlice';
 import tiposActividadReducer from './slices/tiposActividadSlice';
 import categoriasActividadReducer from './slices/categoriasActividadSlice';
+import equipamientosReducer from './slices/equipamientosSlice';
 
 export const store = configureStore({
   reducer: {
@@ -26,6 +27,7 @@ export const store = configureStore({
     categorias: categoriasReducer,
     tiposActividad: tiposActividadReducer,
     categoriasActividad: categoriasActividadReducer,
+    equipamientos: equipamientosReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -37,3 +39,6 @@ export const store = configureStore({
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+
+// Re-export hooks for convenience
+export { useAppDispatch, useAppSelector } from '@/hooks/redux';

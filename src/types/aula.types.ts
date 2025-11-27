@@ -4,9 +4,20 @@
  * Aulas del conservatorio con capacidad, equipamiento y estados de disponibilidad.
  */
 
+import type { Equipamiento } from './equipamiento.types';
+
 export type TipoAula = 'salon' | 'ensayo' | 'auditorio' | 'exterior';
 
 export type EstadoAula = 'disponible' | 'ocupado' | 'mantenimiento' | 'fuera_servicio';
+
+/**
+ * Equipamiento asignado a un aula con cantidad y observaciones
+ */
+export interface AulaEquipamiento {
+  equipamientoId: number;
+  cantidad: number;
+  observaciones?: string;
+}
 
 export interface Aula {
   id: number;
@@ -14,7 +25,19 @@ export interface Aula {
   descripcion?: string;
   capacidad: number;
   ubicacion?: string;
-  equipamiento?: string[]; // Frontend usa array, backend espera string separado por comas
+
+  // ==================== EQUIPAMIENTOS ====================
+  // NUEVO: IDs de equipamientos asignados (para requests POST/PUT)
+  equipamientoIds?: number[];
+
+  // DEPRECATED: Array de strings (legacy, para compatibilidad temporal)
+  // Será removido en futuras versiones
+  equipamiento?: string[];
+
+  // Equipamientos expandidos (para responses GET con include=equipamientos)
+  equipamientos?: Equipamiento[];
+
+  // ==================== OTROS CAMPOS ====================
   tipo: TipoAula;
   estado: EstadoAula;
   observaciones?: string;
@@ -27,7 +50,7 @@ export interface CreateAulaDto {
   descripcion?: string;
   capacidad: number; // REQUIRED
   ubicacion?: string;
-  equipamiento?: string[];
+  equipamientos?: AulaEquipamiento[]; // Array de equipamientos con cantidad y observaciones
   tipo: TipoAula; // REQUIRED
   estado?: EstadoAula; // default disponible
   observaciones?: string;
@@ -38,7 +61,7 @@ export interface UpdateAulaDto {
   descripcion?: string;
   capacidad?: number;
   ubicacion?: string;
-  equipamiento?: string[];
+  equipamientos?: AulaEquipamiento[]; // Array de equipamientos con cantidad y observaciones
   tipo?: TipoAula;
   estado?: EstadoAula;
   observaciones?: string;
@@ -71,6 +94,11 @@ export const ESTADOS_AULA: { value: EstadoAula; label: string; color: string }[]
   { value: 'fuera_servicio', label: 'Fuera de Servicio', color: 'error' },
 ];
 
+/**
+ * @deprecated Lista hardcodeada de equipamientos (legacy)
+ * Usar el módulo de Equipamientos (/admin/aulas/equipamientos) en su lugar
+ * Será removido en futuras versiones
+ */
 export const EQUIPAMIENTO_DISPONIBLE = [
   'Piano',
   'Proyector',

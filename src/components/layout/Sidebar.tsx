@@ -31,6 +31,7 @@ import {
   School,
   ContactPhone,
   AdminPanelSettings,
+  Inventory,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -106,6 +107,13 @@ const menuItems: MenuItem[] = [
     icon: <Room />,
     path: '/aulas',
     color: '#9c27b0',
+    subItems: [
+      {
+        title: 'Equipamientos',
+        icon: <Inventory fontSize="small" />,
+        path: '/admin/aulas/equipamientos',
+      },
+    ],
   },
   {
     title: 'Participación',

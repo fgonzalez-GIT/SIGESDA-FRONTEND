@@ -18,10 +18,10 @@ import {
   FormControlLabel,
   Checkbox,
   Button,
-  Grid2 as Grid,
   Collapse,
   Alert,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import {
   Visibility as VisibilityIcon,
   Edit as EditIcon,

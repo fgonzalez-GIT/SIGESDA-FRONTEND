@@ -14,6 +14,7 @@ import TiposPersonaAdminPage from './pages/Personas/Admin/TiposPersonaAdminPage'
 import EspecialidadesDocenteAdminPage from './pages/Personas/Admin/EspecialidadesDocenteAdminPage';
 import TiposContactoAdminPage from './pages/Personas/Admin/TiposContactoAdminPage';
 import AulasPage from './pages/Aulas/AulasPage';
+import EquipamientosAdminPage from './pages/Equipamientos/Admin/EquipamientosAdminPage';
 import CuotasPage from './pages/Cuotas/CuotasPage';
 import MediosPagoPage from './pages/MediosPago/MediosPagoPage';
 import RecibosPage from './pages/Recibos/RecibosPage';
@@ -64,7 +65,11 @@ function App() {
                 <Route path="/admin/actividades/tipos" element={<TiposActividadPage />} />
                 <Route path="/admin/actividades/categorias" element={<CategoriasActividadPage />} />
 
+                {/* Aulas */}
                 <Route path="/aulas" element={<AulasPage />} />
+
+                {/* Admin - Catálogos de Aulas */}
+                <Route path="/admin/aulas/equipamientos" element={<EquipamientosAdminPage />} />
                 <Route path="/cuotas" element={<CuotasPage />} />
                 <Route path="/categorias" element={<CategoriasPage />} />
                 <Route path="/medios-pago" element={<MediosPagoPage />} />

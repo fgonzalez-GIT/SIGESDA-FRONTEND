@@ -5,7 +5,6 @@ import {
   Typography,
   Card,
   CardContent,
-  Grid2 as Grid,
   CircularProgress,
   Alert,
   Paper,
@@ -18,6 +17,7 @@ import {
   Chip,
   IconButton,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import {
   CalendarToday as CalendarIcon,
   CheckCircle as CheckCircleIcon,

@@ -43,20 +43,22 @@ import {
   setSelectedAula,
   clearError,
 } from '../../store/slices/aulasSlice';
-import type { Aula, CreateAulaDto, TIPOS_AULA, ESTADOS_AULA } from '@/types/aula.types';
+import { fetchEquipamientos } from '../../store/slices/equipamientosSlice';
+import type { Aula, CreateAulaDto, AulaEquipamiento } from '@/types/aula.types';
 import { showNotification } from '../../store/slices/uiSlice';
+import { AulaEquipamientoManager } from '@/components/aulas/AulaEquipamientoManager';
 
 const AulasPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { aulas, loading, error, selectedAula } = useAppSelector((state) => state.aulas);
 
   const [openDialog, setOpenDialog] = useState(false);
-  const [formData, setFormData] = useState<Partial<Aula>>({
+  const [formData, setFormData] = useState<Partial<CreateAulaDto>>({
     nombre: '',
     tipo: 'salon',
     capacidad: 0,
     ubicacion: '',
-    equipamiento: [],
+    equipamientos: [], // Array de equipamientos con cantidad y observaciones
     estado: 'disponible',
     observaciones: ''
   });
@@ -80,11 +82,10 @@ const AulasPage: React.FC = () => {
     { value: 'fuera_servicio', label: 'Fuera de Servicio' }
   ];
 
-  const equipamientoDisponible = ['Piano', 'Proyector', 'Sistema de Audio', 'Micrófono', 'Pizarra', 'Atriles', 'Sillas', 'Mesas'];
-
-  // Cargar aulas al montar el componente
+  // Cargar aulas y equipamientos al montar el componente
   useEffect(() => {
     dispatch(fetchAulas({}));
+    dispatch(fetchEquipamientos({ includeInactive: false }));
   }, [dispatch]);
 
   // Mostrar errores
@@ -101,7 +102,36 @@ const AulasPage: React.FC = () => {
   const handleOpenDialog = (aula?: Aula) => {
     if (aula) {
       dispatch(setSelectedAula(aula));
-      setFormData(aula);
+
+      // Mapear equipamientos al nuevo formato con cantidad y observaciones
+      // Nota: Los aulas existentes solo tienen IDs, asumimos cantidad = 1
+      let equipamientosFormateados: AulaEquipamiento[] = [];
+      if (aula.equipamientos && aula.equipamientos.length > 0) {
+        // Si vienen equipamientos expandidos desde el backend
+        equipamientosFormateados = aula.equipamientos.map(eq => ({
+          equipamientoId: eq.id,
+          cantidad: 1, // Valor por defecto para datos legacy
+          observaciones: undefined,
+        }));
+      } else if (aula.equipamientoIds && aula.equipamientoIds.length > 0) {
+        // Si vienen solo los IDs
+        equipamientosFormateados = aula.equipamientoIds.map(id => ({
+          equipamientoId: id,
+          cantidad: 1, // Valor por defecto para datos legacy
+          observaciones: undefined,
+        }));
+      }
+
+      setFormData({
+        nombre: aula.nombre,
+        descripcion: aula.descripcion,
+        capacidad: aula.capacidad,
+        ubicacion: aula.ubicacion,
+        equipamientos: equipamientosFormateados,
+        tipo: aula.tipo,
+        estado: aula.estado,
+        observaciones: aula.observaciones,
+      });
     } else {
       dispatch(setSelectedAula(null));
       setFormData({
@@ -109,7 +139,7 @@ const AulasPage: React.FC = () => {
         tipo: 'salon',
         capacidad: 0,
         ubicacion: '',
-        equipamiento: [],
+        equipamientos: [],
         estado: 'disponible',
         observaciones: ''
       });
@@ -252,24 +282,44 @@ const AulasPage: React.FC = () => {
     { field: 'capacidad', headerName: 'Capacidad', width: 100 },
     { field: 'ubicacion', headerName: 'Ubicación', width: 180 },
     {
-      field: 'equipamiento',
-      headerName: 'Equipamiento',
-      width: 200,
+      field: 'equipamientos',
+      headerName: 'Equipamientos',
+      width: 250,
       renderCell: (params) => {
-        // Asegurar que params.value sea un array
-        const equipamiento = Array.isArray(params.value) ? params.value : [];
+        const aula = params.row as Aula;
 
-        if (equipamiento.length === 0) {
+        // Prioridad: equipamientos expandidos > equipamientoIds > equipamiento legacy
+        let items: { id?: number; nombre: string }[] = [];
+
+        if (aula.equipamientos && aula.equipamientos.length > 0) {
+          // Equipamientos expandidos (ideal)
+          items = aula.equipamientos.map(eq => ({ id: eq.id, nombre: eq.nombre }));
+        } else if (aula.equipamientoIds && aula.equipamientoIds.length > 0) {
+          // Solo IDs sin expandir - mostrar count genérico
+          return (
+            <Chip
+              label={`${aula.equipamientoIds.length} equipamiento${aula.equipamientoIds.length > 1 ? 's' : ''}`}
+              size="small"
+              variant="outlined"
+              color="primary"
+            />
+          );
+        } else if (aula.equipamiento && aula.equipamiento.length > 0) {
+          // LEGACY: array de strings
+          items = aula.equipamiento.map((eq, idx) => ({ id: idx, nombre: eq }));
+        }
+
+        if (items.length === 0) {
           return <Chip label="Sin equipamiento" size="small" variant="outlined" color="default" />;
         }
 
         return (
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-            {equipamiento.slice(0, 2).map((equipo: string, index: number) => (
-              <Chip key={index} label={equipo} size="small" variant="outlined" />
+            {items.slice(0, 2).map((item) => (
+              <Chip key={item.id || item.nombre} label={item.nombre} size="small" variant="outlined" />
             ))}
-            {equipamiento.length > 2 && (
-              <Chip label={`+${equipamiento.length - 2}`} size="small" />
+            {items.length > 2 && (
+              <Chip label={`+${items.length - 2}`} size="small" />
             )}
           </Box>
         );
@@ -540,28 +590,11 @@ const AulasPage: React.FC = () => {
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
-              <FormControl fullWidth>
-                <InputLabel>Equipamiento</InputLabel>
-                <Select
-                  multiple
-                  value={formData.equipamiento || []}
-                  label="Equipamiento"
-                  onChange={(e) => setFormData({ ...formData, equipamiento: e.target.value as string[] })}
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {(selected as string[]).map((value) => (
-                        <Chip key={value} label={value} size="small" />
-                      ))}
-                    </Box>
-                  )}
-                >
-                  {equipamientoDisponible.map((equipo) => (
-                    <MenuItem key={equipo} value={equipo}>
-                      {equipo}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <AulaEquipamientoManager
+                value={formData.equipamientos || []}
+                onChange={(newEquipamientos) => setFormData({ ...formData, equipamientos: newEquipamientos })}
+                disabled={loading}
+              />
             </Grid>
             <Grid size={{ xs: 12 }}>
               <TextField

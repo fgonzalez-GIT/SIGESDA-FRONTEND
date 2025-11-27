@@ -44,36 +44,40 @@ const validateNotInPast = (fechaInicio: string): boolean => {
 // ==================== SCHEMAS DE RESERVAS ====================
 
 /**
- * Schema para crear una reserva
+ * Schema base para reservas (sin refinements para permitir extend)
  */
-export const createReservaSchema = z
-  .object({
-    aulaId: z.number().int().positive('Aula requerida'),
-    docenteId: z.number().int().positive('Docente requerido'),
-    actividadId: z
-      .number()
-      .int()
-      .positive()
-      .optional()
-      .nullable()
-      .or(z.literal(0))
-      .transform((val) => (val === 0 ? null : val)),
-    estadoReservaId: z
-      .number()
-      .int()
-      .positive()
-      .optional()
-      .or(z.literal(0))
-      .transform((val) => (val === 0 ? undefined : val)),
-    fechaInicio: isoDateString,
-    fechaFin: isoDateString,
-    observaciones: z
-      .string()
-      .max(500, 'Observaciones no pueden exceder 500 caracteres')
-      .optional()
-      .or(z.literal(''))
-      .transform((val) => (val === '' ? undefined : val)),
-  })
+const baseReservaSchema = z.object({
+  aulaId: z.number().int().positive('Aula requerida'),
+  docenteId: z.number().int().positive('Docente requerido'),
+  actividadId: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .nullable()
+    .or(z.literal(0))
+    .transform((val) => (val === 0 ? null : val)),
+  estadoReservaId: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .or(z.literal(0))
+    .transform((val) => (val === 0 ? undefined : val)),
+  fechaInicio: isoDateString,
+  fechaFin: isoDateString,
+  observaciones: z
+    .string()
+    .max(500, 'Observaciones no pueden exceder 500 caracteres')
+    .optional()
+    .or(z.literal(''))
+    .transform((val) => (val === '' ? undefined : val)),
+});
+
+/**
+ * Schema para crear una reserva (con validaciones)
+ */
+export const createReservaSchema = baseReservaSchema
   .refine((data) => new Date(data.fechaInicio) < new Date(data.fechaFin), {
     message: 'La fecha de inicio debe ser anterior a la fecha de fin',
     path: ['fechaFin'],
@@ -244,10 +248,24 @@ export const recurrenciaSchema = z
 
 /**
  * Schema para crear reservas recurrentes
+ * Usa el schema base sin refinements, luego aplica las validaciones
  */
-export const createReservasRecurrentesSchema = createReservaSchema.extend({
-  recurrencia: recurrenciaSchema,
-});
+export const createReservasRecurrentesSchema = baseReservaSchema
+  .extend({
+    recurrencia: recurrenciaSchema,
+  })
+  .refine((data) => new Date(data.fechaInicio) < new Date(data.fechaFin), {
+    message: 'La fecha de inicio debe ser anterior a la fecha de fin',
+    path: ['fechaFin'],
+  })
+  .refine((data) => validateDuration(data.fechaInicio, data.fechaFin), {
+    message: 'La duración debe estar entre 30 minutos y 12 horas',
+    path: ['fechaFin'],
+  })
+  .refine((data) => validateNotInPast(data.fechaInicio), {
+    message: 'No se pueden crear reservas en el pasado',
+    path: ['fechaInicio'],
+  });
 
 // ==================== SCHEMAS DE ESTADOS ====================
 

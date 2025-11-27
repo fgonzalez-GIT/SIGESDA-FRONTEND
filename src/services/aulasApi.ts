@@ -1,4 +1,10 @@
 import { api, ApiResponse } from './api';
+import type {
+  Aula,
+  CreateAulaDto,
+  UpdateAulaDto,
+  AulasQueryParams,
+} from '@/types/aula.types';
 
 /**
  * Aulas API Service
@@ -8,84 +14,89 @@ import { api, ApiResponse } from './api';
  *
  * Características:
  * - IDs numéricos (no UUIDs)
- * - Campo equipamiento: backend espera string, frontend usa array
+ * - Equipamiento: Migración de string[] (legacy) a equipamientoIds[] (nuevo)
  * - Estados: disponible, ocupado, mantenimiento, fuera_servicio
+ *
+ * Migración de equipamientos:
+ * - Backend V1: equipamiento como string separado por comas
+ * - Backend V2: equipamientoIds[] + relación many-to-many
+ * - Frontend maneja ambos formatos durante la transición
  */
-
-export interface Aula {
-  id: number;
-  nombre: string;
-  descripcion?: string;
-  capacidad: number;
-  ubicacion?: string;
-  equipamiento?: string[]; // Frontend usa array, backend espera string separado por comas
-  tipo: 'salon' | 'ensayo' | 'auditorio' | 'exterior';
-  estado: 'disponible' | 'ocupado' | 'mantenimiento' | 'fuera_servicio';
-  observaciones?: string;
-  fechaCreacion: string;
-  activa?: boolean; // Para compatibilidad con backend
-}
-
-export interface CreateAulaDto {
-  nombre: string; // REQUIRED
-  descripcion?: string;
-  capacidad: number; // REQUIRED
-  ubicacion?: string;
-  equipamiento?: string[];
-  tipo: 'salon' | 'ensayo' | 'auditorio' | 'exterior'; // REQUIRED
-  estado?: 'disponible' | 'ocupado' | 'mantenimiento' | 'fuera_servicio'; // default disponible
-  observaciones?: string;
-}
-
-export interface UpdateAulaDto {
-  nombre?: string;
-  descripcion?: string;
-  capacidad?: number;
-  ubicacion?: string;
-  equipamiento?: string[];
-  tipo?: 'salon' | 'ensayo' | 'auditorio' | 'exterior';
-  estado?: 'disponible' | 'ocupado' | 'mantenimiento' | 'fuera_servicio';
-  observaciones?: string;
-}
-
-export interface AulasQueryParams {
-  tipo?: string;
-  estado?: string;
-  capacidadMin?: number;
-  capacidadMax?: number;
-  equipamiento?: string;
-  page?: number;
-  limit?: number;
-}
 
 const BASE_PATH = '/aulas';
 
 /**
- * Helper: Adapta equipamiento del backend (string) al frontend (array)
+ * Helper: Normaliza respuesta del backend al formato del frontend
+ *
+ * Maneja 3 formatos de backend:
+ * 1. Legacy: equipamiento como string separado por comas
+ * 2. Transición: equipamientoIds[] sin expandir
+ * 3. Nuevo: equipamientos[] expandidos (con include=equipamientos)
  */
 const normalizeAula = (aula: any): Aula => {
-  return {
-    ...aula,
-    equipamiento:
-      typeof aula.equipamiento === 'string'
-        ? aula.equipamiento
-            .split(',')
-            .map((item: string) => item.trim())
-            .filter(Boolean)
-        : aula.equipamiento || [],
-  };
+  const normalized: Aula = { ...aula };
+
+  // Si viene equipamiento expandido (array de objetos), usarlo directamente
+  if (Array.isArray(aula.equipamientos) && aula.equipamientos.length > 0) {
+    normalized.equipamientos = aula.equipamientos;
+    normalized.equipamientoIds = aula.equipamientos.map((eq: any) => eq.id);
+  }
+  // Si viene equipamientoIds[], usarlo
+  else if (Array.isArray(aula.equipamientoIds)) {
+    normalized.equipamientoIds = aula.equipamientoIds;
+  }
+  // LEGACY: Si viene equipamiento como string, parsearlo a array
+  else if (typeof aula.equipamiento === 'string' && aula.equipamiento) {
+    normalized.equipamiento = aula.equipamiento
+      .split(',')
+      .map((item: string) => item.trim())
+      .filter(Boolean);
+  }
+  // Si viene equipamiento como array de strings (legacy)
+  else if (Array.isArray(aula.equipamiento)) {
+    normalized.equipamiento = aula.equipamiento;
+  }
+
+  return normalized;
 };
 
 /**
- * Helper: Adapta equipamiento del frontend (array) al backend (string)
+ * Helper: Serializa datos del frontend al formato esperado por el backend
+ *
+ * Prioridad:
+ * 1. Si hay equipamientos[] (nuevo formato con cantidad y observaciones), enviarlo
+ * 2. Si hay equipamientoIds[] (transición), enviarlo
+ * 3. Si hay equipamiento[] (legacy), convertirlo a string para backend V1
  */
 const serializeAula = (aula: CreateAulaDto | UpdateAulaDto): any => {
-  return {
-    ...aula,
-    equipamiento: Array.isArray(aula.equipamiento)
-      ? aula.equipamiento.join(', ')
-      : aula.equipamiento,
-  };
+  const serialized: any = { ...aula };
+
+  // NUEVO: Si se proporciona equipamientos[] con cantidad y observaciones
+  if (Array.isArray(aula.equipamientos) && aula.equipamientos.length > 0) {
+    serialized.equipamientos = aula.equipamientos;
+    // Remover formatos anteriores si existen
+    delete serialized.equipamientoIds;
+    delete serialized.equipamiento;
+  }
+  // Si se proporciona equipamientos como array vacío, enviar array vacío
+  else if (Array.isArray(aula.equipamientos) && aula.equipamientos.length === 0) {
+    serialized.equipamientos = [];
+    delete serialized.equipamientoIds;
+    delete serialized.equipamiento;
+  }
+  // TRANSICIÓN: Si se proporciona equipamientoIds (formato sin cantidad)
+  else if (Array.isArray((aula as any).equipamientoIds)) {
+    serialized.equipamientoIds = (aula as any).equipamientoIds;
+    // Remover equipamiento legacy si existe
+    delete serialized.equipamiento;
+  }
+  // LEGACY: Si se proporciona equipamiento como array, convertir a string
+  else if (Array.isArray((aula as any).equipamiento)) {
+    serialized.equipamiento = (aula as any).equipamiento.join(', ');
+    delete serialized.equipamientoIds;
+  }
+
+  return serialized;
 };
 
 const aulasApi = {

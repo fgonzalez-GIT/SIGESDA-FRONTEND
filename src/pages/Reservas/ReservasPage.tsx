@@ -11,8 +11,8 @@ import {
   CardContent,
   Alert,
   CircularProgress,
-  Grid2 as Grid,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import {
   Add as AddIcon,
   CalendarToday as CalendarIcon,
