@@ -79,7 +79,7 @@ const EquipamientosAdminPage: React.FC = () => {
 
   // Cargar equipamientos y categorías al montar
   useEffect(() => {
-    dispatch(fetchEquipamientos({ includeInactive: true }));
+    dispatch(fetchEquipamientos({ includeInactive: true, limit: 100 }));
 
     // Cargar categorías desde API
     const loadCategorias = async () => {
@@ -171,10 +171,23 @@ const EquipamientosAdminPage: React.FC = () => {
 
   const handleEditFromDetail = () => {
     if (itemToView) {
+      const itemToEdit = itemToView;
+
+      // Eliminar el foco de cualquier elemento activo antes de cerrar el Dialog
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+
+      // Primero cerrar el dialog de detalle completamente
       setDetailDialogOpen(false);
-      setSelectedItem(itemToView);
       setItemToView(null);
-      setFormOpen(true);
+
+      // Delay para asegurar que el dialog de detalle se cierre completamente y
+      // MUI quite el aria-hidden del root antes de abrir el de edición
+      setTimeout(() => {
+        setSelectedItem(itemToEdit);
+        setFormOpen(true);
+      }, 200);
     }
   };
 

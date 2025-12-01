@@ -82,7 +82,7 @@ const AulasPage: React.FC = () => {
   // Cargar aulas, equipamientos y catálogos al montar el componente
   useEffect(() => {
     dispatch(fetchAulas({}));
-    dispatch(fetchEquipamientos({ includeInactive: false }));
+    dispatch(fetchEquipamientos({ includeInactive: false, limit: 100 }));
 
     // Cargar catálogos de tipos y estados
     const loadCatalogos = async () => {
@@ -120,18 +120,26 @@ const AulasPage: React.FC = () => {
     if (aula) {
       dispatch(setSelectedAula(aula));
 
-      // Mapear equipamientos al nuevo formato con cantidad y observaciones
-      // Nota: Los aulas existentes solo tienen IDs, asumimos cantidad = 1
+      // ✅ Mapear equipamientos al formato de formulario (AulaEquipamiento[])
+      // Prioridad: aulas_equipamientos > equipamientos > equipamientoIds
       let equipamientosFormateados: AulaEquipamiento[] = [];
-      if (aula.equipamientos && aula.equipamientos.length > 0) {
-        // Si vienen equipamientos expandidos desde el backend
+
+      if (aula.aulas_equipamientos && aula.aulas_equipamientos.length > 0) {
+        // ✅ CORRECTO: Formato del backend con cantidad y observaciones
+        equipamientosFormateados = aula.aulas_equipamientos.map(ae => ({
+          equipamientoId: ae.equipamientoId,
+          cantidad: ae.cantidad,
+          observaciones: ae.observaciones || undefined,
+        }));
+      } else if (aula.equipamientos && aula.equipamientos.length > 0) {
+        // FALLBACK: Si vienen equipamientos expandidos (legacy)
         equipamientosFormateados = aula.equipamientos.map(eq => ({
           equipamientoId: eq.id,
           cantidad: 1, // Valor por defecto para datos legacy
           observaciones: undefined,
         }));
       } else if (aula.equipamientoIds && aula.equipamientoIds.length > 0) {
-        // Si vienen solo los IDs
+        // FALLBACK: Si vienen solo los IDs
         equipamientosFormateados = aula.equipamientoIds.map(id => ({
           equipamientoId: id,
           cantidad: 1, // Valor por defecto para datos legacy
@@ -242,9 +250,22 @@ const AulasPage: React.FC = () => {
 
   const handleEditFromDetail = () => {
     if (aulaToView) {
+      const aulaToEdit = aulaToView;
+
+      // Eliminar el foco de cualquier elemento activo antes de cerrar el Dialog
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+
+      // Primero cerrar el dialog de detalle completamente
       setDetailDialogOpen(false);
-      handleOpenDialog(aulaToView);
       setAulaToView(null);
+
+      // Delay para asegurar que el dialog de detalle se cierre completamente y
+      // MUI quite el aria-hidden del root antes de abrir el de edición
+      setTimeout(() => {
+        handleOpenDialog(aulaToEdit);
+      }, 200);
     }
   };
 
@@ -264,13 +285,13 @@ const AulasPage: React.FC = () => {
   };
 
   const getEstadoLabel = (estado: string) => {
-    const estadoObj = estadosAula.find(e => e.value === estado);
-    return estadoObj?.label || estado;
+    const estadoObj = estadosAula.find(e => e.codigo === estado);
+    return estadoObj?.nombre || estado;
   };
 
   const getTipoLabel = (tipo: string) => {
-    const tipoObj = tiposAula.find(t => t.value === tipo);
-    return tipoObj?.label || tipo;
+    const tipoObj = tiposAula.find(t => t.codigo === tipo);
+    return tipoObj?.nombre || tipo;
   };
 
   // Función para limpiar filtros
@@ -288,11 +309,11 @@ const AulasPage: React.FC = () => {
       aula.nombre.toLowerCase().includes(searchLower) ||
       (aula.ubicacion && aula.ubicacion.toLowerCase().includes(searchLower));
 
-    // Filtro por tipo
-    const matchesTipo = filterTipo === '' || aula.tipo === filterTipo;
+    // Filtro por tipo (comparar con código del catálogo)
+    const matchesTipo = filterTipo === '' || aula.tipoAula?.codigo === filterTipo;
 
-    // Filtro por estado
-    const matchesEstado = filterEstado === '' || aula.estado === filterEstado;
+    // Filtro por estado (comparar con código del catálogo)
+    const matchesEstado = filterEstado === '' || aula.estadoAula?.codigo === filterEstado;
 
     return matchesSearch && matchesTipo && matchesEstado;
   });
@@ -328,11 +349,19 @@ const AulasPage: React.FC = () => {
       renderCell: (params) => {
         const aula = params.row as Aula;
 
-        // Prioridad: equipamientos expandidos > equipamientoIds > equipamiento legacy
-        let items: { id?: number; nombre: string }[] = [];
+        // ✅ PRIORIDAD 1: aulas_equipamientos (formato correcto del backend)
+        // Estructura: aula.aulas_equipamientos[].equipamiento.nombre
+        let items: { id?: number; nombre: string; cantidad?: number }[] = [];
 
-        if (aula.equipamientos && aula.equipamientos.length > 0) {
-          // Equipamientos expandidos (ideal)
+        if (aula.aulas_equipamientos && aula.aulas_equipamientos.length > 0) {
+          // ✅ Formato correcto: aulas_equipamientos con equipamiento anidado
+          items = aula.aulas_equipamientos.map(ae => ({
+            id: ae.equipamiento.id,
+            nombre: ae.equipamiento.nombre,
+            cantidad: ae.cantidad
+          }));
+        } else if (aula.equipamientos && aula.equipamientos.length > 0) {
+          // FALLBACK: Equipamientos expandidos (legacy)
           items = aula.equipamientos.map(eq => ({ id: eq.id, nombre: eq.nombre }));
         } else if (aula.equipamientoIds && aula.equipamientoIds.length > 0) {
           // Solo IDs sin expandir - mostrar count genérico
@@ -356,7 +385,12 @@ const AulasPage: React.FC = () => {
         return (
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
             {items.slice(0, 2).map((item) => (
-              <Chip key={item.id || item.nombre} label={item.nombre} size="small" variant="outlined" />
+              <Chip
+                key={item.id || item.nombre}
+                label={item.cantidad && item.cantidad > 1 ? `${item.nombre} (${item.cantidad})` : item.nombre}
+                size="small"
+                variant="outlined"
+              />
             ))}
             {items.length > 2 && (
               <Chip label={`+${items.length - 2}`} size="small" />
@@ -517,10 +551,10 @@ const AulasPage: React.FC = () => {
               onChange={(e) => setFilterTipo(e.target.value)}
               label="Tipo"
             >
-              <MenuItem value="">Todos</MenuItem>
+              <MenuItem key="all" value="">Todos</MenuItem>
               {tiposAula.map((tipo) => (
-                <MenuItem key={tipo.value} value={tipo.value}>
-                  {tipo.label}
+                <MenuItem key={tipo.id} value={tipo.codigo}>
+                  {tipo.nombre}
                 </MenuItem>
               ))}
             </Select>
@@ -533,10 +567,10 @@ const AulasPage: React.FC = () => {
               onChange={(e) => setFilterEstado(e.target.value)}
               label="Estado"
             >
-              <MenuItem value="">Todos</MenuItem>
+              <MenuItem key="all" value="">Todos</MenuItem>
               {estadosAula.map((estado) => (
-                <MenuItem key={estado.value} value={estado.value}>
-                  {estado.label}
+                <MenuItem key={estado.id} value={estado.codigo}>
+                  {estado.nombre}
                 </MenuItem>
               ))}
             </Select>
@@ -602,9 +636,9 @@ const AulasPage: React.FC = () => {
                   disabled={loadingCatalogos}
                 >
                   {loadingCatalogos ? (
-                    <MenuItem value="">Cargando...</MenuItem>
+                    <MenuItem key="loading" value="">Cargando...</MenuItem>
                   ) : tiposAula.length === 0 ? (
-                    <MenuItem value="">No hay tipos disponibles</MenuItem>
+                    <MenuItem key="empty" value="">No hay tipos disponibles</MenuItem>
                   ) : (
                     tiposAula.map((tipo) => (
                       <MenuItem key={tipo.id} value={tipo.id}>
@@ -643,9 +677,9 @@ const AulasPage: React.FC = () => {
                   disabled={loadingCatalogos}
                 >
                   {loadingCatalogos ? (
-                    <MenuItem value="">Cargando...</MenuItem>
+                    <MenuItem key="loading" value="">Cargando...</MenuItem>
                   ) : estadosAula.length === 0 ? (
-                    <MenuItem value="">No hay estados disponibles</MenuItem>
+                    <MenuItem key="empty" value="">No hay estados disponibles</MenuItem>
                   ) : (
                     estadosAula.map((estado) => (
                       <MenuItem key={estado.id} value={estado.id}>
@@ -762,12 +796,62 @@ const AulasPage: React.FC = () => {
               <Typography variant="h6" gutterBottom sx={{ mb: 2, fontWeight: 600 }}>
                 Equipamientos Asignados
               </Typography>
-              {aulaToView.equipamientos && aulaToView.equipamientos.length > 0 ? (
+              {aulaToView.aulas_equipamientos && aulaToView.aulas_equipamientos.length > 0 ? (
+                <Paper variant="outlined" sx={{ mb: 3 }}>
+                  <Box sx={{ p: 2 }}>
+                    {aulaToView.aulas_equipamientos.map((ae, index) => (
+                      <Box
+                        key={ae.id}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          py: 1,
+                          borderBottom: index < aulaToView.aulas_equipamientos!.length - 1 ? '1px solid' : 'none',
+                          borderColor: 'divider',
+                        }}
+                      >
+                        <Box sx={{ flex: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body1" fontWeight={500}>
+                              {ae.equipamiento.nombre}
+                            </Typography>
+                            {ae.cantidad > 1 && (
+                              <Chip
+                                label={`x${ae.cantidad}`}
+                                size="small"
+                                color="primary"
+                                variant="filled"
+                              />
+                            )}
+                          </Box>
+                          {ae.equipamiento.descripcion && (
+                            <Typography variant="caption" color="text.secondary">
+                              {ae.equipamiento.descripcion}
+                            </Typography>
+                          )}
+                          {ae.observaciones && (
+                            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                              Obs: {ae.observaciones}
+                            </Typography>
+                          )}
+                        </Box>
+                        <Chip
+                          label={ae.equipamiento.categoriaEquipamiento?.nombre || 'Sin categoría'}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </Box>
+                    ))}
+                  </Box>
+                </Paper>
+              ) : aulaToView.equipamientos && aulaToView.equipamientos.length > 0 ? (
+                // FALLBACK: Formato legacy de equipamientos
                 <Paper variant="outlined" sx={{ mb: 3 }}>
                   <Box sx={{ p: 2 }}>
                     {aulaToView.equipamientos.map((eq, index) => (
                       <Box
-                        key={index}
+                        key={eq.id}
                         sx={{
                           display: 'flex',
                           alignItems: 'center',

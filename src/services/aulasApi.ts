@@ -28,20 +28,32 @@ const BASE_PATH = '/aulas';
 /**
  * Helper: Normaliza respuesta del backend al formato del frontend
  *
- * Maneja 3 formatos de backend:
- * 1. Legacy: equipamiento como string separado por comas
- * 2. Transición: equipamientoIds[] sin expandir
- * 3. Nuevo: equipamientos[] expandidos (con include=equipamientos)
+ * Maneja múltiples formatos de equipamientos:
+ * 1. ✅ CORRECTO: aulas_equipamientos[] (formato actual del backend)
+ * 2. Legacy: equipamientos[] expandidos
+ * 3. Transición: equipamientoIds[] sin expandir
+ * 4. Legacy: equipamiento como string separado por comas
  */
 const normalizeAula = (aula: any): Aula => {
   const normalized: Aula = { ...aula };
 
-  // Si viene equipamiento expandido (array de objetos), usarlo directamente
-  if (Array.isArray(aula.equipamientos) && aula.equipamientos.length > 0) {
+  // ✅ PRIORIDAD 1: aulas_equipamientos (formato correcto del backend)
+  // Estructura: aula.aulas_equipamientos[] con equipamiento anidado
+  if (Array.isArray(aula.aulas_equipamientos) && aula.aulas_equipamientos.length > 0) {
+    normalized.aulas_equipamientos = aula.aulas_equipamientos;
+
+    // También poblar equipamientos[] para compatibilidad con componentes legacy
+    normalized.equipamientos = aula.aulas_equipamientos.map((ae: any) => ae.equipamiento);
+
+    // Poblar equipamientoIds[] para compatibilidad
+    normalized.equipamientoIds = aula.aulas_equipamientos.map((ae: any) => ae.equipamientoId);
+  }
+  // PRIORIDAD 2: Si viene equipamiento expandido (array de objetos), usarlo directamente
+  else if (Array.isArray(aula.equipamientos) && aula.equipamientos.length > 0) {
     normalized.equipamientos = aula.equipamientos;
     normalized.equipamientoIds = aula.equipamientos.map((eq: any) => eq.id);
   }
-  // Si viene equipamientoIds[], usarlo
+  // PRIORIDAD 3: Si viene equipamientoIds[], usarlo
   else if (Array.isArray(aula.equipamientoIds)) {
     normalized.equipamientoIds = aula.equipamientoIds;
   }

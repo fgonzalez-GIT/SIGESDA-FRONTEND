@@ -121,6 +121,11 @@ export interface UpdateEquipamientoDto {
  * Parámetros para filtrar equipamientos
  */
 export interface EquipamientoQueryParams {
+  // Paginación
+  page?: number;        // default: 1
+  limit?: number;       // default: 10, max: 100 (backend NO acepta -1). Usar 100 para obtener todos.
+
+  // Filtros
   includeInactive?: boolean;
   search?: string;
   categoria?: CategoriaEquipamiento;

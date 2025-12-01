@@ -15,6 +15,10 @@ import {
   Tooltip,
   Alert,
   Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -179,24 +183,25 @@ export const AulaEquipamientoManager: React.FC<AulaEquipamientoManagerProps> = (
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {/* Selector de Equipamiento */}
-          <TextField
-            select
-            label="Equipamiento"
-            value={selectedEquipamientoId}
-            onChange={(e) => setSelectedEquipamientoId(e.target.value === '' ? '' : Number(e.target.value))}
-            disabled={disabled}
-            fullWidth
-            SelectProps={{
-              native: true,
-            }}
-          >
-            <option value="">Seleccione un equipamiento</option>
-            {equipamientosActivos.map((eq) => (
-              <option key={eq.id} value={eq.id}>
-                {eq.nombre} - {getCategoriaLabel(eq.categoriaEquipamiento)}
-              </option>
-            ))}
-          </TextField>
+          <FormControl fullWidth disabled={disabled}>
+            <InputLabel id="equipamiento-select-label">Equipamiento</InputLabel>
+            <Select
+              labelId="equipamiento-select-label"
+              id="equipamiento-select"
+              label="Equipamiento"
+              value={selectedEquipamientoId}
+              onChange={(e) => setSelectedEquipamientoId(e.target.value === '' ? '' : Number(e.target.value))}
+            >
+              <MenuItem value="">
+                <em>Seleccione un equipamiento</em>
+              </MenuItem>
+              {equipamientosActivos.map((eq) => (
+                <MenuItem key={eq.id} value={eq.id}>
+                  {eq.nombre} - {getCategoriaLabel(eq.categoriaEquipamiento)}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <Box sx={{ display: 'flex', gap: 2 }}>
             {/* Cantidad */}

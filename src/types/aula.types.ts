@@ -22,11 +22,30 @@ export type EstadoAulaLegacy = 'disponible' | 'ocupado' | 'mantenimiento' | 'fue
 
 /**
  * Equipamiento asignado a un aula con cantidad y observaciones
+ * (Para requests POST/PUT al backend)
  */
 export interface AulaEquipamiento {
   equipamientoId: number;
   cantidad: number;
   observaciones?: string;
+}
+
+/**
+ * Equipamiento detallado de un aula tal como viene del backend
+ * (Para responses GET con equipamientos expandidos)
+ *
+ * Estructura real del backend:
+ * aula.aulas_equipamientos[] → objeto con equipamiento anidado
+ */
+export interface AulaEquipamientoDetalle {
+  id: number;
+  aulaId: number;
+  equipamientoId: number;
+  cantidad: number;
+  observaciones?: string | null;
+  equipamiento: Equipamiento; // ← Objeto anidado con datos completos
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Aula {
@@ -48,14 +67,19 @@ export interface Aula {
   estado?: EstadoAulaLegacy;
 
   // ==================== EQUIPAMIENTOS ====================
-  // NUEVO: IDs de equipamientos asignados (para requests POST/PUT)
+  // ✅ CAMPO CORRECTO DEL BACKEND (recomendado)
+  // Equipamientos expandidos tal como vienen del backend (con cantidad, observaciones, etc.)
+  aulas_equipamientos?: AulaEquipamientoDetalle[];
+
+  // TRANSICIÓN: IDs de equipamientos asignados (para requests POST/PUT)
   equipamientoIds?: number[];
 
   // DEPRECATED: Array de strings (legacy, para compatibilidad temporal)
   // Será removido en futuras versiones
   equipamiento?: string[];
 
-  // Equipamientos expandidos (para responses GET con include=equipamientos)
+  // DEPRECATED: Campo legacy - Usar aulas_equipamientos en su lugar
+  // El backend retorna aulas_equipamientos, NO equipamientos
   equipamientos?: Equipamiento[];
 
   // ==================== METADATA ====================
@@ -115,14 +139,14 @@ export interface AulasQueryParams {
 
 // ==================== UI HELPERS ====================
 
-export const TIPOS_AULA: { value: TipoAula; label: string }[] = [
+export const TIPOS_AULA: { value: TipoAulaLegacy; label: string }[] = [
   { value: 'salon', label: 'Salón' },
   { value: 'ensayo', label: 'Sala de Ensayo' },
   { value: 'auditorio', label: 'Auditorio' },
   { value: 'exterior', label: 'Exterior' },
 ];
 
-export const ESTADOS_AULA: { value: EstadoAula; label: string; color: string }[] = [
+export const ESTADOS_AULA: { value: EstadoAulaLegacy; label: string; color: string }[] = [
   { value: 'disponible', label: 'Disponible', color: 'success' },
   { value: 'ocupado', label: 'Ocupado', color: 'warning' },
   { value: 'mantenimiento', label: 'En Mantenimiento', color: 'info' },
@@ -150,14 +174,14 @@ export const EQUIPAMIENTO_DISPONIBLE = [
 /**
  * Obtiene el label de un tipo de aula
  */
-export function getTipoAulaLabel(tipo: TipoAula): string {
+export function getTipoAulaLabel(tipo: TipoAulaLegacy): string {
   return TIPOS_AULA.find((t) => t.value === tipo)?.label || tipo;
 }
 
 /**
  * Obtiene el label de un estado de aula
  */
-export function getEstadoAulaLabel(estado: EstadoAula): string {
+export function getEstadoAulaLabel(estado: EstadoAulaLegacy): string {
   return ESTADOS_AULA.find((e) => e.value === estado)?.label || estado;
 }
 
@@ -165,7 +189,7 @@ export function getEstadoAulaLabel(estado: EstadoAula): string {
  * Obtiene el color de chip para un estado de aula
  */
 export function getEstadoAulaColor(
-  estado: EstadoAula
+  estado: EstadoAulaLegacy
 ): 'success' | 'warning' | 'info' | 'error' | 'default' {
   const estadoObj = ESTADOS_AULA.find((e) => e.value === estado);
   return (estadoObj?.color as any) || 'default';

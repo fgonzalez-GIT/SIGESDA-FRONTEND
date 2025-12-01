@@ -65,7 +65,7 @@ export const EquipamientoSelect: React.FC<EquipamientoSelectProps> = ({
   // Cargar equipamientos al montar
   useEffect(() => {
     if (items.length === 0) {
-      dispatch(fetchEquipamientos({ includeInactive: !showOnlyActive }));
+      dispatch(fetchEquipamientos({ includeInactive: !showOnlyActive, limit: 100 }));
     }
   }, [dispatch, items.length, showOnlyActive]);
 

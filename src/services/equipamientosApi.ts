@@ -41,6 +41,11 @@ export const equipamientosApi = {
    * GET /api/equipamientos
    *
    * @param params - Parámetros de filtrado opcionales
+   * @param params.limit - Límite de registros (default: 10, max: 100). Backend NO acepta -1. Usar 100 para obtener todos.
+   * @param params.page - Número de página (default: 1)
+   * @param params.includeInactive - Incluir equipamientos inactivos (default: false)
+   * @param params.search - Búsqueda por texto en nombre/descripción
+   * @param params.categoria - Filtrar por categoría de equipamiento
    * @returns Array de equipamientos
    */
   getAll: async (params?: EquipamientoQueryParams): Promise<Equipamiento[]> => {
