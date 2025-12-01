@@ -560,7 +560,7 @@ const AulasPage: React.FC = () => {
                 Disponibles
               </Typography>
               <Typography variant="h4" color="success.main">
-                {aulas.filter(a => a.estado === 'disponible').length}
+                {aulas.filter(a => a.estadoAula?.codigo?.includes('DISPONIBLE')).length}
               </Typography>
             </CardContent>
           </Card>
@@ -569,10 +569,10 @@ const AulasPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Ocupadas
+                Reservadas
               </Typography>
               <Typography variant="h4" color="warning.main">
-                {aulas.filter(a => a.estado === 'ocupado').length}
+                {aulas.filter(a => a.estadoAula?.codigo?.includes('RESERVADA')).length}
               </Typography>
             </CardContent>
           </Card>
