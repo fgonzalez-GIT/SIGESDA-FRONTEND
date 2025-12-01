@@ -20,12 +20,15 @@ import {
   Paper,
   IconButton,
   Tooltip,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
+  Restore as RestoreIcon,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,6 +46,7 @@ import {
   createEquipamiento,
   updateEquipamiento,
   deleteEquipamiento,
+  reactivateEquipamiento,
 } from '@/store/slices/equipamientosSlice';
 import {
   createEquipamientoSchema,
@@ -72,6 +76,7 @@ const EquipamientosAdminPage: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<Equipamiento | null>(null);
   const [itemToDelete, setItemToDelete] = useState<Equipamiento | null>(null);
   const [itemToView, setItemToView] = useState<Equipamiento | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   // Estado para categorías
   const [categorias, setCategorias] = useState<CategoriaEquipamiento[]>([]);
@@ -79,6 +84,8 @@ const EquipamientosAdminPage: React.FC = () => {
 
   // Cargar equipamientos y categorías al montar
   useEffect(() => {
+    // Cargar todos los equipamientos (activos e inactivos)
+    // El filtrado se hace en el frontend según showInactive
     dispatch(fetchEquipamientos({ includeInactive: true, limit: 100 }));
 
     // Cargar categorías desde API
@@ -266,8 +273,37 @@ const EquipamientosAdminPage: React.FC = () => {
     }
   };
 
-  // Ordenar items
-  const itemsOrdenados = [...items].sort((a, b) => {
+  const handleReactivate = async (item: Equipamiento) => {
+    if (window.confirm(`¿Está seguro que desea reactivar el equipamiento "${item.nombre}"?`)) {
+      try {
+        await dispatch(reactivateEquipamiento(item.id)).unwrap();
+
+        dispatch(
+          showNotification({
+            message: `Equipamiento "${item.nombre}" reactivado exitosamente`,
+            severity: 'success',
+          })
+        );
+      } catch (error: any) {
+        console.error('Error al reactivar equipamiento:', error);
+
+        dispatch(
+          showNotification({
+            message: error || 'Error al reactivar equipamiento',
+            severity: 'error',
+          })
+        );
+      }
+    }
+  };
+
+  // Filtrar según estado showInactive
+  const itemsFiltrados = showInactive
+    ? items // Mostrar todos (activos e inactivos)
+    : items.filter((item) => item.activo); // Solo activos
+
+  // Ordenar items filtrados
+  const itemsOrdenados = [...itemsFiltrados].sort((a, b) => {
     if (a.orden !== b.orden) return a.orden - b.orden;
     return a.nombre.localeCompare(b.nombre);
   });
@@ -284,15 +320,27 @@ const EquipamientosAdminPage: React.FC = () => {
             Gestiona los equipamientos disponibles para asignar a las aulas
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAddClick}
-          size="large"
-          disabled={loading}
-        >
-          Nuevo Equipamiento
-        </Button>
+        <Box display="flex" gap={2} alignItems="center">
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showInactive}
+                onChange={(e) => setShowInactive(e.target.checked)}
+                color="warning"
+              />
+            }
+            label="Mostrar equipamientos eliminados"
+          />
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleAddClick}
+            size="large"
+            disabled={loading}
+          >
+            Nuevo Equipamiento
+          </Button>
+        </Box>
       </Box>
 
       {/* Info */}
@@ -346,44 +394,72 @@ const EquipamientosAdminPage: React.FC = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              itemsOrdenados.map((item) => (
-                <TableRow key={item.id} hover>
-                  <TableCell>{item.nombre}</TableCell>
-                  <TableCell>{item.descripcion || '-'}</TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={getCategoriaLabel(item.categoriaEquipamiento)}
-                      color={getCategoriaColor(item.categoriaEquipamiento)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={item.activo ? 'Activo' : 'Inactivo'}
-                      color={item.activo ? 'success' : 'default'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="center">{item.orden}</TableCell>
-                  <TableCell align="center">
-                    <Tooltip title="Ver detalles">
-                      <IconButton size="small" onClick={() => handleViewClick(item)} color="info">
-                        <VisibilityIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Editar">
-                      <IconButton size="small" onClick={() => handleEditClick(item)} color="primary">
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Eliminar">
-                      <IconButton size="small" onClick={() => handleDeleteClick(item)} color="error">
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))
+              itemsOrdenados.map((item) => {
+                const isInactive = !item.activo;
+
+                return (
+                  <TableRow key={item.id} hover sx={{ opacity: isInactive ? 0.6 : 1 }}>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <span style={{ opacity: isInactive ? 0.7 : 1 }}>{item.nombre}</span>
+                        {isInactive && (
+                          <Chip
+                            label="ELIMINADO"
+                            color="error"
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ opacity: isInactive ? 0.7 : 1 }}>
+                      {item.descripcion || '-'}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        label={getCategoriaLabel(item.categoriaEquipamiento)}
+                        color={getCategoriaColor(item.categoriaEquipamiento)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        label={item.activo ? 'Activo' : 'Inactivo'}
+                        color={item.activo ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="center">{item.orden}</TableCell>
+                    <TableCell align="center">
+                      <Tooltip title="Ver detalles">
+                        <IconButton size="small" onClick={() => handleViewClick(item)} color="info">
+                          <VisibilityIcon />
+                        </IconButton>
+                      </Tooltip>
+                      {isInactive ? (
+                        <Tooltip title="Reactivar">
+                          <IconButton size="small" onClick={() => handleReactivate(item)} color="success">
+                            <RestoreIcon />
+                          </IconButton>
+                        </Tooltip>
+                      ) : (
+                        <>
+                          <Tooltip title="Editar">
+                            <IconButton size="small" onClick={() => handleEditClick(item)} color="primary">
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Eliminar">
+                            <IconButton size="small" onClick={() => handleDeleteClick(item)} color="error">
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -521,9 +597,9 @@ const EquipamientosAdminPage: React.FC = () => {
                   <Typography variant="caption" color="text.secondary">
                     Código
                   </Typography>
-                  <Typography variant="body1">
+                  <Box sx={{ mt: 0.5 }}>
                     <Chip label={itemToView.codigo} variant="outlined" size="small" />
-                  </Typography>
+                  </Box>
                 </Box>
 
                 <Box>
@@ -537,26 +613,26 @@ const EquipamientosAdminPage: React.FC = () => {
                   <Typography variant="caption" color="text.secondary">
                     Categoría
                   </Typography>
-                  <Typography variant="body1">
+                  <Box sx={{ mt: 0.5 }}>
                     <Chip
                       label={getCategoriaLabel(itemToView.categoriaEquipamiento)}
                       color={getCategoriaColor(itemToView.categoriaEquipamiento)}
                       size="small"
                     />
-                  </Typography>
+                  </Box>
                 </Box>
 
                 <Box>
                   <Typography variant="caption" color="text.secondary">
                     Estado
                   </Typography>
-                  <Typography variant="body1">
+                  <Box sx={{ mt: 0.5 }}>
                     <Chip
                       label={itemToView.activo ? 'Activo' : 'Inactivo'}
                       color={itemToView.activo ? 'success' : 'default'}
                       size="small"
                     />
-                  </Typography>
+                  </Box>
                 </Box>
 
                 <Box>

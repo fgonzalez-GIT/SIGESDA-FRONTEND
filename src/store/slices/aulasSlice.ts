@@ -112,6 +112,20 @@ export const fetchAulasActivas = createAsyncThunk(
   }
 );
 
+/**
+ * Reactivar Aula
+ */
+export const reactivateAula = createAsyncThunk(
+  'aulas/reactivateAula',
+  async (id: number, { rejectWithValue }) => {
+    try {
+      return await aulasApi.reactivate(id);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error al reactivar aula');
+    }
+  }
+);
+
 // ==================== SLICE ====================
 
 const aulasSlice = createSlice({
@@ -215,6 +229,22 @@ const aulasSlice = createSlice({
         state.aulas = action.payload;
       })
       .addCase(fetchAulasActivas.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Reactivate aula
+      .addCase(reactivateAula.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(reactivateAula.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.aulas.findIndex((a) => a.id === action.payload.id);
+        if (index !== -1) {
+          state.aulas[index] = action.payload;
+        }
+      })
+      .addCase(reactivateAula.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

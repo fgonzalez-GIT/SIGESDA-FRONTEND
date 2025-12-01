@@ -32,7 +32,8 @@ import {
   EventBusy as BusyIcon,
   Search as SearchIcon,
   FilterList as FilterListIcon,
-  Visibility as VisibilityIcon
+  Visibility as VisibilityIcon,
+  Restore as RestoreIcon
 } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
@@ -41,6 +42,7 @@ import {
   createAula,
   updateAula,
   deleteAula,
+  reactivateAula,
   setSelectedAula,
   clearError,
 } from '../../store/slices/aulasSlice';
@@ -74,6 +76,7 @@ const AulasPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipo, setFilterTipo] = useState<string>('');
   const [filterEstado, setFilterEstado] = useState<string>('');
+  const [showInactive, setShowInactive] = useState(false);
 
   // Estados para dialog de detalle
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -81,7 +84,12 @@ const AulasPage: React.FC = () => {
 
   // Cargar aulas, equipamientos y catálogos al montar el componente
   useEffect(() => {
-    dispatch(fetchAulas({}));
+    // Cargar solo aulas activas por defecto
+    if (showInactive) {
+      dispatch(fetchAulas({})); // Todas las aulas
+    } else {
+      dispatch(fetchAulas({ activa: true })); // Solo activas
+    }
     dispatch(fetchEquipamientos({ includeInactive: false, limit: 100 }));
 
     // Cargar catálogos de tipos y estados
@@ -103,7 +111,7 @@ const AulasPage: React.FC = () => {
     };
 
     loadCatalogos();
-  }, [dispatch]);
+  }, [dispatch, showInactive]);
 
   // Mostrar errores
   useEffect(() => {
@@ -224,7 +232,7 @@ const AulasPage: React.FC = () => {
   const handleToggleEstado = async (aula: Aula) => {
     try {
       const nuevoEstado = aula.estado === 'disponible' ? 'ocupado' : 'disponible';
-      await dispatch(updateAula({ ...aula, estado: nuevoEstado })).unwrap();
+      await dispatch(updateAula({ id: aula.id, data: { estado: nuevoEstado } })).unwrap();
       dispatch(showNotification({
         message: `Aula marcada como ${nuevoEstado}`,
         severity: 'success'
@@ -234,6 +242,23 @@ const AulasPage: React.FC = () => {
         message: 'Error al actualizar el estado',
         severity: 'error'
       }));
+    }
+  };
+
+  const handleReactivate = async (aula: Aula) => {
+    if (window.confirm(`¿Está seguro que desea reactivar el aula "${aula.nombre}"?`)) {
+      try {
+        await dispatch(reactivateAula(aula.id)).unwrap();
+        dispatch(showNotification({
+          message: `Aula "${aula.nombre}" reactivada exitosamente`,
+          severity: 'success'
+        }));
+      } catch (error) {
+        dispatch(showNotification({
+          message: 'Error al reactivar el aula',
+          severity: 'error'
+        }));
+      }
     }
   };
 
@@ -299,6 +324,7 @@ const AulasPage: React.FC = () => {
     setSearchTerm('');
     setFilterTipo('');
     setFilterEstado('');
+    setShowInactive(false);
   };
 
   // Aplicar filtros a las aulas
@@ -322,13 +348,28 @@ const AulasPage: React.FC = () => {
     {
       field: 'nombre',
       headerName: 'Nombre',
-      width: 200,
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <RoomIcon color="primary" />
-          {params.value}
-        </Box>
-      )
+      width: 250,
+      renderCell: (params) => {
+        const aula = params.row as Aula;
+        const isInactive = aula.activa === false;
+
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <RoomIcon color={isInactive ? 'disabled' : 'primary'} />
+            <span style={{ opacity: isInactive ? 0.5 : 1 }}>
+              {params.value}
+            </span>
+            {isInactive && (
+              <Chip
+                label="ELIMINADA"
+                color="error"
+                size="small"
+                variant="outlined"
+              />
+            )}
+          </Box>
+        );
+      }
     },
     {
       field: 'tipoAula',
@@ -433,29 +474,53 @@ const AulasPage: React.FC = () => {
       type: 'actions',
       headerName: 'Acciones',
       width: 150,
-      getActions: (params) => [
-        <GridActionsCellItem
-          icon={<VisibilityIcon />}
-          label="Ver detalles"
-          onClick={() => handleViewClick(params.row)}
-          showInMenu={false}
-        />,
-        <GridActionsCellItem
-          icon={<EditIcon />}
-          label="Editar"
-          onClick={() => handleOpenDialog(params.row)}
-        />,
-        <GridActionsCellItem
-          icon={params.row.estado === 'disponible' ? <BusyIcon /> : <AvailableIcon />}
-          label={params.row.estado === 'disponible' ? 'Marcar ocupado' : 'Marcar disponible'}
-          onClick={() => handleToggleEstado(params.row)}
-        />,
-        <GridActionsCellItem
-          icon={<DeleteIcon />}
-          label="Eliminar"
-          onClick={() => handleDelete(params.row.id)}
-        />
-      ]
+      getActions: (params) => {
+        const aula = params.row as Aula;
+        const isInactive = aula.activa === false;
+
+        // Acciones para aulas inactivas
+        if (isInactive) {
+          return [
+            <GridActionsCellItem
+              icon={<VisibilityIcon />}
+              label="Ver detalles"
+              onClick={() => handleViewClick(aula)}
+              showInMenu={false}
+            />,
+            <GridActionsCellItem
+              icon={<RestoreIcon />}
+              label="Reactivar"
+              onClick={() => handleReactivate(aula)}
+              showInMenu={false}
+            />,
+          ];
+        }
+
+        // Acciones para aulas activas
+        return [
+          <GridActionsCellItem
+            icon={<VisibilityIcon />}
+            label="Ver detalles"
+            onClick={() => handleViewClick(aula)}
+            showInMenu={false}
+          />,
+          <GridActionsCellItem
+            icon={<EditIcon />}
+            label="Editar"
+            onClick={() => handleOpenDialog(aula)}
+          />,
+          <GridActionsCellItem
+            icon={aula.estado === 'disponible' ? <BusyIcon /> : <AvailableIcon />}
+            label={aula.estado === 'disponible' ? 'Marcar ocupado' : 'Marcar disponible'}
+            onClick={() => handleToggleEstado(aula)}
+          />,
+          <GridActionsCellItem
+            icon={<DeleteIcon />}
+            label="Eliminar"
+            onClick={() => handleDelete(aula.id)}
+          />
+        ];
+      }
     }
   ];
 
@@ -584,6 +649,17 @@ const AulasPage: React.FC = () => {
           >
             Limpiar Filtros
           </Button>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showInactive}
+                onChange={(e) => setShowInactive(e.target.checked)}
+                color="warning"
+              />
+            }
+            label="Mostrar aulas eliminadas"
+          />
 
           <Box sx={{ ml: 'auto' }}>
             <Typography variant="body2" color="text.secondary">

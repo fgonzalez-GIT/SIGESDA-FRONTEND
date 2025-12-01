@@ -170,6 +170,15 @@ const aulasApi = {
     const data = response.data.data || response.data;
     return Array.isArray(data) ? data.map(normalizeAula) : [];
   },
+
+  /**
+   * Reactivar Aula
+   * PUT /api/aulas/:id con { activa: true }
+   */
+  reactivate: async (id: number): Promise<Aula> => {
+    const response = await api.put<ApiResponse<Aula>>(`${BASE_PATH}/${id}`, { activa: true });
+    return normalizeAula(response.data.data);
+  },
 };
 
 export default aulasApi;

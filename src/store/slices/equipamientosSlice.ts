@@ -147,6 +147,23 @@ export const reorderEquipamientos = createAsyncThunk(
   }
 );
 
+/**
+ * Reactivar equipamiento
+ */
+export const reactivateEquipamiento = createAsyncThunk(
+  'equipamientos/reactivateEquipamiento',
+  async (id: number, { rejectWithValue }) => {
+    try {
+      const result = await equipamientosApi.reactivate(id);
+      return result;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Error al reactivar equipamiento'
+      );
+    }
+  }
+);
+
 // ==================== SLICE ====================
 
 const equipamientosSlice = createSlice({
@@ -309,6 +326,27 @@ const equipamientosSlice = createSlice({
         });
       })
       .addCase(reorderEquipamientos.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // ==================== Reactivate ====================
+      .addCase(reactivateEquipamiento.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(reactivateEquipamiento.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.items.findIndex((e) => e.id === action.payload.id);
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
+        // Actualizar selected si es el mismo
+        if (state.selectedItem?.id === action.payload.id) {
+          state.selectedItem = action.payload;
+        }
+      })
+      .addCase(reactivateEquipamiento.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

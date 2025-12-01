@@ -195,6 +195,26 @@ export const equipamientosApi = {
   },
 
   /**
+   * Reactivar equipamiento
+   * PUT /api/equipamientos/:id con { activo: true }
+   *
+   * @param id - ID del equipamiento a reactivar
+   * @returns Equipamiento reactivado
+   */
+  reactivate: async (id: number): Promise<Equipamiento> => {
+    try {
+      const response = await api.put<ApiResponse<Equipamiento>>(
+        `${BASE_PATH}/${id}`,
+        { activo: true }
+      );
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error(`[equipamientosApi.reactivate] Error reactivating ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
    * Obtener categorías de equipamiento
    * GET /api/catalogos/categorias-equipamiento
    *
