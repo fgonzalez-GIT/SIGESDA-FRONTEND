@@ -33,8 +33,8 @@ export const aulaEquipamientoSchema = z.object({
     .string()
     .max(500, 'Observaciones no puede exceder 500 caracteres')
     .optional()
-    .or(z.literal(''))
-    .transform((val) => (val === '' ? undefined : val)),
+    .nullable()
+    .transform((val) => (val === '' || val === null ? undefined : val)),
 });
 
 // ==================== SCHEMAS DE AULA ====================
@@ -53,8 +53,8 @@ export const createAulaSchema = z.object({
     .string()
     .max(500, 'Descripción no puede exceder 500 caracteres')
     .optional()
-    .or(z.literal(''))
-    .transform((val) => (val === '' ? undefined : val)),
+    .nullable()
+    .transform((val) => (val === '' || val === null ? undefined : val)),
 
   capacidad: z
     .number({
@@ -69,8 +69,8 @@ export const createAulaSchema = z.object({
     .string()
     .max(200, 'Ubicación no puede exceder 200 caracteres')
     .optional()
-    .or(z.literal(''))
-    .transform((val) => (val === '' ? undefined : val)),
+    .nullable()
+    .transform((val) => (val === '' || val === null ? undefined : val)),
 
   equipamientos: z
     .array(aulaEquipamientoSchema)
@@ -92,8 +92,8 @@ export const createAulaSchema = z.object({
     .string()
     .max(1000, 'Observaciones no puede exceder 1000 caracteres')
     .optional()
-    .or(z.literal(''))
-    .transform((val) => (val === '' ? undefined : val)),
+    .nullable()
+    .transform((val) => (val === '' || val === null ? undefined : val)),
 });
 
 /**
@@ -111,8 +111,8 @@ export const updateAulaSchema = z.object({
     .string()
     .max(500, 'Descripción no puede exceder 500 caracteres')
     .optional()
-    .or(z.literal(''))
-    .transform((val) => (val === '' ? undefined : val)),
+    .nullable()
+    .transform((val) => (val === '' || val === null ? undefined : val)),
 
   capacidad: z
     .number({
@@ -127,8 +127,8 @@ export const updateAulaSchema = z.object({
     .string()
     .max(200, 'Ubicación no puede exceder 200 caracteres')
     .optional()
-    .or(z.literal(''))
-    .transform((val) => (val === '' ? undefined : val)),
+    .nullable()
+    .transform((val) => (val === '' || val === null ? undefined : val)),
 
   equipamientos: z
     .array(aulaEquipamientoSchema)
@@ -147,8 +147,8 @@ export const updateAulaSchema = z.object({
     .string()
     .max(1000, 'Observaciones no puede exceder 1000 caracteres')
     .optional()
-    .or(z.literal(''))
-    .transform((val) => (val === '' ? undefined : val)),
+    .nullable()
+    .transform((val) => (val === '' || val === null ? undefined : val)),
 
   activa: z.boolean().optional(),
 });

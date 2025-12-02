@@ -70,7 +70,7 @@ const baseReservaSchema = z.object({
     .string()
     .max(500, 'Observaciones no pueden exceder 500 caracteres')
     .optional()
-    .or(z.literal(''))
+    .nullable()
     .transform((val) => (val === '' ? undefined : val)),
 });
 
@@ -113,7 +113,7 @@ export const updateReservaSchema = z
       .string()
       .max(500)
       .optional()
-      .or(z.literal(''))
+      .nullable()
       .transform((val) => (val === '' ? undefined : val)),
   })
   .refine(
@@ -154,7 +154,7 @@ export const aprobarReservaSchema = z.object({
     .string()
     .max(500, 'Observaciones no pueden exceder 500 caracteres')
     .optional()
-    .or(z.literal(''))
+    .nullable()
     .transform((val) => (val === '' ? undefined : val)),
 });
 
@@ -284,7 +284,7 @@ export const createEstadoReservaSchema = z.object({
     .string()
     .max(500)
     .optional()
-    .or(z.literal(''))
+    .nullable()
     .transform((val) => (val === '' ? undefined : val)),
   activo: z.boolean().default(true),
   orden: z.number().int().min(0, 'Orden no puede ser negativo').default(0),
@@ -306,7 +306,7 @@ export const updateEstadoReservaSchema = z.object({
     .string()
     .max(500)
     .optional()
-    .or(z.literal(''))
+    .nullable()
     .transform((val) => (val === '' ? undefined : val)),
   activo: z.boolean().optional(),
   orden: z.number().int().min(0).optional(),

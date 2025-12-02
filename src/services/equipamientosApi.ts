@@ -4,13 +4,15 @@
  * Gestiona las operaciones CRUD de equipamientos disponibles para aulas.
  *
  * Endpoints esperados del backend:
- * - GET    /api/equipamientos          - Listar equipamientos
- * - GET    /api/equipamientos/:id      - Obtener equipamiento por ID
- * - POST   /api/equipamientos          - Crear equipamiento
- * - PUT    /api/equipamientos/:id      - Actualizar equipamiento
- * - DELETE /api/equipamientos/:id      - Eliminar equipamiento (soft delete)
- * - PATCH  /api/equipamientos/:id/toggle - Toggle activo/inactivo
- * - POST   /api/equipamientos/reorder  - Reordenar equipamientos
+ * - GET    /api/equipamientos                     - Listar equipamientos
+ * - GET    /api/equipamientos/:id                 - Obtener equipamiento por ID
+ * - GET    /api/equipamientos/:id/disponibilidad  - Obtener disponibilidad (NUEVO)
+ * - POST   /api/equipamientos                     - Crear equipamiento
+ * - PUT    /api/equipamientos/:id                 - Actualizar equipamiento
+ * - DELETE /api/equipamientos/:id                 - Eliminar equipamiento (soft delete)
+ * - PATCH  /api/equipamientos/:id/toggle          - Toggle activo/inactivo
+ * - POST   /api/equipamientos/reorder             - Reordenar equipamientos
+ * - GET    /api/catalogos/estados-equipamientos   - Obtener estados (NUEVO)
  */
 
 import { api } from './api';
@@ -22,6 +24,8 @@ import type {
   EquipamientoApiResponse,
   EquipamientoListResponse,
   CategoriaEquipamiento,
+  EstadoEquipamiento,
+  EquipamientoDisponibilidadResponse,
 } from '@/types/equipamiento.types';
 
 const BASE_PATH = '/equipamientos';
@@ -236,6 +240,60 @@ export const equipamientosApi = {
       console.error('[equipamientosApi.getCategorias] Error:', error);
       // Retornar array vacío en caso de error
       return [];
+    }
+  },
+
+  /**
+   * Obtener estados de equipamiento
+   * GET /api/catalogos/estados-equipamientos
+   * NUEVO: Según guía backend
+   *
+   * Estados disponibles: NUEVO, USADO, EN_REPARACION, ROTO, DADO_DE_BAJA
+   *
+   * @returns Array de estados activos
+   */
+  getEstados: async (): Promise<EstadoEquipamiento[]> => {
+    try {
+      const response = await api.get<ApiResponse<EstadoEquipamiento[]>>(
+        '/catalogos/estados-equipamientos'
+      );
+
+      // Manejar diferentes formatos de respuesta
+      if (response.data.data) {
+        return response.data.data;
+      }
+      // Si el backend devuelve directamente el array
+      return Array.isArray(response.data) ? response.data : [];
+    } catch (error) {
+      console.error('[equipamientosApi.getEstados] Error:', error);
+      // Retornar array vacío en caso de error (graceful degradation)
+      return [];
+    }
+  },
+
+  /**
+   * Obtener información de disponibilidad de un equipamiento
+   * GET /api/equipamientos/:id/disponibilidad
+   * NUEVO: Según guía backend
+   *
+   * Retorna información sobre:
+   * - cantidadTotal: Stock total en inventario
+   * - cantidadAsignada: Suma de cantidades asignadas en aulas
+   * - cantidadDisponible: Total - Asignadas (puede ser negativo si hay déficit)
+   * - tieneDeficit: true si cantidadDisponible < 0
+   *
+   * @param id - ID del equipamiento
+   * @returns Equipamiento con información de disponibilidad
+   */
+  getDisponibilidad: async (id: number): Promise<EquipamientoDisponibilidadResponse['data']> => {
+    try {
+      const response = await api.get<EquipamientoDisponibilidadResponse>(
+        `${BASE_PATH}/${id}/disponibilidad`
+      );
+      return response.data.data;
+    } catch (error) {
+      console.error(`[equipamientosApi.getDisponibilidad] Error fetching disponibilidad for ID ${id}:`, error);
+      throw error;
     }
   },
 };

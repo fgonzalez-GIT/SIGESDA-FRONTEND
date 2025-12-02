@@ -11,23 +11,23 @@ const telefonoRegex = /^[\d\s\-\+\(\)]+$/;
 export const createContactoSchema = z.object({
   tipoContactoId: z.number().int().positive('Tipo de contacto requerido'),
   valor: z.string().min(1, 'Valor requerido').max(200).trim(),
-  descripcion: z.string().max(200).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  descripcion: z.string().max(200).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
   esPrincipal: z.boolean().default(false),
-  observaciones: z.string().max(200).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  observaciones: z.string().max(200).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
 });
 
 export const updateContactoSchema = z.object({
   tipoContactoId: z.number().int().positive().optional(),
   valor: z.string().min(1).max(200).trim().optional(),
-  descripcion: z.string().max(200).optional().or(z.literal('')),
+  descripcion: z.string().max(200).optional().nullable(),
   esPrincipal: z.boolean().optional(),
   activo: z.boolean().optional(),
-  observaciones: z.string().max(200).optional().or(z.literal('')),
+  observaciones: z.string().max(200).optional().nullable(),
 });
 
 const personaTipoBaseSchema = z.object({
   tipoPersonaCodigo: z.string().min(1).trim(),
-  observaciones: z.string().max(500).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  observaciones: z.string().max(500).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
 });
 
 export const createTipoSocioSchema = personaTipoBaseSchema.extend({
@@ -74,7 +74,7 @@ export const updatePersonaTipoSchema = z.object({
   cuit: z.string().min(11).max(13).regex(cuitRegex).optional(),
   razonSocialId: z.number().int().positive().optional(),
   activo: z.boolean().optional(),
-  observaciones: z.string().max(500).optional().or(z.literal('')),
+  observaciones: z.string().max(500).optional().nullable(),
 });
 
 export const createPersonaSchema = z.object({
@@ -82,11 +82,11 @@ export const createPersonaSchema = z.object({
   apellido: z.string().min(2).max(100).trim(),
   dni: z.string().regex(dniRegex).min(7).max(8),
   // Transformar strings vacíos a undefined para campos opcionales
-  email: z.string().regex(emailRegex).max(200).trim().optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
-  telefono: z.string().regex(telefonoRegex).max(50).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
-  direccion: z.string().max(300).trim().optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
-  fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
-  observaciones: z.string().max(1000).optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  email: z.string().regex(emailRegex).max(200).trim().optional().nullable().transform(val => val === '' || val === null ? undefined : val),
+  telefono: z.string().regex(telefonoRegex).max(50).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
+  direccion: z.string().max(300).trim().optional().nullable().transform(val => val === '' || val === null ? undefined : val),
+  fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
+  observaciones: z.string().max(1000).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
   tipos: z.array(createPersonaTipoSchema).optional().default([]),
   contactos: z.array(createContactoSchema).optional().default([]),
 }).refine(data => data.tipos && data.tipos.length > 0, {
@@ -129,18 +129,18 @@ export const updatePersonaSchema = z.object({
   nombre: z.string().min(2).max(100).trim().optional(),
   apellido: z.string().min(2).max(100).trim().optional(),
   dni: z.string().regex(dniRegex).min(7).max(8).optional(),
-  email: z.string().regex(emailRegex).max(200).trim().optional().or(z.literal('')),
-  telefono: z.string().regex(telefonoRegex).max(50).optional().or(z.literal('')),
-  direccion: z.string().max(300).trim().optional().or(z.literal('')),
-  fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
+  email: z.string().regex(emailRegex).max(200).trim().optional().nullable(),
+  telefono: z.string().regex(telefonoRegex).max(50).optional().nullable(),
+  direccion: z.string().max(300).trim().optional().nullable(),
+  fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   estado: z.enum(['ACTIVO', 'INACTIVO', 'SUSPENDIDO']).optional(),
-  observaciones: z.string().max(1000).optional().or(z.literal('')),
+  observaciones: z.string().max(1000).optional().nullable(),
 });
 
 export const createTipoPersonaSchema = z.object({
   codigo: z.string().min(2).max(50).regex(/^[A-Z_]+$/).transform(val => val.toUpperCase()),
   nombre: z.string().min(3).max(100).trim(),
-  descripcion: z.string().max(300).optional().or(z.literal('')),
+  descripcion: z.string().max(300).optional().nullable(),
   requiresCategoria: z.boolean().default(false),
   requiresEspecialidad: z.boolean().default(false),
   requiresCuit: z.boolean().default(false),
@@ -149,7 +149,7 @@ export const createTipoPersonaSchema = z.object({
 
 export const updateTipoPersonaSchema = z.object({
   nombre: z.string().min(3).max(100).trim().optional(),
-  descripcion: z.string().max(300).optional().or(z.literal('')),
+  descripcion: z.string().max(300).optional().nullable(),
   requiresCategoria: z.boolean().optional(),
   requiresEspecialidad: z.boolean().optional(),
   requiresCuit: z.boolean().optional(),
@@ -160,13 +160,13 @@ export const updateTipoPersonaSchema = z.object({
 export const createEspecialidadDocenteSchema = z.object({
   codigo: z.string().min(2).max(50).regex(/^[A-Z_]+$/).transform(val => val.toUpperCase()),
   nombre: z.string().min(3).max(100).trim(),
-  descripcion: z.string().max(300).optional().or(z.literal('')),
+  descripcion: z.string().max(300).optional().nullable(),
   orden: z.number().int().positive().optional(),
 });
 
 export const updateEspecialidadDocenteSchema = z.object({
   nombre: z.string().min(3).max(100).trim().optional(),
-  descripcion: z.string().max(300).optional().or(z.literal('')),
+  descripcion: z.string().max(300).optional().nullable(),
   activo: z.boolean().optional(),
   orden: z.number().int().positive().optional(),
 });
@@ -174,15 +174,15 @@ export const updateEspecialidadDocenteSchema = z.object({
 export const createTipoContactoSchema = z.object({
   codigo: z.string().min(2).max(50).regex(/^[A-Z_]+$/).transform(val => val.toUpperCase()),
   nombre: z.string().min(3).max(100).trim(),
-  descripcion: z.string().max(300).optional().or(z.literal('')),
-  icono: z.string().max(50).optional().or(z.literal('')),
+  descripcion: z.string().max(300).optional().nullable(),
+  icono: z.string().max(50).optional().nullable(),
   orden: z.number().int().positive().optional(),
 });
 
 export const updateTipoContactoSchema = z.object({
   nombre: z.string().min(3).max(100).trim().optional(),
-  descripcion: z.string().max(300).optional().or(z.literal('')),
-  icono: z.string().max(50).optional().or(z.literal('')),
+  descripcion: z.string().max(300).optional().nullable(),
+  icono: z.string().max(50).optional().nullable(),
   activo: z.boolean().optional(),
   orden: z.number().int().positive().optional(),
 });

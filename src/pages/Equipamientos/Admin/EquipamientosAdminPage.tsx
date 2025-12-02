@@ -54,10 +54,12 @@ import {
   type CreateEquipamientoFormData,
   type UpdateEquipamientoFormData,
 } from '@/schemas/equipamiento.schema';
-import type { Equipamiento, CategoriaEquipamiento } from '@/types/equipamiento.types';
+import type { Equipamiento, CategoriaEquipamiento, EstadoEquipamiento } from '@/types/equipamiento.types';
 import {
   getCategoriaLabel,
   getCategoriaColor,
+  getEstadoLabel,
+  getEstadoColor,
 } from '@/types/equipamiento.types';
 import { equipamientosApi } from '@/services/equipamientosApi';
 
@@ -78,11 +80,19 @@ const EquipamientosAdminPage: React.FC = () => {
   const [itemToView, setItemToView] = useState<Equipamiento | null>(null);
   const [showInactive, setShowInactive] = useState(false);
 
+  // NUEVO: Estados para filtros
+  const [filtroEstadoId, setFiltroEstadoId] = useState<number | ''>('');
+  const [filtroSoloConStock, setFiltroSoloConStock] = useState(false);
+
   // Estado para categorías
   const [categorias, setCategorias] = useState<CategoriaEquipamiento[]>([]);
   const [loadingCategorias, setLoadingCategorias] = useState(false);
 
-  // Cargar equipamientos y categorías al montar
+  // NUEVO: Estado para estados de equipamiento
+  const [estados, setEstados] = useState<EstadoEquipamiento[]>([]);
+  const [loadingEstados, setLoadingEstados] = useState(false);
+
+  // Cargar equipamientos, categorías y estados al montar
   useEffect(() => {
     // Cargar todos los equipamientos (activos e inactivos)
     // El filtrado se hace en el frontend según showInactive
@@ -101,7 +111,21 @@ const EquipamientosAdminPage: React.FC = () => {
       }
     };
 
+    // NUEVO: Cargar estados desde API
+    const loadEstados = async () => {
+      setLoadingEstados(true);
+      try {
+        const ests = await equipamientosApi.getEstados();
+        setEstados(ests);
+      } catch (error) {
+        console.error('Error al cargar estados:', error);
+      } finally {
+        setLoadingEstados(false);
+      }
+    };
+
     loadCategorias();
+    loadEstados();
   }, [dispatch]);
 
   // Form hook
@@ -118,6 +142,8 @@ const EquipamientosAdminPage: React.FC = () => {
           descripcion: selectedItem.descripcion || '',
           observaciones: selectedItem.observaciones || '',
           categoriaEquipamientoId: selectedItem.categoriaEquipamiento?.id,
+          estadoEquipamientoId: selectedItem.estadoEquipamientoId, // NUEVO
+          cantidad: selectedItem.cantidad || 1, // NUEVO
           orden: selectedItem.orden,
         }
       : {
@@ -125,6 +151,8 @@ const EquipamientosAdminPage: React.FC = () => {
           descripcion: '',
           observaciones: '',
           categoriaEquipamientoId: '' as any,
+          estadoEquipamientoId: '' as any, // NUEVO
+          cantidad: 1, // NUEVO: Default 1
           orden: 0,
         },
   });
@@ -137,6 +165,8 @@ const EquipamientosAdminPage: React.FC = () => {
         descripcion: selectedItem.descripcion || '',
         observaciones: selectedItem.observaciones || '',
         categoriaEquipamientoId: selectedItem.categoriaEquipamiento?.id,
+        estadoEquipamientoId: selectedItem.estadoEquipamientoId, // NUEVO
+        cantidad: selectedItem.cantidad || 1, // NUEVO
         orden: selectedItem.orden,
       });
     } else {
@@ -145,6 +175,8 @@ const EquipamientosAdminPage: React.FC = () => {
         descripcion: '',
         observaciones: '',
         categoriaEquipamientoId: '' as any,
+        estadoEquipamientoId: '' as any, // NUEVO
+        cantidad: 1, // NUEVO
         orden: 0,
       });
     }
@@ -180,9 +212,17 @@ const EquipamientosAdminPage: React.FC = () => {
     if (itemToView) {
       const itemToEdit = itemToView;
 
-      // Eliminar el foco de cualquier elemento activo antes de cerrar el Dialog
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
+      // Guardar referencia al botón enfocado antes de cerrar
+      const activeElement = document.activeElement;
+
+      // Mover el foco a un elemento seguro (body) antes de cerrar el dialog
+      if (activeElement instanceof HTMLElement && activeElement.blur) {
+        activeElement.blur();
+      }
+
+      // Enfocar temporalmente en body para liberar el foco del dialog
+      if (document.body) {
+        document.body.focus();
       }
 
       // Primero cerrar el dialog de detalle completamente
@@ -194,7 +234,7 @@ const EquipamientosAdminPage: React.FC = () => {
       setTimeout(() => {
         setSelectedItem(itemToEdit);
         setFormOpen(true);
-      }, 200);
+      }, 300);
     }
   };
 
@@ -297,10 +337,19 @@ const EquipamientosAdminPage: React.FC = () => {
     }
   };
 
-  // Filtrar según estado showInactive
-  const itemsFiltrados = showInactive
-    ? items // Mostrar todos (activos e inactivos)
-    : items.filter((item) => item.activo); // Solo activos
+  // Filtrar según múltiples criterios
+  const itemsFiltrados = items.filter((item) => {
+    // Filtro por activo/inactivo
+    if (!showInactive && !item.activo) return false;
+
+    // NUEVO: Filtro por estado de equipamiento
+    if (filtroEstadoId && item.estadoEquipamientoId !== filtroEstadoId) return false;
+
+    // NUEVO: Filtro por stock (solo con cantidad > 0)
+    if (filtroSoloConStock && (!item.cantidad || item.cantidad <= 0)) return false;
+
+    return true;
+  });
 
   // Ordenar items filtrados
   const itemsOrdenados = [...itemsFiltrados].sort((a, b) => {
@@ -321,16 +370,6 @@ const EquipamientosAdminPage: React.FC = () => {
           </Typography>
         </Box>
         <Box display="flex" gap={2} alignItems="center">
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showInactive}
-                onChange={(e) => setShowInactive(e.target.checked)}
-                color="warning"
-              />
-            }
-            label="Mostrar equipamientos eliminados"
-          />
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -342,6 +381,73 @@ const EquipamientosAdminPage: React.FC = () => {
           </Button>
         </Box>
       </Box>
+
+      {/* NUEVO: Barra de filtros */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mr: 1 }}>
+            Filtros:
+          </Typography>
+
+          {/* Filtro por Estado */}
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Estado del Equipamiento</InputLabel>
+            <Select
+              value={filtroEstadoId}
+              onChange={(e) => setFiltroEstadoId(e.target.value as number | '')}
+              label="Estado del Equipamiento"
+              disabled={loadingEstados}
+            >
+              <MenuItem value="">
+                <em>Todos los estados</em>
+              </MenuItem>
+              {estados.map((est) => (
+                <MenuItem key={est.id} value={est.id}>
+                  {est.nombre}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Filtro Solo con Stock */}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={filtroSoloConStock}
+                onChange={(e) => setFiltroSoloConStock(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Solo con stock"
+          />
+
+          {/* Mostrar Inactivos */}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showInactive}
+                onChange={(e) => setShowInactive(e.target.checked)}
+                color="warning"
+              />
+            }
+            label="Mostrar eliminados"
+          />
+
+          {/* Botón para limpiar filtros */}
+          {(filtroEstadoId || filtroSoloConStock) && (
+            <Button
+              size="small"
+              onClick={() => {
+                setFiltroEstadoId('');
+                setFiltroSoloConStock(false);
+              }}
+              sx={{ ml: 'auto' }}
+            >
+              Limpiar filtros
+            </Button>
+          )}
+        </Box>
+      </Paper>
 
       {/* Info */}
       <Alert severity="info" sx={{ mb: 3 }}>
@@ -368,7 +474,13 @@ const EquipamientosAdminPage: React.FC = () => {
                 Categoría
               </TableCell>
               <TableCell width="100px" align="center">
-                Estado
+                Estado Equip.
+              </TableCell>
+              <TableCell width="80px" align="center">
+                Cantidad
+              </TableCell>
+              <TableCell width="100px" align="center">
+                Activo
               </TableCell>
               <TableCell width="80px" align="center">
                 Orden
@@ -381,13 +493,13 @@ const EquipamientosAdminPage: React.FC = () => {
           <TableBody>
             {loading && items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center">
+                <TableCell colSpan={8} align="center">
                   <CircularProgress size={40} />
                 </TableCell>
               </TableRow>
             ) : itemsOrdenados.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center">
+                <TableCell colSpan={8} align="center">
                   <Typography variant="body2" color="text.secondary">
                     No hay equipamientos creados
                   </Typography>
@@ -422,6 +534,27 @@ const EquipamientosAdminPage: React.FC = () => {
                         size="small"
                       />
                     </TableCell>
+                    {/* NUEVO: Columna de Estado del Equipamiento */}
+                    <TableCell align="center">
+                      {item.estadoEquipamiento ? (
+                        <Chip
+                          label={getEstadoLabel(item.estadoEquipamiento)}
+                          color={getEstadoColor(item.estadoEquipamiento)}
+                          size="small"
+                        />
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          -
+                        </Typography>
+                      )}
+                    </TableCell>
+                    {/* NUEVO: Columna de Cantidad */}
+                    <TableCell align="center">
+                      <Typography variant="body2" fontWeight="medium">
+                        {item.cantidad || 0}
+                      </Typography>
+                    </TableCell>
+                    {/* Columna de Activo (soft delete) */}
                     <TableCell align="center">
                       <Chip
                         label={item.activo ? 'Activo' : 'Inactivo'}
@@ -466,7 +599,14 @@ const EquipamientosAdminPage: React.FC = () => {
       </TableContainer>
 
       {/* Formulario Dialog */}
-      <Dialog open={formOpen} onClose={handleFormClose} maxWidth="sm" fullWidth>
+      <Dialog
+        open={formOpen}
+        onClose={handleFormClose}
+        maxWidth="sm"
+        fullWidth
+        disableEnforceFocus
+        disableRestoreFocus
+      >
         <form onSubmit={handleSubmit(handleFormSubmit)}>
           <DialogTitle>
             {selectedItem ? 'Editar Equipamiento' : 'Nuevo Equipamiento'}
@@ -549,6 +689,59 @@ const EquipamientosAdminPage: React.FC = () => {
                 )}
               />
 
+              {/* NUEVO: Campo de estado de equipamiento */}
+              <Controller
+                name="estadoEquipamientoId"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.estadoEquipamientoId}>
+                    <InputLabel>Estado</InputLabel>
+                    <Select {...field} label="Estado" disabled={loadingEstados}>
+                      <MenuItem value="">
+                        <em>Sin estado</em>
+                      </MenuItem>
+                      {loadingEstados ? (
+                        <MenuItem value="" disabled>Cargando...</MenuItem>
+                      ) : estados.length === 0 ? (
+                        <MenuItem value="" disabled>No hay estados disponibles</MenuItem>
+                      ) : (
+                        estados.map((est) => (
+                          <MenuItem key={est.id} value={est.id}>
+                            {est.nombre}
+                          </MenuItem>
+                        ))
+                      )}
+                    </Select>
+                    {errors.estadoEquipamientoId && (
+                      <FormHelperText>{errors.estadoEquipamientoId.message}</FormHelperText>
+                    )}
+                    <FormHelperText>
+                      Estado del equipamiento (Nuevo, Usado, etc.)
+                    </FormHelperText>
+                  </FormControl>
+                )}
+              />
+
+              {/* NUEVO: Campo de cantidad */}
+              <Controller
+                name="cantidad"
+                control={control}
+                render={({ field: { value, onChange, ...field } }) => (
+                  <TextField
+                    {...field}
+                    value={value ?? 1}
+                    onChange={(e) => onChange(parseInt(e.target.value) || 1)}
+                    label="Cantidad"
+                    type="number"
+                    placeholder="1"
+                    error={!!errors.cantidad}
+                    helperText={errors.cantidad?.message || 'Stock total del equipamiento (mínimo: 1)'}
+                    inputProps={{ min: 1 }}
+                    fullWidth
+                  />
+                )}
+              />
+
               <Controller
                 name="orden"
                 control={control}
@@ -580,7 +773,13 @@ const EquipamientosAdminPage: React.FC = () => {
       </Dialog>
 
       {/* Detalle Dialog */}
-      <Dialog open={detailDialogOpen} onClose={handleDetailDialogClose} maxWidth="md" fullWidth>
+      <Dialog
+        open={detailDialogOpen}
+        onClose={handleDetailDialogClose}
+        maxWidth="md"
+        fullWidth
+        disableEnforceFocus
+      >
         <DialogTitle>Detalles del Equipamiento</DialogTitle>
         <DialogContent>
           {itemToView && (
@@ -622,9 +821,39 @@ const EquipamientosAdminPage: React.FC = () => {
                   </Box>
                 </Box>
 
+                {/* NUEVO: Estado del Equipamiento */}
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    Estado
+                    Estado del Equipamiento
+                  </Typography>
+                  <Box sx={{ mt: 0.5 }}>
+                    {itemToView.estadoEquipamiento ? (
+                      <Chip
+                        label={getEstadoLabel(itemToView.estadoEquipamiento)}
+                        color={getEstadoColor(itemToView.estadoEquipamiento)}
+                        size="small"
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        Sin estado
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+
+                {/* NUEVO: Cantidad */}
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Cantidad/Stock
+                  </Typography>
+                  <Typography variant="body1" fontWeight="medium">
+                    {itemToView.cantidad || 0} unidades
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Activo
                   </Typography>
                   <Box sx={{ mt: 0.5 }}>
                     <Chip
@@ -715,7 +944,11 @@ const EquipamientosAdminPage: React.FC = () => {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        disableEnforceFocus
+      >
         <DialogTitle>Confirmar Eliminación</DialogTitle>
         <DialogContent>
           <DialogContentText>

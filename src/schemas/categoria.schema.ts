@@ -19,7 +19,7 @@ export const createCategoriaSchema = z.object({
   descripcion: z.string()
     .max(200, 'Descripción no puede exceder 200 caracteres')
     .optional()
-    .or(z.literal('')),
+    .nullable(),
 
   montoCuota: z.number({
     required_error: 'Monto de cuota es requerido',
@@ -62,7 +62,7 @@ export const updateCategoriaSchema = z.object({
   descripcion: z.string()
     .max(200, 'Descripción no puede exceder 200 caracteres')
     .optional()
-    .or(z.literal('')),
+    .nullable(),
 
   montoCuota: z.number()
     .min(0, 'Monto de cuota debe ser mayor o igual a 0')

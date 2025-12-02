@@ -23,15 +23,15 @@ export const createEquipamientoSchema = z.object({
     .string()
     .max(500, 'Descripción no puede exceder 500 caracteres')
     .optional()
-    .or(z.literal(''))
-    .transform((val) => (val === '' ? undefined : val)),
+    .nullable()
+    .transform((val) => (val === '' || val === null ? undefined : val)),
 
   observaciones: z
     .string()
     .max(1000, 'Observaciones no puede exceder 1000 caracteres')
     .optional()
-    .or(z.literal(''))
-    .transform((val) => (val === '' ? undefined : val)),
+    .nullable()
+    .transform((val) => (val === '' || val === null ? undefined : val)),
 
   categoriaEquipamientoId: z
     .number({
@@ -40,6 +40,25 @@ export const createEquipamientoSchema = z.object({
     })
     .int('Categoría debe ser un ID válido')
     .positive('Debe seleccionar una categoría'),
+
+  // NUEVO: Estado del equipamiento (opcional, nullable)
+  estadoEquipamientoId: z
+    .number({
+      invalid_type_error: 'Estado inválido',
+    })
+    .int('Estado debe ser un ID válido')
+    .positive('Debe seleccionar un estado')
+    .optional(),
+
+  // NUEVO: Cantidad/stock total (default: 1 en backend si no se envía)
+  cantidad: z
+    .number({
+      invalid_type_error: 'Cantidad debe ser un número',
+    })
+    .int('Cantidad debe ser un número entero')
+    .min(1, 'Cantidad debe ser al menos 1')
+    .optional()
+    .default(1),
 
   orden: z
     .number()
@@ -65,15 +84,15 @@ export const updateEquipamientoSchema = z.object({
     .string()
     .max(500, 'Descripción no puede exceder 500 caracteres')
     .optional()
-    .or(z.literal(''))
-    .transform((val) => (val === '' ? undefined : val)),
+    .nullable()
+    .transform((val) => (val === '' || val === null ? undefined : val)),
 
   observaciones: z
     .string()
     .max(1000, 'Observaciones no puede exceder 1000 caracteres')
     .optional()
-    .or(z.literal(''))
-    .transform((val) => (val === '' ? undefined : val)),
+    .nullable()
+    .transform((val) => (val === '' || val === null ? undefined : val)),
 
   categoriaEquipamientoId: z
     .number({
@@ -81,6 +100,24 @@ export const updateEquipamientoSchema = z.object({
     })
     .int('Categoría debe ser un ID válido')
     .positive('Debe seleccionar una categoría')
+    .optional(),
+
+  // NUEVO: Actualizar estado del equipamiento
+  estadoEquipamientoId: z
+    .number({
+      invalid_type_error: 'Estado inválido',
+    })
+    .int('Estado debe ser un ID válido')
+    .positive('Debe seleccionar un estado')
+    .optional(),
+
+  // NUEVO: Actualizar cantidad/stock total
+  cantidad: z
+    .number({
+      invalid_type_error: 'Cantidad debe ser un número',
+    })
+    .int('Cantidad debe ser un número entero')
+    .min(1, 'Cantidad debe ser al menos 1')
     .optional(),
 
   activo: z.boolean().optional(),
@@ -101,6 +138,8 @@ export const equipamientoQuerySchema = z.object({
   includeInactive: z.boolean().optional(),
   search: z.string().optional(),
   categoriaId: z.number().optional(),
+  estadoEquipamientoId: z.number().optional(), // NUEVO: Filtrar por estado
+  conStock: z.boolean().optional(), // NUEVO: Solo equipamiento con cantidad > 0
 });
 
 // ==================== TIPOS INFERIDOS ====================

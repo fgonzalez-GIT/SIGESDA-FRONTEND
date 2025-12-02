@@ -25,7 +25,7 @@ export const categoriaActividadSchema = z.object({
     .string()
     .max(500, 'La descripción no puede exceder 500 caracteres')
     .optional()
-    .or(z.literal('')),
+    .nullable(),
 
   orden: z
     .number()

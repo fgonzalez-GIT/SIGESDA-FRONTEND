@@ -18,6 +18,9 @@ export interface Equipamiento {
   observaciones?: string | null;
   categoriaEquipamientoId: number;
   categoriaEquipamiento: CategoriaEquipamiento;
+  estadoEquipamientoId?: number; // NUEVO: ID del estado del equipamiento (nullable)
+  estadoEquipamiento?: EstadoEquipamiento; // NUEVO: Relación con estado del equipamiento
+  cantidad: number; // NUEVO: Cantidad/stock total del equipamiento (default: 1)
   activo: boolean;
   orden: number;
   createdAt?: string;
@@ -33,6 +36,22 @@ export interface Equipamiento {
  * Categoría de equipamiento (entidad del backend)
  */
 export interface CategoriaEquipamiento {
+  id: number;
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  color?: string;
+  activo: boolean;
+  orden: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Estado de equipamiento (entidad del backend)
+ * Representa el estado actual del equipamiento (Nuevo, Usado, En Reparación, etc.)
+ */
+export interface EstadoEquipamiento {
   id: number;
   codigo: string;
   nombre: string;
@@ -88,6 +107,56 @@ export const CATEGORIA_EQUIPAMIENTO_COLORS: Record<CategoriaEquipamientoCodigo, 
   OTRO: 'default',
 };
 
+/**
+ * Código de estado de equipamiento (según guía backend)
+ */
+export type EstadoEquipamientoCodigo =
+  | 'NUEVO'
+  | 'USADO'
+  | 'EN_REPARACION'
+  | 'ROTO'
+  | 'DADO_DE_BAJA';
+
+export const ESTADOS_EQUIPAMIENTO_CODIGOS: EstadoEquipamientoCodigo[] = [
+  'NUEVO',
+  'USADO',
+  'EN_REPARACION',
+  'ROTO',
+  'DADO_DE_BAJA',
+];
+
+/**
+ * Labels legibles para estados (fallback si no viene del backend)
+ */
+export const ESTADO_EQUIPAMIENTO_LABELS: Record<EstadoEquipamientoCodigo, string> = {
+  NUEVO: 'Nuevo',
+  USADO: 'Usado',
+  EN_REPARACION: 'En Reparación',
+  ROTO: 'Roto',
+  DADO_DE_BAJA: 'Dado de Baja',
+};
+
+/**
+ * Colores para chips de estados (MUI palette)
+ */
+export const ESTADO_EQUIPAMIENTO_COLORS: Record<EstadoEquipamientoCodigo, 'primary' | 'secondary' | 'success' | 'warning' | 'info' | 'error' | 'default'> = {
+  NUEVO: 'success',
+  USADO: 'info',
+  EN_REPARACION: 'warning',
+  ROTO: 'error',
+  DADO_DE_BAJA: 'default',
+};
+
+/**
+ * Estados que bloquean la asignación de equipamiento a aulas
+ * Según guía: ROTO, EN_REPARACION, DADO_DE_BAJA no pueden asignarse
+ */
+export const ESTADOS_BLOQUEADOS: EstadoEquipamientoCodigo[] = [
+  'ROTO',
+  'EN_REPARACION',
+  'DADO_DE_BAJA',
+];
+
 // ==================== DTOs ====================
 
 /**
@@ -99,6 +168,8 @@ export interface CreateEquipamientoDto {
   descripcion?: string;
   observaciones?: string;
   categoriaEquipamientoId: number;
+  estadoEquipamientoId?: number; // NUEVO: Estado del equipamiento (opcional, nullable)
+  cantidad?: number; // NUEVO: Cantidad/stock total (default: 1 en backend)
   orden?: number;
 }
 
@@ -111,6 +182,8 @@ export interface UpdateEquipamientoDto {
   descripcion?: string;
   observaciones?: string;
   categoriaEquipamientoId?: number;
+  estadoEquipamientoId?: number; // NUEVO: Actualizar estado
+  cantidad?: number; // NUEVO: Actualizar cantidad/stock
   activo?: boolean;
   orden?: number;
 }
@@ -129,6 +202,8 @@ export interface EquipamientoQueryParams {
   includeInactive?: boolean;
   search?: string;
   categoria?: CategoriaEquipamiento;
+  estadoEquipamientoId?: number; // NUEVO: Filtrar por estado
+  conStock?: boolean; // NUEVO: Solo equipamiento con cantidad > 0
 }
 
 // ==================== API RESPONSES ====================
@@ -149,6 +224,29 @@ export interface EquipamientoListResponse {
   success: boolean;
   data: Equipamiento[];
   total: number;
+  message?: string;
+}
+
+/**
+ * Información de disponibilidad de un equipamiento
+ * NUEVO: Según guía backend
+ */
+export interface DisponibilidadInfo {
+  cantidadTotal: number;        // Stock total en inventario
+  cantidadAsignada: number;     // Suma de cantidades asignadas en aulas
+  cantidadDisponible: number;   // Total - Asignadas (puede ser negativo si hay déficit)
+  tieneDeficit: boolean;        // true si cantidadDisponible < 0
+}
+
+/**
+ * Response del endpoint de disponibilidad
+ * GET /api/equipamientos/:id/disponibilidad
+ */
+export interface EquipamientoDisponibilidadResponse {
+  success: boolean;
+  data: Equipamiento & {
+    disponibilidad: DisponibilidadInfo;
+  };
   message?: string;
 }
 
@@ -211,4 +309,54 @@ export const groupByCategoria = (equipamientos: Equipamiento[]): Record<string, 
   });
 
   return grouped;
+};
+
+/**
+ * Obtiene el label legible de un estado
+ * NUEVO: Helper para estados de equipamiento
+ */
+export const getEstadoLabel = (estado: EstadoEquipamiento | undefined): string => {
+  // Si estado es un objeto (del backend), usar su nombre
+  if (estado && typeof estado === 'object' && estado.nombre) {
+    return estado.nombre;
+  }
+  // Fallback
+  return 'Sin estado';
+};
+
+/**
+ * Obtiene el color del chip de un estado
+ * NUEVO: Helper para estados de equipamiento
+ */
+export const getEstadoColor = (estado: EstadoEquipamiento | undefined): 'primary' | 'secondary' | 'success' | 'warning' | 'info' | 'error' | 'default' => {
+  // Si estado es un objeto y tiene color definido, usarlo
+  if (estado && typeof estado === 'object' && estado.color) {
+    return estado.color as any;
+  }
+  // Fallback a colores por código
+  if (estado && typeof estado === 'object' && estado.codigo) {
+    const codigo = estado.codigo as EstadoEquipamientoCodigo;
+    return ESTADO_EQUIPAMIENTO_COLORS[codigo] || 'default';
+  }
+  return 'default';
+};
+
+/**
+ * Verifica si un equipamiento está en un estado bloqueado (no se puede asignar a aulas)
+ * NUEVO: Validación según guía backend
+ * Estados bloqueados: ROTO, EN_REPARACION, DADO_DE_BAJA
+ */
+export const isEstadoBloqueado = (estado: EstadoEquipamiento | undefined): boolean => {
+  if (!estado || !estado.codigo) return false;
+  return ESTADOS_BLOQUEADOS.includes(estado.codigo as EstadoEquipamientoCodigo);
+};
+
+/**
+ * Verifica si un equipamiento puede asignarse a un aula
+ * NUEVO: Validación combinada (activo + estado no bloqueado)
+ */
+export const puedeAsignarse = (equipamiento: Equipamiento): boolean => {
+  if (!equipamiento.activo) return false;
+  if (isEstadoBloqueado(equipamiento.estadoEquipamiento)) return false;
+  return true;
 };

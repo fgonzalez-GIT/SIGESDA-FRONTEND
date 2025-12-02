@@ -30,7 +30,15 @@ import {
 import { useAppSelector } from '@/hooks/redux';
 import type { AulaEquipamiento } from '@/types/aula.types';
 import type { Equipamiento } from '@/types/equipamiento.types';
-import { getCategoriaLabel, getCategoriaColor } from '@/types/equipamiento.types';
+import {
+  getCategoriaLabel,
+  getCategoriaColor,
+  puedeAsignarse,
+  isEstadoBloqueado,
+  getEstadoLabel,
+  getEstadoColor,
+} from '@/types/equipamiento.types';
+import { DisponibilidadInfo } from '@/components/equipamientos/DisponibilidadInfo';
 
 interface AulaEquipamientoManagerProps {
   value: AulaEquipamiento[];
@@ -91,6 +99,17 @@ export const AulaEquipamientoManager: React.FC<AulaEquipamientoManagerProps> = (
       return;
     }
 
+    // NUEVO: Validar que el equipamiento pueda asignarse (no esté bloqueado)
+    const equipamiento = getEquipamientoById(selectedEquipamientoId as number);
+    if (equipamiento && !puedeAsignarse(equipamiento)) {
+      const estado = equipamiento.estadoEquipamiento;
+      const estadoTexto = estado ? getEstadoLabel(estado) : 'no disponible';
+      setValidationError(
+        `No se puede asignar este equipamiento porque está en estado "${estadoTexto}"`
+      );
+      return;
+    }
+
     // Agregar nuevo equipamiento
     const nuevoEquipamiento: AulaEquipamiento = {
       equipamientoId: selectedEquipamientoId as number,
@@ -133,6 +152,17 @@ export const AulaEquipamientoManager: React.FC<AulaEquipamientoManagerProps> = (
 
     if (isEquipamientoDuplicado(selectedEquipamientoId as number)) {
       setValidationError('Este equipamiento ya fue agregado');
+      return;
+    }
+
+    // NUEVO: Validar que el equipamiento pueda asignarse (no esté bloqueado)
+    const equipamiento = getEquipamientoById(selectedEquipamientoId as number);
+    if (equipamiento && !puedeAsignarse(equipamiento)) {
+      const estado = equipamiento.estadoEquipamiento;
+      const estadoTexto = estado ? getEstadoLabel(estado) : 'no disponible';
+      setValidationError(
+        `No se puede asignar este equipamiento porque está en estado "${estadoTexto}"`
+      );
       return;
     }
 
@@ -226,6 +256,23 @@ export const AulaEquipamientoManager: React.FC<AulaEquipamientoManagerProps> = (
               inputProps={{ maxLength: 500 }}
             />
           </Box>
+
+          {/* NUEVO: Mostrar disponibilidad del equipamiento seleccionado */}
+          {selectedEquipamientoId && (
+            <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
+              <DisponibilidadInfo
+                equipamientoId={selectedEquipamientoId as number}
+                compact={false}
+                showProgress={true}
+              />
+              {cantidad && (
+                <Alert severity="info" sx={{ mt: 1 }}>
+                  Vas a asignar <strong>{cantidad} unidades</strong> de este equipamiento al aula.
+                  Verifica que haya disponibilidad suficiente.
+                </Alert>
+              )}
+            </Paper>
+          )}
 
           {/* Botones de Acción */}
           <Box sx={{ display: 'flex', gap: 1 }}>

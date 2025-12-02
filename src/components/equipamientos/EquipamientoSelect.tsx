@@ -18,7 +18,14 @@ import {
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchEquipamientos } from '@/store/slices/equipamientosSlice';
 import type { Equipamiento, CategoriaEquipamientoCodigo } from '@/types/equipamiento.types';
-import { getCategoriaLabel, getCategoriaColor } from '@/types/equipamiento.types';
+import {
+  getCategoriaLabel,
+  getCategoriaColor,
+  getEstadoLabel,
+  getEstadoColor,
+  puedeAsignarse,
+  isEstadoBloqueado,
+} from '@/types/equipamiento.types';
 
 interface EquipamientoSelectProps {
   value: number[]; // Array de IDs de equipamientos seleccionados
@@ -30,6 +37,9 @@ interface EquipamientoSelectProps {
   multiple?: boolean; // true = multi-select, false = single select
   groupByCategory?: boolean; // Agrupar por categoría
   showOnlyActive?: boolean; // Mostrar solo activos
+  soloAsignables?: boolean; // NUEVO: Filtrar equipamientos no asignables (estados bloqueados)
+  mostrarCantidad?: boolean; // NUEVO: Mostrar cantidad en opciones
+  mostrarEstado?: boolean; // NUEVO: Mostrar estado en opciones
 }
 
 // Mapeo de iconos por código de categoría
@@ -58,6 +68,9 @@ export const EquipamientoSelect: React.FC<EquipamientoSelectProps> = ({
   multiple = true,
   groupByCategory = false,
   showOnlyActive = true,
+  soloAsignables = false,
+  mostrarCantidad = false,
+  mostrarEstado = false,
 }) => {
   const dispatch = useAppDispatch();
   const { items, loading } = useAppSelector((state) => state.equipamientos);
@@ -70,9 +83,14 @@ export const EquipamientoSelect: React.FC<EquipamientoSelectProps> = ({
   }, [dispatch, items.length, showOnlyActive]);
 
   // Filtrar equipamientos
-  const equipamientosFiltrados = showOnlyActive
+  let equipamientosFiltrados = showOnlyActive
     ? items.filter((eq) => eq.activo)
     : items;
+
+  // NUEVO: Filtrar solo asignables (excluir estados bloqueados)
+  if (soloAsignables) {
+    equipamientosFiltrados = equipamientosFiltrados.filter((eq) => puedeAsignarse(eq));
+  }
 
   // Ordenar por orden y nombre
   const equipamientosOrdenados = [...equipamientosFiltrados].sort((a, b) => {
@@ -125,6 +143,7 @@ export const EquipamientoSelect: React.FC<EquipamientoSelectProps> = ({
       loading={loading}
       getOptionLabel={(option) => (option as Equipamiento).nombre}
       isOptionEqualToValue={(option, value) => (option as Equipamiento).id === (value as Equipamiento).id}
+      getOptionDisabled={(option) => !puedeAsignarse(option as Equipamiento)} // NUEVO: Deshabilitar estados bloqueados
       groupBy={getGroupBy}
       renderInput={(params) => (
         <TextField
@@ -147,32 +166,61 @@ export const EquipamientoSelect: React.FC<EquipamientoSelectProps> = ({
       renderOption={(props, option) => {
         const { key, ...restProps } = props as any;
         const eq = option as Equipamiento;
+        const esBloqueado = isEstadoBloqueado(eq.estadoEquipamiento);
+
         return (
           <Box
             component="li"
             key={key}
             {...restProps}
-            sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              opacity: esBloqueado ? 0.6 : 1,
+            }}
           >
             {categoriaIcons[eq.categoriaEquipamiento?.codigo] || categoriaIcons['OTRO']}
             <Box sx={{ flex: 1 }}>
-              <Typography variant="body1">
-                {eq.nombre}
-                {!eq.activo && ' (Inactivo)'}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography variant="body1">
+                  {eq.nombre}
+                  {!eq.activo && ' (Inactivo)'}
+                  {esBloqueado && ' (No disponible)'}
+                </Typography>
+                {/* NUEVO: Mostrar cantidad */}
+                {mostrarCantidad && eq.cantidad !== undefined && (
+                  <Chip
+                    label={`Stock: ${eq.cantidad}`}
+                    size="small"
+                    variant="outlined"
+                    color={eq.cantidad > 0 ? 'default' : 'error'}
+                  />
+                )}
+              </Box>
               {eq.descripcion && (
                 <Typography variant="caption" color="text.secondary">
                   {eq.descripcion}
                 </Typography>
               )}
             </Box>
-            <Chip
-              label={getCategoriaLabel(eq.categoriaEquipamiento)}
-              size="small"
-              color={getCategoriaColor(eq.categoriaEquipamiento)}
-              variant="outlined"
-              sx={{ ml: 'auto' }}
-            />
+            <Box sx={{ display: 'flex', gap: 0.5, ml: 'auto' }}>
+              {/* NUEVO: Mostrar estado */}
+              {mostrarEstado && eq.estadoEquipamiento && (
+                <Chip
+                  label={getEstadoLabel(eq.estadoEquipamiento)}
+                  size="small"
+                  color={getEstadoColor(eq.estadoEquipamiento)}
+                  variant="outlined"
+                />
+              )}
+              <Chip
+                label={getCategoriaLabel(eq.categoriaEquipamiento)}
+                size="small"
+                color={getCategoriaColor(eq.categoriaEquipamiento)}
+                variant="outlined"
+              />
+            </Box>
           </Box>
         );
       }}
