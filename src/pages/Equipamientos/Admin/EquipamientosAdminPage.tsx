@@ -22,6 +22,7 @@ import {
   Tooltip,
   Switch,
   FormControlLabel,
+  InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -29,6 +30,8 @@ import {
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
   Restore as RestoreIcon,
+  Search as SearchIcon,
+  FilterList as FilterListIcon,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -80,7 +83,9 @@ const EquipamientosAdminPage: React.FC = () => {
   const [itemToView, setItemToView] = useState<Equipamiento | null>(null);
   const [showInactive, setShowInactive] = useState(false);
 
-  // NUEVO: Estados para filtros
+  // Estados para filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filtroCategoriaId, setFiltroCategoriaId] = useState<number | ''>('');
   const [filtroEstadoId, setFiltroEstadoId] = useState<number | ''>('');
   const [filtroSoloConStock, setFiltroSoloConStock] = useState(false);
 
@@ -337,18 +342,35 @@ const EquipamientosAdminPage: React.FC = () => {
     }
   };
 
+  // Función para limpiar filtros
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setFiltroCategoriaId('');
+    setFiltroEstadoId('');
+    setFiltroSoloConStock(false);
+  };
+
   // Filtrar según múltiples criterios
   const itemsFiltrados = items.filter((item) => {
     // Filtro por activo/inactivo
     if (!showInactive && !item.activo) return false;
 
-    // NUEVO: Filtro por estado de equipamiento
-    if (filtroEstadoId && item.estadoEquipamientoId !== filtroEstadoId) return false;
+    // Filtro de búsqueda (nombre o descripción)
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = searchTerm === '' ||
+      item.nombre.toLowerCase().includes(searchLower) ||
+      (item.descripcion && item.descripcion.toLowerCase().includes(searchLower));
 
-    // NUEVO: Filtro por stock (solo con cantidad > 0)
-    if (filtroSoloConStock && (!item.cantidad || item.cantidad <= 0)) return false;
+    // Filtro por categoría
+    const matchesCategoria = filtroCategoriaId === '' || item.categoriaEquipamiento?.id === filtroCategoriaId;
 
-    return true;
+    // Filtro por estado de equipamiento
+    const matchesEstado = filtroEstadoId === '' || item.estadoEquipamientoId === filtroEstadoId;
+
+    // Filtro por stock (solo con cantidad > 0)
+    const matchesStock = !filtroSoloConStock || (item.cantidad && item.cantidad > 0);
+
+    return matchesSearch && matchesCategoria && matchesEstado && matchesStock;
   });
 
   // Ordenar items filtrados
@@ -382,25 +404,53 @@ const EquipamientosAdminPage: React.FC = () => {
         </Box>
       </Box>
 
-      {/* NUEVO: Barra de filtros */}
+      {/* Sección de Búsqueda y Filtros */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mr: 1 }}>
-            Filtros:
-          </Typography>
+          {/* Campo de Búsqueda */}
+          <TextField
+            size="small"
+            placeholder="Buscar por nombre o descripción..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 300, flexGrow: 1 }}
+          />
+
+          {/* Filtro por Categoría */}
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Categoría</InputLabel>
+            <Select
+              value={filtroCategoriaId}
+              onChange={(e) => setFiltroCategoriaId(e.target.value as number | '')}
+              label="Categoría"
+              disabled={loadingCategorias}
+            >
+              <MenuItem value="">Todas</MenuItem>
+              {categorias.map((cat) => (
+                <MenuItem key={cat.id} value={cat.id}>
+                  {cat.nombre}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           {/* Filtro por Estado */}
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Estado del Equipamiento</InputLabel>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Estado</InputLabel>
             <Select
               value={filtroEstadoId}
               onChange={(e) => setFiltroEstadoId(e.target.value as number | '')}
-              label="Estado del Equipamiento"
+              label="Estado"
               disabled={loadingEstados}
             >
-              <MenuItem value="">
-                <em>Todos los estados</em>
-              </MenuItem>
+              <MenuItem value="">Todos</MenuItem>
               {estados.map((est) => (
                 <MenuItem key={est.id} value={est.id}>
                   {est.nombre}
@@ -408,6 +458,16 @@ const EquipamientosAdminPage: React.FC = () => {
               ))}
             </Select>
           </FormControl>
+
+          {/* Botón Limpiar Filtros */}
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleClearFilters}
+            startIcon={<FilterListIcon />}
+          >
+            Limpiar Filtros
+          </Button>
 
           {/* Filtro Solo con Stock */}
           <FormControlLabel
@@ -421,7 +481,7 @@ const EquipamientosAdminPage: React.FC = () => {
             label="Solo con stock"
           />
 
-          {/* Mostrar Inactivos */}
+          {/* Mostrar Eliminados */}
           <FormControlLabel
             control={
               <Switch
@@ -433,19 +493,12 @@ const EquipamientosAdminPage: React.FC = () => {
             label="Mostrar eliminados"
           />
 
-          {/* Botón para limpiar filtros */}
-          {(filtroEstadoId || filtroSoloConStock) && (
-            <Button
-              size="small"
-              onClick={() => {
-                setFiltroEstadoId('');
-                setFiltroSoloConStock(false);
-              }}
-              sx={{ ml: 'auto' }}
-            >
-              Limpiar filtros
-            </Button>
-          )}
+          {/* Contador de Resultados */}
+          <Box sx={{ ml: 'auto' }}>
+            <Typography variant="body2" color="text.secondary">
+              {itemsFiltrados.length} de {items.length} equipamientos
+            </Typography>
+          </Box>
         </Box>
       </Paper>
 
