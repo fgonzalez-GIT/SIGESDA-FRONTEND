@@ -14,7 +14,8 @@ import {
 import {
   Schedule as ScheduleIcon,
   School as SchoolIcon,
-  People as PeopleIcon
+  People as PeopleIcon,
+  Room as RoomIcon
 } from '@mui/icons-material';
 
 // Hooks personalizados
@@ -25,6 +26,7 @@ import {
   useParticipantesActividad,
   useEstadisticasActividad
 } from '../../hooks/useActividades';
+import { useAulasActividad } from '../../hooks/useActividadesAulas';
 
 // Componentes V2
 import { ActividadHeader } from '../../components/actividades/v2/ActividadHeader';
@@ -32,6 +34,7 @@ import { ActividadInfoCards } from '../../components/actividades/v2/ActividadInf
 import { HorariosTab } from '../../components/actividades/v2/horarios/HorariosTab';
 import { DocentesTab } from '../../components/actividades/v2/docentes/DocentesTab';
 import { ParticipantesTab } from '../../components/actividades/v2/participantes/ParticipantesTab';
+import AulasTab from '../../components/actividades/v2/aulas/AulasTab';
 
 // Tipos
 import type {
@@ -62,6 +65,7 @@ export const ActividadDetallePageV2: React.FC = () => {
   const { horarios, loading: horariosLoading, refetch: refetchHorarios } = useHorariosActividad(Number(id));
   const { docentes, loading: docentesLoading, refetch: refetchDocentes } = useDocentesActividad(Number(id));
   const { participantes, loading: participantesLoading, refetch: refetchParticipantes } = useParticipantesActividad(Number(id));
+  const { aulas, loading: aulasLoading, refetch: refetchAulas } = useAulasActividad(Number(id));
   const { estadisticas, refetch: refetchEstadisticas } = useEstadisticasActividad(Number(id));
 
   // ============================================
@@ -77,12 +81,13 @@ export const ActividadDetallePageV2: React.FC = () => {
   };
 
   const handleRefreshData = async () => {
-    // Refrescar datos cuando se modifiquen horarios/docentes/participantes
+    // Refrescar datos cuando se modifiquen horarios/docentes/participantes/aulas
     await Promise.all([
       refetchActividad(),
       refetchHorarios(),
       refetchDocentes(),
       refetchParticipantes(),
+      refetchAulas(),
       refetchEstadisticas(),
     ]);
   };
@@ -143,6 +148,7 @@ export const ActividadDetallePageV2: React.FC = () => {
   const contadorHorarios = horarios?.filter(h => h.activo).length || 0;
   const contadorDocentes = docentes?.filter(d => d.activo).length || 0;
   const contadorParticipantes = participantes?.filter(p => p.activa).length || 0;
+  const contadorAulas = aulas?.filter(a => a.activa).length || 0;
 
   // ============================================
   // ESTADOS DE CARGA Y ERROR
@@ -260,6 +266,20 @@ export const ActividadDetallePageV2: React.FC = () => {
               </Box>
             }
           />
+          <Tab
+            value="aulas"
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <RoomIcon fontSize="small" />
+                Aulas
+                <Badge
+                  badgeContent={contadorAulas}
+                  color="primary"
+                  sx={{ ml: 1 }}
+                />
+              </Box>
+            }
+          />
         </Tabs>
       </Box>
 
@@ -298,6 +318,18 @@ export const ActividadDetallePageV2: React.FC = () => {
             loading={participantesLoading}
             cupoMaximo={cupoMaximo}
             cupoActual={cupoActual}
+            onRefresh={handleRefreshData}
+          />
+        )}
+
+        {/* Pestaña: Aulas */}
+        {activeTab === 'aulas' && (
+          <AulasTab
+            actividadId={Number(id)}
+            actividadNombre={actividad.nombre}
+            tieneHorarios={horarios && horarios.length > 0}
+            aulas={aulas || []}
+            loading={aulasLoading}
             onRefresh={handleRefreshData}
           />
         )}

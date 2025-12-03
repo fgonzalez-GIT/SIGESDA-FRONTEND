@@ -101,7 +101,7 @@ export interface ProyeccionCupo {
 // PESTAÑAS
 // ============================================
 
-export type TabValue = 'horarios' | 'docentes' | 'participantes';
+export type TabValue = 'horarios' | 'docentes' | 'participantes' | 'aulas';
 
 export interface TabConfig {
   value: TabValue;
