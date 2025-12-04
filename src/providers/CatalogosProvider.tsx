@@ -93,18 +93,20 @@ export const CatalogosProvider: React.FC<CatalogosProviderProps> = ({ children }
   const catalogosFiltrados = React.useMemo(() => {
     if (!catalogos) return null;
 
-    // Si hay exactamente 7 días, usarlos tal cual
-    // Si hay más (duplicados), tomar solo los primeros 7 únicos por nombre
-    const diasUnicos = catalogos.diasSemana.reduce((acc, dia) => {
-      if (!acc.find(d => d.nombre === dia.nombre) && acc.length < 7) {
-        acc.push(dia);
-      }
-      return acc;
-    }, [] as typeof catalogos.diasSemana);
+    // Filtrar por orden 1-7 para obtener los 7 días de la semana
+    // IMPORTANTE: Usar 'orden' en lugar de 'id' porque los IDs pueden ser 8-14
+    const diasUnicos = catalogos.diasSemana
+      .filter(dia => dia.orden >= 1 && dia.orden <= 7)
+      .sort((a, b) => a.orden - b.orden); // Ordenar por orden (Lunes=1, Domingo=7)
 
     // Debug: verificar los días cargados
-    console.log('🔍 Días de semana originales:', catalogos.diasSemana.map(d => ({ id: d.id, nombre: d.nombre })));
-    console.log('✅ Días de semana usados:', diasUnicos.map(d => ({ id: d.id, nombre: d.nombre })));
+    console.log('🔍 Días de semana originales:', catalogos.diasSemana.map(d => ({ id: d.id, nombre: d.nombre, orden: d.orden })));
+    console.log('✅ Días de semana usados:', diasUnicos.map(d => ({ id: d.id, nombre: d.nombre, orden: d.orden })));
+
+    // Validación adicional: advertir si no hay exactamente 7 días
+    if (diasUnicos.length !== 7) {
+      console.warn(`⚠️ Se esperaban 7 días de semana, pero se encontraron ${diasUnicos.length}`);
+    }
 
     return {
       ...catalogos,

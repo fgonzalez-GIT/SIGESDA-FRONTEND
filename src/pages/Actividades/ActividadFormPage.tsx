@@ -72,7 +72,7 @@ export const ActividadFormPage: React.FC = () => {
     nombre: '',
     tipoActividadId: 0,
     categoriaId: 0,
-    estadoId: 1,
+    estadoId: 0, // Cambiar de 1 a 0 (sin selección por defecto, se establecerá dinámicamente)
     descripcion: '',
     fechaDesde: null as Date | null,
     fechaHasta: null as Date | null,
@@ -117,6 +117,24 @@ export const ActividadFormPage: React.FC = () => {
     }
   }, [isEditing, actividad]);
 
+  // Establecer estado predeterminado dinámicamente cuando se cargan los catálogos (solo en modo creación)
+  useEffect(() => {
+    if (!isEditing && catalogos?.estadosActividades && formData.estadoId === 0) {
+      // Buscar el estado "ACTIVA" o "PLANIFICADA" como predeterminado
+      const estadoPorDefecto =
+        catalogos.estadosActividades.find(e => e.codigo === 'PLANIFICADA') ||
+        catalogos.estadosActividades.find(e => e.codigo === 'ACTIVA') ||
+        catalogos.estadosActividades[0]; // Fallback al primer estado disponible
+
+      if (estadoPorDefecto) {
+        console.log(`✅ Estado predeterminado establecido: ${estadoPorDefecto.nombre} (ID: ${estadoPorDefecto.id})`);
+        setFormData(prev => ({ ...prev, estadoId: estadoPorDefecto.id }));
+      } else {
+        console.warn('⚠️ No se encontraron estados de actividades disponibles');
+      }
+    }
+  }, [catalogos, formData.estadoId, isEditing]);
+
   // Handlers
   const handleChange = (field: keyof typeof formData) => (
     event: React.ChangeEvent<HTMLInputElement | { value: unknown }>
@@ -143,9 +161,9 @@ export const ActividadFormPage: React.FC = () => {
       return;
     }
 
-    // Validar que el día exista en el catálogo y tenga orden válido (1-7)
+    // Validar que el día exista en el catálogo filtrado
     const diaSeleccionado = catalogos?.diasSemana?.find(d => d.id === nuevoHorario.diaSemanaId);
-    if (!diaSeleccionado || diaSeleccionado.orden < 1 || diaSeleccionado.orden > 7) {
+    if (!diaSeleccionado) {
       setErrors((prev) => ({ ...prev, horarios: 'El día seleccionado no es válido' }));
       return;
     }
@@ -235,10 +253,19 @@ export const ActividadFormPage: React.FC = () => {
       return;
     }
 
-    // Validar que todos los días de semana existan en el catálogo y tengan orden válido (1-7)
+    // Validar que el estadoId sea válido
+    if (!formData.estadoId || formData.estadoId === 0) {
+      setErrors((prev) => ({
+        ...prev,
+        general: 'Debe seleccionar un estado válido para la actividad. Si no aparecen opciones, contacte al administrador del sistema.'
+      }));
+      return;
+    }
+
+    // Validar que todos los días de semana existan en el catálogo
     const horariosInvalidos = horarios.filter(h => {
       const dia = catalogos?.diasSemana?.find(d => d.id === h.diaSemanaId);
-      return !dia || dia.orden < 1 || dia.orden > 7;
+      return !dia; // Solo validar que el día exista en el catálogo
     });
     if (horariosInvalidos.length > 0) {
       setErrors((prev) => ({
