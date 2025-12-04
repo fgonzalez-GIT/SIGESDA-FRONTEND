@@ -253,10 +253,10 @@ export function useDisponibilidadAula(actividadId: number) {
     }
   };
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setDisponibilidad(null);
     setError(null);
-  };
+  }, []);
 
   return {
     verificar,
