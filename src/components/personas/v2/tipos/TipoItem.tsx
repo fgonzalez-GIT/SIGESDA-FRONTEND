@@ -72,7 +72,7 @@ export const TipoItem: React.FC<TipoItemProps> = ({
   };
 
   const renderDetallesCamposEspecificos = () => {
-    const codigo = tipo.tipoPersonaCodigo.toUpperCase();
+    const codigo = tipo.tipoPersona?.codigo?.toUpperCase() || '';
 
     switch (codigo) {
       case 'SOCIO':

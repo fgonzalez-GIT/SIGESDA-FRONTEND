@@ -346,7 +346,7 @@ const PersonaDetallePage: React.FC = () => {
           personaId={persona.id}
           personaNombre={`${persona.nombre} ${persona.apellido}`}
           catalogos={catalogos}
-          tiposAsignados={persona.tipos?.map(t => t.tipoPersonaCodigo) || []}
+          tiposAsignados={persona.tipos?.map(t => t.tipoPersona?.codigo).filter((c): c is string => !!c) || []}
           onSuccess={handleAsignarTipoSuccess}
         />
       )}
