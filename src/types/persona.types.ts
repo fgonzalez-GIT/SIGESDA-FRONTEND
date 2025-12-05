@@ -99,22 +99,27 @@ export interface CatalogosPersonas {
 
 /**
  * Tipo asignado a una persona (tabla de relación)
+ * NOTA: El backend envía tipoPersonaId (number), no tipoPersonaCodigo (string)
  */
 export interface PersonaTipo {
   id: number;
   personaId: number;
-  tipoPersonaCodigo: string;
+  tipoPersonaId: number;       // ID del tipo (el backend NO envía tipoPersonaCodigo)
 
   // Campos específicos según el tipo
   categoriaId?: number;        // Para SOCIO (Int)
   numeroSocio?: number;        // Auto-generado para SOCIO
+  fechaIngreso?: string;       // Para SOCIO (ISO 8601)
+  fechaBaja?: string;          // Para SOCIO
+  motivoBaja?: string;         // Para SOCIO
   especialidadId?: number;     // Para DOCENTE
-  honorariosPorHora?: number;  // Para DOCENTE
+  honorariosPorHora?: number | string;  // Para DOCENTE (backend envía string)
   cuit?: string;               // Para PROVEEDOR (11 dígitos)
   razonSocialId?: number;      // Para PROVEEDOR (Int)
 
   // Metadatos
   fechaAsignacion: string;     // ISO 8601
+  fechaDesasignacion?: string; // ISO 8601
   activo: boolean;
   observaciones?: string;
   createdAt?: string;
@@ -125,6 +130,10 @@ export interface PersonaTipo {
   categoria?: CategoriaSocio;
   especialidad?: EspecialidadDocente;
   razonSocial?: RazonSocial;
+
+  // DEPRECATED: Solo para compatibilidad con código antiguo
+  // Usar tipoPersona.codigo en su lugar
+  tipoPersonaCodigo?: string;
 }
 
 /**
@@ -148,6 +157,8 @@ export interface Contacto {
 
 /**
  * Persona V2 - con múltiples tipos
+ * NOTA: El backend envía 'activo' (boolean), no 'estado' (enum)
+ * NOTA: El backend NO envía 'fechaIngreso' en la raíz, sino dentro de tipos[]
  */
 export interface Persona {
   id: number;
@@ -161,11 +172,21 @@ export interface Persona {
   direccion?: string;
   fechaNacimiento?: string;    // ISO 8601
 
-  // Estado
-  estado: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO';
-  fechaIngreso?: string;       // ISO 8601
-  fechaBaja?: string;
-  motivoBaja?: string;
+  // Estado - El backend envía 'activo' (boolean)
+  activo: boolean;             // Campo real del backend
+  estado?: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO';  // Campo virtual calculado
+
+  // Campos heredados del modelo legacy (aún presentes en backend)
+  numeroSocio?: number | null;
+  categoria?: any | null;
+  fechaIngreso?: string | null;  // Campo legacy, ahora está en tipos[].fechaIngreso
+  fechaBaja?: string | null;
+  motivoBaja?: string | null;
+  especialidad?: any | null;
+  honorariosPorHora?: string | number | null;
+  cuit?: string | null;
+  razonSocial?: any | null;
+  categoriaId?: number | null;
   observaciones?: string;
 
   // Metadatos
@@ -297,6 +318,9 @@ export interface PersonasQueryParams {
   estado?: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO';
   categoriaId?: number;        // Filtrar socios por categoría
   especialidadId?: number;     // Filtrar docentes por especialidad
+
+  // Filtros de estado
+  activo?: boolean;            // true: solo activas, false: solo inactivas (default: true si no se envía)
 
   // Opciones de inclusión
   includeTipos?: boolean;      // Incluir tipos asignados (default: true)
@@ -465,7 +489,9 @@ export interface ReorderCatalogoDTO {
  * Verificar si una persona tiene un tipo específico
  */
 export const personaTieneTipo = (persona: Persona, codigoTipo: string): boolean => {
-  return persona.tipos?.some(t => t.tipoPersonaCodigo === codigoTipo && t.activo) ?? false;
+  return persona.tipos?.some(t =>
+    t.tipoPersona?.codigo === codigoTipo && t.activo
+  ) ?? false;
 };
 
 /**
@@ -479,7 +505,9 @@ export const getTiposActivos = (persona: Persona): PersonaTipo[] => {
  * Obtener códigos de tipos activos
  */
 export const getCodigosTiposActivos = (persona: Persona): string[] => {
-  return getTiposActivos(persona).map(t => t.tipoPersonaCodigo);
+  return getTiposActivos(persona)
+    .map(t => t.tipoPersona?.codigo)
+    .filter((codigo): codigo is string => !!codigo);
 };
 
 /**

@@ -42,6 +42,7 @@ const PersonasPage: React.FC = () => {
   const [filters, setFilters] = useState<PersonasQueryParams>({
     page: 1,
     limit: 20,
+    activo: true, // Por defecto, solo mostrar personas activas
   });
 
   // Estado de personas y catálogos
@@ -69,6 +70,7 @@ const PersonasPage: React.FC = () => {
     setFilters({
       page: 1,
       limit: 20,
+      activo: true, // Resetear a solo activas
     });
   };
 

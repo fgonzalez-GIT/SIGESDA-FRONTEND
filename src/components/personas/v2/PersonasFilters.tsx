@@ -13,11 +13,14 @@ import {
   Stack,
   SelectChangeEvent,
   OutlinedInput,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import {
   Search as SearchIcon,
   FilterList as FilterListIcon,
   Clear as ClearIcon,
+  DeleteOutline as DeleteOutlineIcon,
 } from '@mui/icons-material';
 import type { PersonasQueryParams, CatalogosPersonas } from '../../../types/persona.types';
 
@@ -78,7 +81,7 @@ export const PersonasFilters: React.FC<PersonasFiltersProps> = ({
   const handleCategoriaChange = (event: SelectChangeEvent<string>) => {
     onFilterChange({
       ...filters,
-      categoriaId: event.target.value || undefined,
+      categoriaId: event.target.value ? Number(event.target.value) : undefined,
       page: 1,
     });
   };
@@ -91,12 +94,23 @@ export const PersonasFilters: React.FC<PersonasFiltersProps> = ({
     });
   };
 
+  const handleIncludeDeletedChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onFilterChange({
+      ...filters,
+      // Si el switch está ON (checked=true), mostrar solo inactivas (activo=false)
+      // Si el switch está OFF (checked=false), mostrar solo activas (activo=true)
+      activo: !event.target.checked,
+      page: 1,
+    });
+  };
+
   const hasActiveFilters =
     filters.search ||
     (filters.tiposCodigos && filters.tiposCodigos.length > 0) ||
     filters.estado ||
     filters.categoriaId ||
-    filters.especialidadId;
+    filters.especialidadId ||
+    filters.activo === false; // El switch está activo cuando activo es false (mostrando inactivas)
 
   return (
     <Paper sx={{ p: 2, mb: 3 }}>
@@ -127,6 +141,36 @@ export const PersonasFilters: React.FC<PersonasFiltersProps> = ({
           >
             {hasActiveFilters ? 'Limpiar Filtros' : 'Sin Filtros'}
           </Button>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={filters.activo === false}
+                onChange={handleIncludeDeletedChange}
+                size="small"
+                color="warning"
+              />
+            }
+            label="Solo eliminadas"
+            sx={{
+              ml: 1,
+              '& .MuiFormControlLabel-label': {
+                fontSize: '0.875rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+              },
+            }}
+            componentsProps={{
+              typography: {
+                sx: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                },
+              },
+            }}
+          />
 
           {resultCount !== undefined && totalCount !== undefined && (
             <Box sx={{ ml: 'auto' }}>
@@ -285,6 +329,16 @@ export const PersonasFilters: React.FC<PersonasFiltersProps> = ({
                 size="small"
                 variant="outlined"
                 onDelete={() => onFilterChange({ ...filters, especialidadId: undefined })}
+              />
+            )}
+            {filters.activo === false && (
+              <Chip
+                label="Solo eliminadas"
+                size="small"
+                color="warning"
+                variant="outlined"
+                icon={<DeleteOutlineIcon />}
+                onDelete={() => onFilterChange({ ...filters, activo: true })}
               />
             )}
           </Box>

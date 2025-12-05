@@ -84,6 +84,17 @@ export const PersonasTable: React.FC<PersonasTableProps> = ({
     return `${day}/${month}/${year}`;
   };
 
+  /**
+   * Mapear campo 'activo' (boolean) a 'estado' (enum)
+   * El backend envía activo: true/false, el frontend espera estado: ACTIVO/INACTIVO
+   */
+  const getEstado = (persona: Persona): string => {
+    // Intentar usar el campo estado si existe
+    if (persona.estado) return persona.estado;
+    // Fallback: mapear desde campo activo
+    return persona.activo ? 'ACTIVO' : 'INACTIVO';
+  };
+
   const getEstadoColor = (estado: string) => {
     switch (estado) {
       case 'ACTIVO':
@@ -95,6 +106,23 @@ export const PersonasTable: React.FC<PersonasTableProps> = ({
       default:
         return 'default';
     }
+  };
+
+  /**
+   * Obtener fecha de ingreso de la persona
+   * - Primero intenta obtenerla desde tipos[] (SOCIO tiene fechaIngreso)
+   * - Luego desde el campo legacy persona.fechaIngreso
+   */
+  const getFechaIngreso = (persona: Persona): string | undefined => {
+    // Buscar fecha de ingreso en tipo SOCIO (nueva estructura)
+    const tipoSocio = persona.tipos?.find(
+      (t) => t.tipoPersona?.codigo === 'SOCIO' && t.activo
+    );
+    if (tipoSocio?.fechaIngreso) {
+      return tipoSocio.fechaIngreso;
+    }
+    // Fallback: campo legacy
+    return persona.fechaIngreso || undefined;
   };
 
   if (personas.length === 0) {
@@ -151,7 +179,13 @@ export const PersonasTable: React.FC<PersonasTableProps> = ({
 
             return (
               <React.Fragment key={persona.id}>
-                <TableRow hover>
+                <TableRow
+                  hover
+                  sx={{
+                    backgroundColor: !persona.activo ? 'action.disabledBackground' : 'inherit',
+                    opacity: !persona.activo ? 0.7 : 1,
+                  }}
+                >
                   {/* Botón expandir */}
                   {expandable && (
                     <TableCell sx={{ padding: '4px' }}>
@@ -171,11 +205,30 @@ export const PersonasTable: React.FC<PersonasTableProps> = ({
 
                   {/* Nombre completo */}
                   <TableCell>
-                    <Tooltip title={getNombreCompleto(persona)} placement="top">
-                      <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
-                        {getNombreCompleto(persona)}
-                      </Typography>
-                    </Tooltip>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Tooltip title={getNombreCompleto(persona)} placement="top">
+                        <Typography
+                          variant="body2"
+                          noWrap
+                          sx={{
+                            maxWidth: 200,
+                            textDecoration: !persona.activo ? 'line-through' : 'none',
+                            color: !persona.activo ? 'text.disabled' : 'text.primary',
+                          }}
+                        >
+                          {getNombreCompleto(persona)}
+                        </Typography>
+                      </Tooltip>
+                      {!persona.activo && (
+                        <Chip
+                          label="Eliminada"
+                          size="small"
+                          color="error"
+                          variant="outlined"
+                          sx={{ fontSize: '0.65rem', height: 18 }}
+                        />
+                      )}
+                    </Box>
                   </TableCell>
 
                   {/* DNI */}
@@ -212,18 +265,23 @@ export const PersonasTable: React.FC<PersonasTableProps> = ({
 
                   {/* Estado */}
                   <TableCell>
-                    <Chip
-                      label={persona.estado}
-                      color={getEstadoColor(persona.estado) as any}
-                      size="small"
-                      variant={persona.estado === 'ACTIVO' ? 'filled' : 'outlined'}
-                    />
+                    {(() => {
+                      const estado = getEstado(persona);
+                      return (
+                        <Chip
+                          label={estado}
+                          color={getEstadoColor(estado) as any}
+                          size="small"
+                          variant={estado === 'ACTIVO' ? 'filled' : 'outlined'}
+                        />
+                      );
+                    })()}
                   </TableCell>
 
                   {/* Fecha de ingreso */}
                   <TableCell>
                     <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>
-                      {formatDate(persona.fechaIngreso)}
+                      {formatDate(getFechaIngreso(persona))}
                     </Typography>
                   </TableCell>
 
@@ -239,17 +297,31 @@ export const PersonasTable: React.FC<PersonasTableProps> = ({
                           </Tooltip>
                         )}
                         {onEdit && (
-                          <Tooltip title="Editar">
-                            <IconButton size="small" onClick={() => onEdit(persona)} color="primary">
-                              <EditIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title={!persona.activo ? "No se puede editar una persona eliminada" : "Editar"}>
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => onEdit(persona)}
+                                color="primary"
+                                disabled={!persona.activo}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                         )}
                         {onDelete && (
-                          <Tooltip title="Eliminar">
-                            <IconButton size="small" onClick={() => onDelete(persona)} color="error">
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title={!persona.activo ? "Persona ya eliminada" : "Eliminar"}>
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => onDelete(persona)}
+                                color="error"
+                                disabled={!persona.activo}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                         )}
                       </Stack>

@@ -41,7 +41,11 @@ export const TipoBadge: React.FC<TipoBadgeProps> = ({
   // Determinar el código del tipo
   const getTipoCodigo = (): string => {
     if (typeof tipo === 'string') return tipo;
-    if ('tipoPersonaCodigo' in tipo) return tipo.tipoPersonaCodigo;
+    // PersonaTipo: usar tipoPersona.codigo (relación)
+    if ('tipoPersonaId' in tipo && tipo.tipoPersona) return tipo.tipoPersona.codigo;
+    // Fallback para compatibilidad: tipoPersonaCodigo (DEPRECATED)
+    if ('tipoPersonaCodigo' in tipo && tipo.tipoPersonaCodigo) return tipo.tipoPersonaCodigo;
+    // TipoPersona: usar codigo directo
     if ('codigo' in tipo) return tipo.codigo;
     return '';
   };
@@ -49,7 +53,9 @@ export const TipoBadge: React.FC<TipoBadgeProps> = ({
   // Obtener nombre del tipo
   const getTipoNombre = (): string => {
     if (typeof tipo === 'string') return tipo;
-    if ('tipoPersonaCodigo' in tipo && tipo.tipoPersona) return tipo.tipoPersona.nombre;
+    // PersonaTipo: usar tipoPersona.nombre (relación)
+    if ('tipoPersonaId' in tipo && tipo.tipoPersona) return tipo.tipoPersona.nombre;
+    // TipoPersona: usar nombre directo
     if ('nombre' in tipo) return tipo.nombre;
     return getTipoCodigo();
   };
@@ -57,9 +63,11 @@ export const TipoBadge: React.FC<TipoBadgeProps> = ({
   // Obtener descripción para tooltip
   const getTipoDescripcion = (): string => {
     if (typeof tipo === 'string') return '';
-    if ('tipoPersonaCodigo' in tipo && tipo.tipoPersona) {
+    // PersonaTipo: usar tipoPersona.descripcion (relación)
+    if ('tipoPersonaId' in tipo && tipo.tipoPersona) {
       return tipo.tipoPersona.descripcion || '';
     }
+    // TipoPersona: usar descripcion directo
     if ('descripcion' in tipo) return tipo.descripcion || '';
     return '';
   };

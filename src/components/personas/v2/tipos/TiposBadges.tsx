@@ -50,7 +50,9 @@ export const TiposBadges: React.FC<TiposBadgesProps> = ({
 
   const getTipoNombre = (tipo: PersonaTipo | TipoPersona | string): string => {
     if (typeof tipo === 'string') return tipo;
-    if ('tipoPersonaCodigo' in tipo && tipo.tipoPersona) return tipo.tipoPersona.nombre;
+    // PersonaTipo: usar tipoPersona.nombre (relación)
+    if ('tipoPersonaId' in tipo && tipo.tipoPersona) return tipo.tipoPersona.nombre;
+    // TipoPersona: usar nombre directo
     if ('nombre' in tipo) return tipo.nombre;
     return '';
   };

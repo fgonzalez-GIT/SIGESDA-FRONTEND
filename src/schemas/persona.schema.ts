@@ -82,8 +82,24 @@ export const createPersonaSchema = z.object({
   apellido: z.string().min(2).max(100).trim(),
   dni: z.string().regex(dniRegex).min(7).max(8),
   // Transformar strings vacíos a undefined para campos opcionales
-  email: z.string().regex(emailRegex).max(200).trim().optional().nullable().transform(val => val === '' || val === null ? undefined : val),
-  telefono: z.string().regex(telefonoRegex).max(50).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
+  email: z.string()
+    .trim()
+    .max(200)
+    .refine(val => !val || val === '' || emailRegex.test(val), {
+      message: 'Email inválido, debe tener formato correcto (ej: usuario@dominio.com)'
+    })
+    .optional()
+    .nullable()
+    .transform(val => val === '' || val === null ? undefined : val),
+  telefono: z.string()
+    .trim()
+    .max(50)
+    .refine(val => !val || val === '' || telefonoRegex.test(val), {
+      message: 'Formato de teléfono inválido'
+    })
+    .optional()
+    .nullable()
+    .transform(val => val === '' || val === null ? undefined : val),
   direccion: z.string().max(300).trim().optional().nullable().transform(val => val === '' || val === null ? undefined : val),
   fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
   observaciones: z.string().max(1000).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
