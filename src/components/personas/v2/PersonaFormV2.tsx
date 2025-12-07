@@ -162,12 +162,21 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
     if (persona) {
       // Modo edición: cargar datos básicos Y tipos existentes
       const tiposExistentes = persona.tipos?.map((pt) => {
+        // Obtener código del tipo (con fallback al campo deprecated)
+        const codigo = pt.tipoPersona?.codigo || pt.tipoPersonaCodigo;
+
+        // Si no hay código disponible, saltar este tipo
+        if (!codigo) {
+          console.warn('PersonaTipo sin código:', pt);
+          return null;
+        }
+
         const tipo: any = {
-          tipoPersonaCodigo: pt.tipoPersona.codigo,
+          tipoPersonaCodigo: codigo,
         };
 
         // Cargar campos específicos según el tipo
-        const codigoUpper = pt.tipoPersona.codigo.toUpperCase();
+        const codigoUpper = codigo.toUpperCase();
         if (codigoUpper === 'SOCIO' && pt.categoriaId) {
           tipo.categoriaId = pt.categoriaId;
         } else if (codigoUpper === 'DOCENTE') {
@@ -179,7 +188,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
         }
 
         return tipo;
-      }) || [];
+      }).filter(Boolean) || [];  // Filtrar nulls
 
       reset({
         nombre: persona.nombre,
@@ -348,6 +357,12 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
   };
 
   const renderCamposTipo = (codigoTipo: string, index: number) => {
+    // Validación defensiva: si no hay código, no renderizar nada
+    if (!codigoTipo) {
+      console.warn('renderCamposTipo llamado con codigoTipo undefined/null');
+      return null;
+    }
+
     const tipoUpper = codigoTipo.toUpperCase();
 
     switch (tipoUpper) {
@@ -582,9 +597,11 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
               />
 
               {/* Campos dinámicos según tipos seleccionados */}
-              {tiposWatch?.map((tipo: any, index: number) =>
-                renderCamposTipo(tipo.tipoPersonaCodigo, index)
-              )}
+              {tiposWatch
+                ?.filter((tipo: any) => tipo?.tipoPersonaCodigo)
+                .map((tipo: any, index: number) =>
+                  renderCamposTipo(tipo.tipoPersonaCodigo, index)
+                )}
             </Box>
 
             <Divider />

@@ -128,8 +128,10 @@ export const AsignarTipoModal: React.FC<AsignarTipoModalProps> = ({
         if (!especialidadId) {
           newErrors.especialidadId = 'La especialidad es obligatoria para tipo DOCENTE';
         }
-        if (!honorariosPorHora || honorariosPorHora <= 0) {
-          newErrors.honorariosPorHora = 'Los honorarios son obligatorios y deben ser mayores a 0';
+        if (honorariosPorHora === '' || honorariosPorHora == null) {
+          newErrors.honorariosPorHora = 'Los honorarios son obligatorios';
+        } else if (Number(honorariosPorHora) < 0) {
+          newErrors.honorariosPorHora = 'Los honorarios no pueden ser negativos';
         }
         break;
 
@@ -170,7 +172,7 @@ export const AsignarTipoModal: React.FC<AsignarTipoModalProps> = ({
       // Agregar campos específicos según el tipo
       switch (tipoSeleccionado.toUpperCase()) {
         case 'SOCIO':
-          dto.categoriaId = categoriaId;
+          dto.categoriaId = Number(categoriaId);
           break;
 
         case 'DOCENTE':
@@ -180,7 +182,7 @@ export const AsignarTipoModal: React.FC<AsignarTipoModalProps> = ({
 
         case 'PROVEEDOR':
           dto.cuit = cuit.replace(/-/g, ''); // Remover guiones
-          dto.razonSocial = razonSocial;
+          dto.razonSocialId = Number(razonSocial);
           break;
       }
 
