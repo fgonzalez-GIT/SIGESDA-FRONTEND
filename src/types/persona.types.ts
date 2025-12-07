@@ -70,16 +70,20 @@ export interface RazonSocial {
 }
 
 /**
- * Tipo de Contacto (catálogo)
+ * Tipo de Contacto (catálogo dinámico)
+ * Basado en: FRONTEND_API_TIPOS_CONTACTO.md
  */
 export interface TipoContacto {
   id: number;
-  codigo: string;              // 'WHATSAPP', 'INSTAGRAM', 'FACEBOOK', etc.
+  codigo: string;              // 'WHATSAPP', 'INSTAGRAM', 'FACEBOOK', 'EMAIL', etc.
   nombre: string;
-  descripcion?: string;
-  icono?: string;              // Nombre del icono de MUI
+  descripcion?: string | null;
+  icono?: string | null;       // Emoji o nombre del icono de MUI
+  pattern?: string | null;     // Regex para validación de formato (ej: email, teléfono)
   activo: boolean;
   orden: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**
@@ -145,9 +149,9 @@ export interface Contacto {
   tipoContactoId: number;
   valor: string;               // Número, email, URL, etc.
   descripcion?: string;
-  esPrincipal: boolean;        // Solo uno puede ser principal
+  principal: boolean;          // Solo uno puede ser principal por tipo de contacto
   activo: boolean;
-  observaciones?: string;      // Campo adicional del backend
+  observaciones?: string;      // Max 500 caracteres
   createdAt?: string;
   updatedAt?: string;
 
@@ -232,8 +236,8 @@ export interface CreateContactoDTO {
   tipoContactoId: number;
   valor: string;
   descripcion?: string;
-  esPrincipal?: boolean;
-  observaciones?: string;      // Campo adicional del backend
+  principal?: boolean;         // Solo uno puede ser principal por tipo de contacto
+  observaciones?: string;      // Max 500 caracteres
 }
 
 /**
@@ -295,9 +299,9 @@ export interface UpdateContactoDTO {
   tipoContactoId?: number;
   valor?: string;
   descripcion?: string;
-  esPrincipal?: boolean;
+  principal?: boolean;         // Solo uno puede ser principal por tipo de contacto
   activo?: boolean;
-  observaciones?: string;      // Campo adicional del backend
+  observaciones?: string;      // Max 500 caracteres
 }
 
 // ============================================================================
@@ -457,6 +461,7 @@ export interface CreateTipoContactoDTO {
   nombre: string;
   descripcion?: string;
   icono?: string;
+  pattern?: string;            // Regex para validación de formato
   orden?: number;
 }
 
@@ -467,6 +472,7 @@ export interface UpdateTipoContactoDTO {
   nombre?: string;
   descripcion?: string;
   icono?: string;
+  pattern?: string;            // Regex para validación de formato
   activo?: boolean;
   orden?: number;
 }
@@ -514,7 +520,7 @@ export const getCodigosTiposActivos = (persona: Persona): string[] => {
  * Obtener contacto principal de una persona
  */
 export const getContactoPrincipal = (persona: Persona): Contacto | null => {
-  return persona.contactos?.find(c => c.esPrincipal && c.activo) ?? null;
+  return persona.contactos?.find(c => c.principal && c.activo) ?? null;
 };
 
 /**
@@ -575,7 +581,7 @@ export const getContactoPrincipalPorTipo = (
 ): Contacto | null => {
   if (!persona.contactos) return null;
   return persona.contactos.find(
-    c => c.tipoContacto?.codigo === tipoContactoCodigo && c.esPrincipal && c.activo
+    c => c.tipoContacto?.codigo === tipoContactoCodigo && c.principal && c.activo
   ) ?? null;
 };
 

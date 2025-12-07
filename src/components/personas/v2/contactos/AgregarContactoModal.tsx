@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -33,6 +33,12 @@ import {
   createContactoSchema,
   type CreateContactoFormData,
 } from '../../../../schemas/persona.schema';
+import {
+  validatePattern,
+  getPatternErrorMessage,
+  getPlaceholderByTipoCodigo,
+  getHelperTextByTipoCodigo,
+} from '../../../../utils/contacto.utils';
 
 interface AgregarContactoModalProps {
   open: boolean;
@@ -80,11 +86,35 @@ export const AgregarContactoModal: React.FC<AgregarContactoModalProps> = ({
       tipoContactoId: 0,
       valor: '',
       descripcion: '',
-      esPrincipal: false,
+      principal: false,
     },
   });
 
   const tipoContactoIdWatch = watch('tipoContactoId');
+  const valorWatch = watch('valor');
+
+  // Estado para error de validación de pattern
+  const [patternError, setPatternError] = useState<string | null>(null);
+
+  // Validar pattern cuando cambia el valor o el tipo
+  useEffect(() => {
+    if (!tipoContactoIdWatch || !valorWatch) {
+      setPatternError(null);
+      return;
+    }
+
+    const tipo = catalogos?.tiposContacto.find(t => t.id === tipoContactoIdWatch);
+    if (!tipo) {
+      setPatternError(null);
+      return;
+    }
+
+    if (!validatePattern(valorWatch, tipo.pattern)) {
+      setPatternError(getPatternErrorMessage(tipo.nombre));
+    } else {
+      setPatternError(null);
+    }
+  }, [tipoContactoIdWatch, valorWatch, catalogos]);
 
   useEffect(() => {
     if (contacto) {
@@ -93,7 +123,7 @@ export const AgregarContactoModal: React.FC<AgregarContactoModalProps> = ({
         tipoContactoId: contacto.tipoContactoId,
         valor: contacto.valor,
         descripcion: contacto.descripcion || '',
-        esPrincipal: contacto.esPrincipal,
+        principal: contacto.principal,
       });
     } else {
       // Modo creación: resetear formulario
@@ -101,7 +131,7 @@ export const AgregarContactoModal: React.FC<AgregarContactoModalProps> = ({
         tipoContactoId: 0,
         valor: '',
         descripcion: '',
-        esPrincipal: false,
+        principal: false,
       });
     }
   }, [contacto, reset, open]);
@@ -118,62 +148,17 @@ export const AgregarContactoModal: React.FC<AgregarContactoModalProps> = ({
     }
   };
 
-  const getPlaceholderByTipo = (tipoId: number): string => {
-    const tipo = catalogos?.tiposContacto.find((t) => t.id === tipoId);
-    if (!tipo) return 'Ingrese el valor del contacto';
+  // Obtener tipo seleccionado
+  const tipoSeleccionado = catalogos?.tiposContacto.find(t => t.id === tipoContactoIdWatch);
 
-    const codigo = tipo.codigo.toUpperCase();
-
-    switch (codigo) {
-      case 'WHATSAPP':
-      case 'TELEFONO':
-      case 'PHONE':
-        return '+54 9 11 1234-5678';
-      case 'EMAIL':
-        return 'ejemplo@email.com';
-      case 'FACEBOOK':
-        return 'usuario o URL completa';
-      case 'INSTAGRAM':
-        return '@usuario o URL completa';
-      case 'TWITTER':
-      case 'X':
-        return '@usuario o URL completa';
-      case 'LINKEDIN':
-        return 'nombre-usuario o URL completa';
-      case 'WEBSITE':
-      case 'WEB':
-        return 'https://www.ejemplo.com';
-      default:
-        return 'Ingrese el valor del contacto';
-    }
+  const getPlaceholder = (): string => {
+    if (!tipoSeleccionado) return 'Ingrese el valor del contacto';
+    return getPlaceholderByTipoCodigo(tipoSeleccionado.codigo);
   };
 
-  const getHelperTextByTipo = (tipoId: number): string => {
-    const tipo = catalogos?.tiposContacto.find((t) => t.id === tipoId);
-    if (!tipo) return '';
-
-    const codigo = tipo.codigo.toUpperCase();
-
-    switch (codigo) {
-      case 'WHATSAPP':
-        return 'Número con código de país (ej: +54 9 11 1234-5678)';
-      case 'TELEFONO':
-      case 'PHONE':
-        return 'Número de teléfono';
-      case 'EMAIL':
-        return 'Dirección de email válida';
-      case 'FACEBOOK':
-      case 'INSTAGRAM':
-      case 'TWITTER':
-      case 'X':
-      case 'LINKEDIN':
-        return 'Nombre de usuario o URL completa del perfil';
-      case 'WEBSITE':
-      case 'WEB':
-        return 'URL completa del sitio web';
-      default:
-        return '';
-    }
+  const getHelperText = (): string => {
+    if (!tipoSeleccionado) return '';
+    return getHelperTextByTipoCodigo(tipoSeleccionado.codigo, tipoSeleccionado.descripcion);
   };
 
   if (!catalogos) {
@@ -243,10 +228,10 @@ export const AgregarContactoModal: React.FC<AgregarContactoModalProps> = ({
                     {...field}
                     fullWidth
                     label="Valor *"
-                    placeholder={getPlaceholderByTipo(tipoContactoIdWatch)}
-                    error={!!errors.valor}
+                    placeholder={getPlaceholder()}
+                    error={!!errors.valor || !!patternError}
                     helperText={
-                      errors.valor?.message || getHelperTextByTipo(tipoContactoIdWatch)
+                      errors.valor?.message || patternError || getHelperText()
                     }
                   />
                 )}
@@ -276,7 +261,7 @@ export const AgregarContactoModal: React.FC<AgregarContactoModalProps> = ({
             {/* Es principal */}
             <Grid size={{ xs: 12 }}>
               <Controller
-                name="esPrincipal"
+                name="principal"
                 control={control}
                 render={({ field }) => (
                   <FormControlLabel
@@ -286,7 +271,7 @@ export const AgregarContactoModal: React.FC<AgregarContactoModalProps> = ({
                 )}
               />
               <FormHelperText>
-                Solo puede haber un contacto principal por persona
+                Solo puede haber un contacto principal por tipo de contacto
               </FormHelperText>
             </Grid>
           </Grid>
@@ -300,7 +285,7 @@ export const AgregarContactoModal: React.FC<AgregarContactoModalProps> = ({
             type="submit"
             variant="contained"
             startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
-            disabled={loading}
+            disabled={loading || !!patternError}
           >
             {loading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Agregar'}
           </Button>

@@ -63,25 +63,25 @@ export const ContactosFormSection: React.FC<ContactosFormSectionProps> = ({
       tipoContactoId: 0,
       valor: '',
       descripcion: '',
-      esPrincipal: false,
+      principal: false,
       observaciones: '',
     });
   };
 
   const handleTogglePrincipal = (index: number) => {
     const currentContacto = fields[index];
-    const newValue = !currentContacto.esPrincipal;
+    const newValue = !currentContacto.principal;
 
     // Si se marca como principal, desmarcar los demás
     if (newValue) {
       fields.forEach((field, i) => {
-        if (i !== index && field.esPrincipal) {
-          update(i, { ...field, esPrincipal: false });
+        if (i !== index && field.principal) {
+          update(i, { ...field, principal: false });
         }
       });
     }
 
-    update(index, { ...currentContacto, esPrincipal: newValue });
+    update(index, { ...currentContacto, principal: newValue });
   };
 
   const tiposContacto = catalogos?.tiposContacto || [];
@@ -123,10 +123,10 @@ export const ContactosFormSection: React.FC<ContactosFormSectionProps> = ({
                 <IconButton
                   size="small"
                   onClick={() => handleTogglePrincipal(index)}
-                  color={field.esPrincipal ? 'primary' : 'default'}
-                  title={field.esPrincipal ? 'Contacto principal' : 'Marcar como principal'}
+                  color={field.principal ? 'primary' : 'default'}
+                  title={field.principal ? 'Contacto principal' : 'Marcar como principal'}
                 >
-                  {field.esPrincipal ? <StarIcon /> : <StarBorderIcon />}
+                  {field.principal ? <StarIcon /> : <StarBorderIcon />}
                 </IconButton>
                 <IconButton
                   size="small"
@@ -232,7 +232,7 @@ export const ContactosFormSection: React.FC<ContactosFormSectionProps> = ({
                 />
               </Grid>
 
-              {field.esPrincipal && (
+              {field.principal && (
                 <Grid size={{ xs: 12 }}>
                   <Chip
                     icon={<StarIcon />}

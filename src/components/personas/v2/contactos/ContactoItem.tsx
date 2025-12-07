@@ -115,13 +115,13 @@ export const ContactoItem: React.FC<ContactoItemProps> = ({
           backgroundColor: contacto.activo ? 'background.paper' : 'action.disabledBackground',
           borderRadius: 1,
           border: '1px solid',
-          borderColor: contacto.esPrincipal ? 'primary.main' : 'divider',
+          borderColor: contacto.principal ? 'primary.main' : 'divider',
           opacity: contacto.activo ? 1 : 0.6,
-          borderWidth: contacto.esPrincipal ? 2 : 1,
+          borderWidth: contacto.principal ? 2 : 1,
         }}
       >
         <Box display="flex" alignItems="center" gap={1.5} flex={1}>
-          {contacto.esPrincipal && (
+          {contacto.principal && (
             <Tooltip title="Contacto principal">
               <StarIcon color="primary" fontSize="small" />
             </Tooltip>
@@ -161,7 +161,7 @@ export const ContactoItem: React.FC<ContactoItemProps> = ({
                 </IconButton>
               </Tooltip>
             )}
-            {onSetPrincipal && !contacto.esPrincipal && (
+            {onSetPrincipal && !contacto.principal && (
               <Tooltip title="Marcar como principal">
                 <IconButton size="small" onClick={() => onSetPrincipal(contacto)}>
                   <StarBorderIcon fontSize="small" />
@@ -194,14 +194,14 @@ export const ContactoItem: React.FC<ContactoItemProps> = ({
       sx={{
         backgroundColor: contacto.activo ? 'background.paper' : 'action.disabledBackground',
         opacity: contacto.activo ? 1 : 0.6,
-        borderColor: contacto.esPrincipal ? 'primary.main' : 'divider',
-        borderWidth: contacto.esPrincipal ? 2 : 1,
+        borderColor: contacto.principal ? 'primary.main' : 'divider',
+        borderWidth: contacto.principal ? 2 : 1,
       }}
     >
       <CardContent>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
           <Box display="flex" alignItems="center" gap={1}>
-            {contacto.esPrincipal && (
+            {contacto.principal && (
               <Tooltip title="Contacto principal">
                 <StarIcon color="primary" />
               </Tooltip>
@@ -232,7 +232,7 @@ export const ContactoItem: React.FC<ContactoItemProps> = ({
                   </IconButton>
                 </Tooltip>
               )}
-              {onSetPrincipal && !contacto.esPrincipal && (
+              {onSetPrincipal && !contacto.principal && (
                 <Tooltip title="Marcar como principal">
                   <IconButton size="small" onClick={() => onSetPrincipal(contacto)}>
                     <StarBorderIcon fontSize="small" />

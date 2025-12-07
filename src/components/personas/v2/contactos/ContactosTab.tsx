@@ -205,8 +205,8 @@ export const ContactosTab: React.FC<ContactosTabProps> = ({ personaId, catalogos
   };
 
   // Separar contacto principal de los demás
-  const contactoPrincipal = contactos.find((c) => c.esPrincipal && c.activo);
-  const otrosContactos = contactos.filter((c) => !c.esPrincipal || !c.activo);
+  const contactoPrincipal = contactos.find((c) => c.principal && c.activo);
+  const otrosContactos = contactos.filter((c) => !c.principal || !c.activo);
 
   return (
     <Box>

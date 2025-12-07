@@ -395,7 +395,7 @@ interface UsePersonaContactosResult {
  *   tipoContactoId: 1,
  *   valor: '+54911123456',
  *   descripcion: 'WhatsApp personal',
- *   esPrincipal: true
+ *   principal: true
  * });
  *
  * // Eliminar contacto

@@ -12,17 +12,17 @@ export const createContactoSchema = z.object({
   tipoContactoId: z.number().int().positive('Tipo de contacto requerido'),
   valor: z.string().min(1, 'Valor requerido').max(200).trim(),
   descripcion: z.string().max(200).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
-  esPrincipal: z.boolean().default(false),
-  observaciones: z.string().max(200).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
+  principal: z.boolean().default(false),
+  observaciones: z.string().max(500).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
 });
 
 export const updateContactoSchema = z.object({
   tipoContactoId: z.number().int().positive().optional(),
   valor: z.string().min(1).max(200).trim().optional(),
   descripcion: z.string().max(200).optional().nullable(),
-  esPrincipal: z.boolean().optional(),
+  principal: z.boolean().optional(),
   activo: z.boolean().optional(),
-  observaciones: z.string().max(200).optional().nullable(),
+  observaciones: z.string().max(500).optional().nullable(),
 });
 
 const personaTipoBaseSchema = z.object({
@@ -132,7 +132,7 @@ export const createPersonaSchema = z.object({
   path: ['tipos'],
 }).refine(data => {
   if (data.contactos && data.contactos.length > 0) {
-    const contactosPrincipales = data.contactos.filter(c => c.esPrincipal);
+    const contactosPrincipales = data.contactos.filter(c => c.principal);
     return contactosPrincipales.length <= 1;
   }
   return true;
@@ -190,17 +190,19 @@ export const updateEspecialidadDocenteSchema = z.object({
 export const createTipoContactoSchema = z.object({
   codigo: z.string().min(2).max(50).regex(/^[A-Z_]+$/).transform(val => val.toUpperCase()),
   nombre: z.string().min(3).max(100).trim(),
-  descripcion: z.string().max(300).optional().nullable(),
+  descripcion: z.string().max(500).optional().nullable(),
   icono: z.string().max(50).optional().nullable(),
-  orden: z.number().int().positive().optional(),
+  pattern: z.string().max(500).optional().nullable(),
+  orden: z.number().int().nonnegative().optional(),
 });
 
 export const updateTipoContactoSchema = z.object({
   nombre: z.string().min(3).max(100).trim().optional(),
-  descripcion: z.string().max(300).optional().nullable(),
+  descripcion: z.string().max(500).optional().nullable(),
   icono: z.string().max(50).optional().nullable(),
+  pattern: z.string().max(500).optional().nullable(),
   activo: z.boolean().optional(),
-  orden: z.number().int().positive().optional(),
+  orden: z.number().int().nonnegative().optional(),
 });
 
 export const reorderCatalogoSchema = z.object({

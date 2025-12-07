@@ -24,6 +24,8 @@ import {
   UpdateTipoPersonaDTO,
   CreateEspecialidadDocenteDTO,
   UpdateEspecialidadDocenteDTO,
+  CreateTipoContactoDTO,
+  UpdateTipoContactoDTO,
   ReorderCatalogoDTO,
 } from '../types/persona.types';
 
@@ -47,17 +49,18 @@ export const personasApi = {
    * - GET /api/catalogos/especialidades-docentes ✅
    * - GET /api/categorias-socios ✅
    * - GET /api/catalogos/razones-sociales ✅
-   * - GET /api/catalogos/tipos-contacto ❌ (no existe, se retorna array vacío)
+   * - GET /api/catalogos/tipos-contacto ✅ (NUEVO - backend etapa 7.5)
    */
   getCatalogos: async (): Promise<CatalogosResponse> => {
     console.info('📦 Cargando catálogos de personas desde endpoints individuales...');
 
-    // Cargar solo los catálogos que existen en el backend
-    const [tiposRes, especialidadesRes, categoriasRes, razonesRes] = await Promise.allSettled([
+    // Cargar todos los catálogos disponibles
+    const [tiposRes, especialidadesRes, categoriasRes, razonesRes, tiposContactoRes] = await Promise.allSettled([
       api.get('/catalogos/tipos-persona'),           // ✅ Existe
       api.get('/catalogos/especialidades-docentes'), // ✅ Existe
       api.get('/categorias-socios'),                 // ✅ Existe (ruta diferente)
-      api.get('/catalogos/razones-sociales'),        // ✅ Existe (nuevo)
+      api.get('/catalogos/razones-sociales'),        // ✅ Existe
+      api.get('/catalogos/tipos-contacto'),          // ✅ Existe (backend etapa 7.5)
     ]);
 
     // Construir respuesta con datos disponibles
@@ -66,7 +69,7 @@ export const personasApi = {
       especialidadesDocentes: especialidadesRes.status === 'fulfilled' ? especialidadesRes.value.data.data : [],
       categoriasSocio: categoriasRes.status === 'fulfilled' ? categoriasRes.value.data.data : [],
       razonesSociales: razonesRes.status === 'fulfilled' ? razonesRes.value.data.data : [],
-      tiposContacto: [], // No existe endpoint en backend
+      tiposContacto: tiposContactoRes.status === 'fulfilled' ? tiposContactoRes.value.data.data : [],
     };
 
     const warnings = [];
@@ -74,6 +77,7 @@ export const personasApi = {
     if (especialidadesRes.status === 'rejected') warnings.push('especialidades-docentes');
     if (categoriasRes.status === 'rejected') warnings.push('categorias-socios');
     if (razonesRes.status === 'rejected') warnings.push('razones-sociales');
+    if (tiposContactoRes.status === 'rejected') warnings.push('tipos-contacto');
 
     if (warnings.length > 0) {
       console.warn(`⚠️ No se pudieron cargar algunos catálogos: ${warnings.join(', ')}`);
@@ -110,16 +114,23 @@ export const personasApi = {
    * Obtener catálogo de tipos de contacto
    * GET /api/catalogos/tipos-contacto
    *
-   * NOTA: Este endpoint NO existe en el backend actual.
-   * Retorna array vacío para evitar errores 404.
+   * Disponible desde backend etapa 7.5
    */
-  getTiposContacto: async (): Promise<ApiResponse<TipoContacto[]>> => {
-    console.warn('⚠️ Endpoint /catalogos/tipos-contacto no disponible en backend');
-    return {
-      success: true,
-      data: [],
-      message: 'Endpoint no implementado en backend',
-    };
+  getTiposContacto: async (params?: {
+    soloActivos?: boolean;
+    ordenarPor?: 'orden' | 'nombre' | 'codigo';
+  }): Promise<ApiResponse<TipoContacto[]>> => {
+    const response = await api.get('/catalogos/tipos-contacto', { params });
+    return response.data;
+  },
+
+  /**
+   * Obtener tipo de contacto por ID
+   * GET /api/catalogos/tipos-contacto/:id
+   */
+  getTipoContactoById: async (id: number): Promise<ApiResponse<TipoContacto>> => {
+    const response = await api.get(`/catalogos/tipos-contacto/${id}`);
+    return response.data;
   },
 
   /**
@@ -348,11 +359,11 @@ export const personasApi = {
    * PATCH /api/personas/contactos/:id/principal
    *
    * NOTA: Este endpoint NO existe en el backend actual.
-   * Como workaround, usa updateContacto con esPrincipal: true.
+   * Como workaround, usa updateContacto con principal: true.
    */
   setPrincipal: async (contactoId: number): Promise<ApiResponse<Contacto>> => {
     console.warn('⚠️ Endpoint /personas/contactos/:id/principal no disponible. Use updateContacto() en su lugar.');
-    throw new Error('Endpoint no implementado. Use updateContacto() con { esPrincipal: true }');
+    throw new Error('Endpoint no implementado. Use updateContacto() con { principal: true }');
   },
 
   // ============================================================================
@@ -573,6 +584,37 @@ export const personasApi = {
       const response = await api.post('/admin/catalogos/tipos-contacto/reordenar', data);
       return response.data;
     },
+
+    /**
+     * Desactivar tipo de contacto
+     * POST /api/catalogos/tipos-contacto/:id/desactivar
+     */
+    desactivarTipoContacto: async (id: number): Promise<ApiResponse<TipoContacto>> => {
+      const response = await api.post(`/catalogos/tipos-contacto/${id}/desactivar`);
+      return response.data;
+    },
+
+    /**
+     * Activar tipo de contacto
+     * POST /api/catalogos/tipos-contacto/:id/activar
+     */
+    activarTipoContacto: async (id: number): Promise<ApiResponse<TipoContacto>> => {
+      const response = await api.post(`/catalogos/tipos-contacto/${id}/activar`);
+      return response.data;
+    },
+  },
+
+  // ============================================================================
+  // ESTADÍSTICAS DE TIPOS DE CONTACTO
+  // ============================================================================
+
+  /**
+   * Obtener estadísticas de uso de tipos de contacto
+   * GET /api/catalogos/tipos-contacto/estadisticas/uso
+   */
+  getEstadisticasTiposContacto: async (): Promise<ApiResponse<any[]>> => {
+    const response = await api.get('/catalogos/tipos-contacto/estadisticas/uso');
+    return response.data;
   },
 };
 
