@@ -765,17 +765,13 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
             </Box>
 
 
-            {/* Contactos - Solo en modo creación */}
-            {!isEditing && (
-              <>
-                <ContactosFormSection
-                  control={control}
-                  errors={errors}
-                  catalogos={catalogos}
-                />
-                <Divider />
-              </>
-            )}
+            {/* Contactos adicionales */}
+            <ContactosFormSection
+              control={control}
+              errors={errors}
+              catalogos={catalogos}
+            />
+            <Divider />
 
             {/* Observaciones */}
             <Box>

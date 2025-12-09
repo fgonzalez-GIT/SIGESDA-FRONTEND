@@ -100,6 +100,20 @@ export const FamiliaresTab: React.FC<FamiliaresTabProps> = ({
     }
   };
 
+  const handleCreateRelacion = async (request: any) => {
+    try {
+      await familiaresApiReal.crearRelacion(request);
+
+      // Llamar a onSuccess que cierra el modal y recarga
+      await handleSuccess();
+    } catch (err: any) {
+      const errorMsg = err.message || 'Error al crear la relación familiar';
+      setError(errorMsg);
+      handleApiError(err);
+      throw err; // Re-throw para que el modal sepa que hubo error
+    }
+  };
+
   const handleSuccess = async () => {
     // Cerrar modal
     setDialogOpen(false);
@@ -211,7 +225,8 @@ export const FamiliaresTab: React.FC<FamiliaresTabProps> = ({
       <RelacionFamiliarDialog
         open={dialogOpen}
         onClose={handleCloseDialog}
-        personaOrigenId={personaId}
+        personaSeleccionada={personaId}
+        onSubmit={handleCreateRelacion}
         onSuccess={handleSuccess}
       />
     </Box>

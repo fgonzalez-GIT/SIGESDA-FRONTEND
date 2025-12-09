@@ -107,7 +107,21 @@ const PersonasPage: React.FC = () => {
     try {
       if (selectedPersona) {
         // Actualizar persona existente
-        await personasApi.update(selectedPersona.id, data);
+        // Separar contactos del resto de datos
+        const { contactos, tipos, ...personaData } = data;
+
+        // Actualizar datos básicos de la persona
+        await personasApi.update(selectedPersona.id, personaData);
+
+        // Agregar contactos nuevos (si hay)
+        if (contactos && contactos.length > 0) {
+          await Promise.all(
+            contactos.map(contacto =>
+              personasApi.addContacto(selectedPersona.id, contacto)
+            )
+          );
+        }
+
         dispatch(
           showNotification({
             message: 'Persona actualizada exitosamente',
@@ -115,7 +129,7 @@ const PersonasPage: React.FC = () => {
           })
         );
       } else {
-        // Crear nueva persona
+        // Crear nueva persona (con tipos y contactos incluidos en el DTO)
         await personasApi.create(data);
         dispatch(
           showNotification({

@@ -64,16 +64,18 @@ const tiposRelacion = [
   { value: 'madre', label: 'Madre', inversa: 'hija' },
   { value: 'hijo', label: 'Hijo', inversa: 'padre' },
   { value: 'hija', label: 'Hija', inversa: 'madre' },
-  { value: 'esposo', label: 'Esposo', inversa: 'esposa' },
-  { value: 'esposa', label: 'Esposa', inversa: 'esposo' },
-  { value: 'hermano', label: 'Hermano', inversa: 'hermana' },
-  { value: 'hermana', label: 'Hermana', inversa: 'hermano' },
+  { value: 'esposo', label: 'Esposo', inversa: 'esposo' },
+  { value: 'esposa', label: 'Esposa', inversa: 'esposa' },
+  { value: 'hermano', label: 'Hermano', inversa: 'hermano' },
+  { value: 'hermana', label: 'Hermana', inversa: 'hermana' },
   { value: 'abuelo', label: 'Abuelo', inversa: 'nieto' },
   { value: 'abuela', label: 'Abuela', inversa: 'nieta' },
   { value: 'nieto', label: 'Nieto', inversa: 'abuelo' },
   { value: 'nieta', label: 'Nieta', inversa: 'abuela' },
-  { value: 'tio', label: 'Tío', inversa: 'primo' },
-  { value: 'tia', label: 'Tía', inversa: 'prima' },
+  { value: 'tio', label: 'Tío', inversa: 'sobrino' },
+  { value: 'tia', label: 'Tía', inversa: 'sobrina' },
+  { value: 'sobrino', label: 'Sobrino', inversa: 'tio' },
+  { value: 'sobrina', label: 'Sobrina', inversa: 'tia' },
   { value: 'primo', label: 'Primo', inversa: 'primo' },
   { value: 'prima', label: 'Prima', inversa: 'prima' },
   { value: 'otro', label: 'Otra relación', inversa: 'otro' },
@@ -184,7 +186,12 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
       porcentajeDescuento: formData.porcentajeDescuento > 0 ? formData.porcentajeDescuento : undefined,
     };
 
-    onSubmit(request);
+    if (onSubmit) {
+      onSubmit(request);
+    } else if (onSuccess) {
+      // Fallback: si solo hay onSuccess, llamarlo directamente
+      onSuccess();
+    }
   };
 
   const handleClose = () => {
@@ -281,7 +288,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                       {...params}
                       label="Persona Principal"
                       error={!!errors.personaId}
-                      helperText={errors.personaId}
+                      helperText={errors.personaId || "Persona que tomamos como base para asignarle un familiar"}
                       required
                       InputProps={{
                         ...params.InputProps,
@@ -305,7 +312,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                       {...params}
                       label="Familiar"
                       error={!!errors.familiarId}
-                      helperText={errors.familiarId}
+                      helperText={errors.familiarId || "Persona que se vincula a Persona Principal con un parentesco"}
                       required
                       InputProps={{
                         ...params.InputProps,
@@ -318,11 +325,12 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
 
                 {/* Tipo de Relación */}
                 <FormControl fullWidth required error={!!errors.tipoRelacion}>
-                  <InputLabel>Tipo de Relación</InputLabel>
+                  <InputLabel>Tipo de Relación (el género debe coincidir con el Familiar)</InputLabel>
                   <Select
                     value={formData.tipoRelacion}
                     onChange={(e) => handleTipoRelacionChange(e.target.value)}
                     disabled={loading}
+                    label="Tipo de Relación (el género debe coincidir con el Familiar)"
                   >
                     {tiposRelacion.map((tipo) => (
                       <MenuItem key={tipo.value} value={tipo.value}>
@@ -333,6 +341,11 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                   {errors.tipoRelacion && (
                     <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
                       {errors.tipoRelacion}
+                    </Typography>
+                  )}
+                  {!errors.tipoRelacion && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, ml: 2 }}>
+                      Indica el parentesco que el Familiar tiene con la Persona Principal
                     </Typography>
                   )}
                 </FormControl>
@@ -363,11 +376,11 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                           disabled={loading}
                         />
                       }
-                      label="Crear relación inversa automáticamente"
+                      label="Crear relación inversa automáticamente (se respetará el género del Familiar)"
                     />
                     {formData.crearRelacionInversa && formData.tipoRelacionInversa && (
                       <Alert severity="info" sx={{ mt: 1 }}>
-                        Se creará automáticamente la relación inversa:
+                        Se creará automáticamente la relación inversa (respetando el género del Familiar):
                         <strong> {familiarSeleccionado?.nombre} es {formData.tipoRelacionInversa} de {personaPrincipal?.nombre}</strong>
                       </Alert>
                     )}
@@ -602,8 +615,8 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                 {formData.crearRelacionInversa && !relacion && (
                   <Alert severity="info" sx={{ mt: 2 }}>
                     <Typography variant="body2">
-                      <strong>Relación inversa:</strong> También se creará automáticamente la relación
-                      "{formData.tipoRelacionInversa}" desde {familiarSeleccionado?.nombre} hacia {personaPrincipal?.nombre}.
+                      <strong>Relación inversa:</strong> También se creará automáticamente:{' '}
+                      <strong>{familiarSeleccionado?.nombre} es {formData.tipoRelacionInversa} de {personaPrincipal?.nombre}</strong>
                     </Typography>
                   </Alert>
                 )}

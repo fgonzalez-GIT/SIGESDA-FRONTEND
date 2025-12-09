@@ -20,7 +20,7 @@ import {
   ContactPhone as ContactIcon,
   FamilyRestroom as FamilyIcon,
 } from '@mui/icons-material';
-import { PersonaHeader, ContactosTab } from '../../components/personas/v2';
+import { PersonaHeader, ContactosTab, PersonaFormV2 } from '../../components/personas/v2';
 import { usePersona, useCatalogosPersonas } from '../../hooks/usePersonas';
 import { TipoItem } from '../../components/personas/v2/tipos';
 import { AsignarTipoModal } from '../../components/personas/v2/tipos/AsignarTipoModal';
@@ -29,6 +29,7 @@ import { personasApi } from '../../services/personasApi';
 import { useAppDispatch } from '../../hooks/redux';
 import { setTiposAsignados, removerTipo } from '../../store/slices/personasSlice';
 import { showNotification } from '../../store/slices/uiSlice';
+import type { CreatePersonaDTO } from '../../types/persona.types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -65,6 +66,7 @@ const PersonaDetallePage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [asignarTipoOpen, setAsignarTipoOpen] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
 
   // Cargar persona y catálogos
   const { persona, loading, error, refetch } = usePersona(personaId);
@@ -79,8 +81,52 @@ const PersonaDetallePage: React.FC = () => {
   };
 
   const handleEdit = () => {
-    // TODO: Abrir formulario de edición
-    console.log('Editar persona', personaId);
+    setFormOpen(true);
+  };
+
+  const handleFormClose = () => {
+    setFormOpen(false);
+  };
+
+  const handleFormSubmit = async (data: CreatePersonaDTO) => {
+    if (!personaId) return;
+
+    try {
+      // Separar contactos del resto de datos
+      const { contactos, tipos, ...personaData } = data;
+
+      // Actualizar datos básicos de la persona
+      await personasApi.update(personaId, personaData);
+
+      // Agregar contactos nuevos (si hay)
+      if (contactos && contactos.length > 0) {
+        await Promise.all(
+          contactos.map(contacto =>
+            personasApi.addContacto(personaId, contacto)
+          )
+        );
+      }
+
+      dispatch(
+        showNotification({
+          message: 'Persona actualizada exitosamente',
+          severity: 'success',
+        })
+      );
+
+      setFormOpen(false);
+      refetch(); // Recargar datos de la persona
+    } catch (error: any) {
+      console.error('Error al actualizar persona:', error);
+      dispatch(
+        showNotification({
+          message: 'No es posible realizar la acción en este momento',
+          severity: 'error',
+        })
+      );
+      // Re-throw para que el formulario no se cierre
+      throw error;
+    }
   };
 
   const handleAsignarTipo = () => {
@@ -348,6 +394,18 @@ const PersonaDetallePage: React.FC = () => {
           catalogos={catalogos}
           tiposAsignados={persona.tipos?.map(t => t.tipoPersona?.codigo).filter((c): c is string => !!c) || []}
           onSuccess={handleAsignarTipoSuccess}
+        />
+      )}
+
+      {/* Formulario de edición de persona */}
+      {persona && (
+        <PersonaFormV2
+          open={formOpen}
+          onClose={handleFormClose}
+          onSubmit={handleFormSubmit}
+          persona={persona}
+          catalogos={catalogos}
+          loading={loadingAction}
         />
       )}
     </Box>
