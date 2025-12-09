@@ -102,6 +102,7 @@ export const createPersonaSchema = z.object({
     .transform(val => val === '' || val === null ? undefined : val),
   direccion: z.string().max(300).trim().optional().nullable().transform(val => val === '' || val === null ? undefined : val),
   fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
+  genero: z.enum(['MASCULINO', 'FEMENINO', 'OTRO', 'NO_ESPECIFICA']).optional().nullable(),
   observaciones: z.string().max(1000).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
   tipos: z.array(createPersonaTipoSchema).optional().default([]),
   contactos: z.array(createContactoSchema).optional().default([]),
@@ -149,6 +150,7 @@ export const updatePersonaSchema = z.object({
   telefono: z.string().regex(telefonoRegex).max(50).optional().nullable(),
   direccion: z.string().max(300).trim().optional().nullable(),
   fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  genero: z.enum(['MASCULINO', 'FEMENINO', 'OTRO', 'NO_ESPECIFICA']).optional().nullable(),
   estado: z.enum(['ACTIVO', 'INACTIVO', 'SUSPENDIDO']).optional(),
   observaciones: z.string().max(1000).optional().nullable(),
 });

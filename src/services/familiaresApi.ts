@@ -17,34 +17,36 @@ import { RelacionFamiliar, CrearRelacionRequest } from '../store/slices/familiar
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Mapeo de tipos de relación: frontend (minúsculas) -> backend (mayúsculas)
+// IMPORTANTE: Incluye HIJO y HIJA para correcta determinación de género en relaciones inversas
 const tipoRelacionMap: Record<string, string> = {
   'padre': 'PADRE',
   'madre': 'MADRE',
-  'hijo': 'HIJO',
-  'hija': 'HIJA',
+  'hijo': 'HIJO',     // ✓ Género masculino
+  'hija': 'HIJA',     // ✓ Género femenino
   'esposo': 'ESPOSO',
   'esposa': 'ESPOSA',
   'hermano': 'HERMANO',
   'hermana': 'HERMANA',
   'abuelo': 'ABUELO',
   'abuela': 'ABUELA',
-  'nieto': 'NIETO',
-  'nieta': 'NIETA',
+  'nieto': 'NIETO',   // ✓ Género masculino
+  'nieta': 'NIETA',   // ✓ Género femenino
   'tio': 'TIO',
   'tia': 'TIA',
-  'sobrino': 'SOBRINO',
-  'sobrina': 'SOBRINA',
+  'sobrino': 'SOBRINO',  // ✓ Género masculino
+  'sobrina': 'SOBRINA',  // ✓ Género femenino
   'primo': 'PRIMO',
   'prima': 'PRIMA',
   'otro': 'OTRO',
 };
 
 // Mapeo inverso: backend -> frontend
+// IMPORTANTE: Cada género tiene su propio mapeo para preservar información de género
 const parentescoToTipoRelacion: Record<string, RelacionFamiliar['tipoRelacion']> = {
   'PADRE': 'padre',
   'MADRE': 'madre',
-  'HIJO': 'hijo',
-  'HIJA': 'hija',
+  'HIJO': 'hijo',     // ✓ Preserva género masculino
+  'HIJA': 'hija',     // ✓ Preserva género femenino
   'ESPOSO': 'esposo',
   'ESPOSA': 'esposa',
   'CONYUGE': 'esposo', // Fallback para compatibilidad con datos antiguos
@@ -52,12 +54,12 @@ const parentescoToTipoRelacion: Record<string, RelacionFamiliar['tipoRelacion']>
   'HERMANA': 'hermana',
   'ABUELO': 'abuelo',
   'ABUELA': 'abuela',
-  'NIETO': 'nieto',
-  'NIETA': 'nieta',
+  'NIETO': 'nieto',   // ✓ Preserva género masculino
+  'NIETA': 'nieta',   // ✓ Preserva género femenino
   'TIO': 'tio',
   'TIA': 'tia',
-  'SOBRINO': 'sobrino',
-  'SOBRINA': 'sobrina',
+  'SOBRINO': 'sobrino',  // ✓ Preserva género masculino
+  'SOBRINA': 'sobrina',  // ✓ Preserva género femenino
   'PRIMO': 'primo',
   'PRIMA': 'prima',
   'OTRO': 'otro',

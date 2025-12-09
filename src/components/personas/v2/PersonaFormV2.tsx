@@ -111,6 +111,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
       telefono: '',
       direccion: '',
       fechaNacimiento: '',
+      genero: undefined,
       observaciones: '',
       tipos: [{ tipoPersonaCodigo: 'NO_SOCIO' }],
       contactos: [],
@@ -198,6 +199,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
         telefono: persona.telefono || '',
         direccion: persona.direccion || '',
         fechaNacimiento: isoToDateInput(persona.fechaNacimiento),
+        genero: persona.genero || undefined,
         observaciones: persona.observaciones || '',
         tipos: tiposExistentes,
         contactos: [],
@@ -215,6 +217,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
         telefono: '',
         direccion: '',
         fechaNacimiento: '',
+        genero: undefined,
         observaciones: '',
         tipos: [{ tipoPersonaCodigo: 'NO_SOCIO' }],
         contactos: [],
@@ -698,6 +701,34 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                         error={!!errors.fechaNacimiento}
                         helperText={errors.fechaNacimiento?.message}
                       />
+                    )}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Controller
+                    name="genero"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth size="small" error={!!errors.genero}>
+                        <InputLabel>Género</InputLabel>
+                        <Select
+                          {...field}
+                          label="Género"
+                          value={field.value || ''}
+                        >
+                          <MenuItem value="">Sin especificar</MenuItem>
+                          <MenuItem value="MASCULINO">Masculino</MenuItem>
+                          <MenuItem value="FEMENINO">Femenino</MenuItem>
+                          <MenuItem value="OTRO">Otro</MenuItem>
+                          <MenuItem value="NO_ESPECIFICA">Prefiero no especificar</MenuItem>
+                        </Select>
+                        {errors.genero && (
+                          <FormHelperText>{errors.genero.message}</FormHelperText>
+                        )}
+                        <FormHelperText>
+                          Utilizado para determinar correctamente las relaciones familiares
+                        </FormHelperText>
+                      </FormControl>
                     )}
                   />
                 </Grid>

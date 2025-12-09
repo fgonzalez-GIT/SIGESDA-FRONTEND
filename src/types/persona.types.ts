@@ -6,6 +6,16 @@
  */
 
 // ============================================================================
+// ENUMS Y CONSTANTES
+// ============================================================================
+
+/**
+ * Género de una persona
+ * Utilizado para calcular correctamente relaciones familiares inversas
+ */
+export type GeneroPersona = 'MASCULINO' | 'FEMENINO' | 'OTRO' | 'NO_ESPECIFICA';
+
+// ============================================================================
 // CATÁLOGOS BASE
 // ============================================================================
 
@@ -175,6 +185,7 @@ export interface Persona {
   telefono?: string;
   direccion?: string;
   fechaNacimiento?: string;    // ISO 8601
+  genero?: GeneroPersona;      // Género para relaciones familiares
 
   // Estado - El backend envía 'activo' (boolean)
   activo: boolean;             // Campo real del backend
@@ -252,6 +263,7 @@ export interface CreatePersonaDTO {
   telefono?: string;
   direccion?: string;
   fechaNacimiento?: string;
+  genero?: GeneroPersona;
 
   // Tipos y contactos (opcional al crear)
   tipos?: CreatePersonaTipoDTO[];
@@ -275,6 +287,7 @@ export interface UpdatePersonaDTO {
   telefono?: string;
   direccion?: string;
   fechaNacimiento?: string;
+  genero?: GeneroPersona;
   estado?: 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO';
   observaciones?: string;
 }

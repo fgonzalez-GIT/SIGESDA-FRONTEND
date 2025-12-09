@@ -4,7 +4,7 @@ export interface RelacionFamiliar {
   id: number;
   personaId: number;
   familiarId: number;
-  tipoRelacion: 'padre' | 'madre' | 'hijo' | 'hija' | 'esposo' | 'esposa' | 'hermano' | 'hermana' | 'abuelo' | 'abuela' | 'nieto' | 'nieta' | 'tio' | 'tia' | 'primo' | 'prima' | 'otro';
+  tipoRelacion: 'padre' | 'madre' | 'hijo' | 'hija' | 'esposo' | 'esposa' | 'hermano' | 'hermana' | 'abuelo' | 'abuela' | 'nieto' | 'nieta' | 'tio' | 'tia' | 'sobrino' | 'sobrina' | 'primo' | 'prima' | 'otro';
   descripcion?: string;
   fechaCreacion: string;
   activo: boolean;
