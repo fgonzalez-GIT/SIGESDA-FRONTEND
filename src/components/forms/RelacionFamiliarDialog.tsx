@@ -83,20 +83,22 @@ const tiposRelacion = [
 ];
 
 /**
- * Calcula la relación inversa considerando el género del familiar
+ * Calcula la relación inversa considerando el género del familiar y de la persona principal
  *
- * @param tipoRelacion - Tipo de relación seleccionada (ej: 'padre', 'madre')
+ * @param tipoRelacion - Tipo de relación seleccionada (ej: 'padre', 'madre', 'hijo')
  * @param generoFamiliar - Género del familiar (la persona que se está agregando)
+ * @param generoPersonaPrincipal - Género de la persona principal (la persona base)
  * @returns El tipo de relación inversa correcta según el género
  *
  * @example
  * calcularRelacionInversa('madre', 'MASCULINO') // => 'hijo' (María es madre de Francisco → Francisco es hijo de María)
- * calcularRelacionInversa('madre', 'FEMENINO') // => 'hija' (María es madre de Ana → Ana es hija de María)
+ * calcularRelacionInversa('hijo', null, 'FEMENINO') // => 'madre' (Francisco es hijo de María → María es madre de Francisco)
  * calcularRelacionInversa('esposo', 'FEMENINO') // => 'esposa' (Simétricas mantienen género)
  */
 const calcularRelacionInversa = (
   tipoRelacion: string,
-  generoFamiliar?: GeneroPersona | null
+  generoFamiliar?: GeneroPersona | null,
+  generoPersonaPrincipal?: GeneroPersona | null
 ): RelacionFamiliar['tipoRelacion'] => {
   // Si no hay género, usar lógica por defecto (fallback al mapeo hardcoded)
   if (!generoFamiliar) {
@@ -124,23 +126,29 @@ const calcularRelacionInversa = (
     case 'tia':
       return esMasculino ? 'sobrino' : esFemenino ? 'sobrina' : 'sobrino';
 
-    // HIJO/HIJA → PADRE/MADRE (ya está correcto en el mapeo)
+    // HIJO/HIJA → PADRE/MADRE (depende del género de la PERSONA PRINCIPAL)
     case 'hijo':
-      return 'padre';
     case 'hija':
-      return 'madre';
+      // El familiar es hijo/a, entonces la persona principal es padre/madre
+      const esMasculinoPersonaPrincipal = generoPersonaPrincipal === 'MASCULINO';
+      const esFemeninoPersonaPrincipal = generoPersonaPrincipal === 'FEMENINO';
+      return esMasculinoPersonaPrincipal ? 'padre' : esFemeninoPersonaPrincipal ? 'madre' : 'padre';
 
-    // NIETO/NIETA → ABUELO/ABUELA (ya está correcto en el mapeo)
+    // NIETO/NIETA → ABUELO/ABUELA (depende del género de la PERSONA PRINCIPAL)
     case 'nieto':
-      return 'abuelo';
     case 'nieta':
-      return 'abuela';
+      // El familiar es nieto/a, entonces la persona principal es abuelo/abuela
+      const esMasculinoPrincipal = generoPersonaPrincipal === 'MASCULINO';
+      const esFemeninoPrincipal = generoPersonaPrincipal === 'FEMENINO';
+      return esMasculinoPrincipal ? 'abuelo' : esFemeninoPrincipal ? 'abuela' : 'abuelo';
 
-    // SOBRINO/SOBRINA → TÍO/TÍA (ya está correcto en el mapeo)
+    // SOBRINO/SOBRINA → TÍO/TÍA (depende del género de la PERSONA PRINCIPAL)
     case 'sobrino':
-      return 'tio';
     case 'sobrina':
-      return 'tia';
+      // El familiar es sobrino/a, entonces la persona principal es tío/tía
+      const esMasculinoPpal = generoPersonaPrincipal === 'MASCULINO';
+      const esFemeninoPpal = generoPersonaPrincipal === 'FEMENINO';
+      return esMasculinoPpal ? 'tio' : esFemeninoPpal ? 'tia' : 'tio';
 
     // Relaciones simétricas que mantienen el género
     case 'esposo':
@@ -297,10 +305,15 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
   const handleTipoRelacionChange = (tipoRelacion: string) => {
     setFormData(prev => ({ ...prev, tipoRelacion: tipoRelacion as RelacionFamiliar['tipoRelacion'] }));
 
-    // Auto-completar relación inversa usando género del familiar
+    // Auto-completar relación inversa usando género del familiar y de la persona principal
     if (formData.crearRelacionInversa) {
       const familiarSeleccionado = personas.find(p => p.id === formData.familiarId);
-      const relacionInversa = calcularRelacionInversa(tipoRelacion, familiarSeleccionado?.genero);
+      const personaPrincipal = personas.find(p => p.id === formData.personaId);
+      const relacionInversa = calcularRelacionInversa(
+        tipoRelacion,
+        familiarSeleccionado?.genero,
+        personaPrincipal?.genero
+      );
 
       setFormData(prev => ({
         ...prev,
@@ -332,7 +345,11 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
   // Recalcular relación inversa cuando cambia el familiar seleccionado (porque cambia su género)
   useEffect(() => {
     if (formData.tipoRelacion && formData.crearRelacionInversa && formData.familiarId) {
-      const relacionInversa = calcularRelacionInversa(formData.tipoRelacion, familiarSeleccionado?.genero);
+      const relacionInversa = calcularRelacionInversa(
+        formData.tipoRelacion,
+        familiarSeleccionado?.genero,
+        personaPrincipal?.genero
+      );
       setFormData(prev => ({
         ...prev,
         tipoRelacionInversa: relacionInversa
@@ -476,7 +493,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                     {formData.crearRelacionInversa && formData.tipoRelacionInversa && (
                       <Alert severity="info" sx={{ mt: 1 }}>
                         Se creará automáticamente la relación inversa (respetando el género del Familiar):
-                        <strong> {familiarSeleccionado?.nombre} es {formData.tipoRelacionInversa} de {personaPrincipal?.nombre}</strong>
+                        <strong> {personaPrincipal?.nombre} es {formData.tipoRelacionInversa} de {familiarSeleccionado?.nombre}</strong>
                       </Alert>
                     )}
                   </Box>
@@ -711,7 +728,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                   <Alert severity="info" sx={{ mt: 2 }}>
                     <Typography variant="body2">
                       <strong>Relación inversa:</strong> También se creará automáticamente:{' '}
-                      <strong>{familiarSeleccionado?.nombre} es {formData.tipoRelacionInversa} de {personaPrincipal?.nombre}</strong>
+                      <strong>{personaPrincipal?.nombre} es {formData.tipoRelacionInversa} de {familiarSeleccionado?.nombre}</strong>
                     </Typography>
                   </Alert>
                 )}
