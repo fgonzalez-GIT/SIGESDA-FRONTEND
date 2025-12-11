@@ -1,10 +1,16 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Provider } from 'react-redux';
+import { Provider, useSelector } from 'react-redux';
 import { ThemeProvider } from '@mui/material/styles';
 import { store } from './store';
 import { theme } from './theme';
 import DashboardLayout from './components/layout/DashboardLayout';
 import { CatalogosProvider } from './providers/CatalogosProvider';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { selectIsAuthenticated } from './store/slices/authSlice';
+
+// Auth Pages
+import { LoginPage } from './pages/Auth/LoginPage';
+import { UnauthorizedPage } from './pages/Auth/UnauthorizedPage';
 
 // Pages
 import Dashboard from './pages/Dashboard/Dashboard';
@@ -34,61 +40,136 @@ import ActividadDetallePage from './pages/Actividades/ActividadDetallePage';
 import ActividadDetallePageV2 from './pages/Actividades/ActividadDetallePageV2';
 import ActividadFormPage from './pages/Actividades/ActividadFormPage';
 
+/**
+ * Componente para redirigir la ruta raíz según autenticación
+ */
+const RootRedirect = () => {
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
+};
+
 function App() {
   return (
     <Provider store={store}>
       <ThemeProvider theme={theme}>
         <CatalogosProvider>
           <Router>
-            <DashboardLayout>
-              <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+            <Routes>
+              {/* ============ RUTAS PÚBLICAS (Sin Layout) ============ */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-                {/* Personas */}
-                <Route path="/personas" element={<PersonasPage />} />
-                <Route path="/personas/:id" element={<PersonaDetallePage />} />
+              {/* ============ RUTAS PROTEGIDAS (Con Layout) ============ */}
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <Routes>
+                        {/* Root */}
+                        <Route path="/" element={<RootRedirect />} />
+                        <Route path="/dashboard" element={<Dashboard />} />
 
-                {/* Admin - Catálogos de Personas */}
-                <Route path="/admin/personas/tipos" element={<TiposPersonaAdminPage />} />
-                <Route path="/admin/personas/especialidades" element={<EspecialidadesDocenteAdminPage />} />
-                <Route path="/admin/personas/tipos-contacto" element={<TiposContactoAdminPage />} />
+                        {/* ===== Personas ===== */}
+                        <Route path="/personas" element={<PersonasPage />} />
+                        <Route path="/personas/:id" element={<PersonaDetallePage />} />
 
-                {/* Actividades */}
-                <Route path="/actividades" element={<ActividadesPage />} />
-                <Route path="/actividades/nueva" element={<ActividadFormPage />} />
-                <Route path="/actividades/:id" element={<ActividadDetallePageV2 />} />
-                <Route path="/actividades/:id/v1" element={<ActividadDetallePage />} />
-                <Route path="/actividades/:id/editar" element={<ActividadFormPage />} />
+                        {/* ===== Admin - Catálogos de Personas ===== */}
+                        <Route
+                          path="/admin/personas/tipos"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin', 'admin_catalogos']}>
+                              <TiposPersonaAdminPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/admin/personas/especialidades"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin', 'admin_catalogos']}>
+                              <EspecialidadesDocenteAdminPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/admin/personas/tipos-contacto"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin', 'admin_catalogos']}>
+                              <TiposContactoAdminPage />
+                            </ProtectedRoute>
+                          }
+                        />
 
-                {/* Admin - Catálogos de Actividades */}
-                <Route path="/admin/actividades/tipos" element={<TiposActividadPage />} />
-                <Route path="/admin/actividades/categorias" element={<CategoriasActividadPage />} />
+                        {/* ===== Actividades ===== */}
+                        <Route path="/actividades" element={<ActividadesPage />} />
+                        <Route path="/actividades/nueva" element={<ActividadFormPage />} />
+                        <Route path="/actividades/:id" element={<ActividadDetallePageV2 />} />
+                        <Route path="/actividades/:id/v1" element={<ActividadDetallePage />} />
+                        <Route path="/actividades/:id/editar" element={<ActividadFormPage />} />
 
-                {/* Aulas */}
-                <Route path="/aulas" element={<AulasPage />} />
+                        {/* ===== Admin - Catálogos de Actividades ===== */}
+                        <Route
+                          path="/admin/actividades/tipos"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin', 'admin_catalogos']}>
+                              <TiposActividadPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/admin/actividades/categorias"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin', 'admin_catalogos']}>
+                              <CategoriasActividadPage />
+                            </ProtectedRoute>
+                          }
+                        />
 
-                {/* Admin - Catálogos de Aulas */}
-                <Route path="/admin/aulas/equipamientos" element={<EquipamientosAdminPage />} />
-                <Route path="/cuotas" element={<CuotasPage />} />
-                <Route path="/categorias" element={<CategoriasPage />} />
-                <Route path="/medios-pago" element={<MediosPagoPage />} />
-                <Route path="/recibos" element={<RecibosPage />} />
-                <Route path="/participacion" element={<ParticipacionPage />} />
-                <Route path="/familiares" element={<FamiliaresPage />} />
+                        {/* ===== Aulas ===== */}
+                        <Route path="/aulas" element={<AulasPage />} />
 
-                {/* Reservas */}
-                <Route path="/reservas" element={<ReservasPage />} />
-                <Route path="/reservas/dashboard" element={<DashboardReservasPage />} />
-                <Route path="/reservas/:id" element={<ReservaDetallePage />} />
+                        {/* ===== Admin - Catálogos de Aulas ===== */}
+                        <Route
+                          path="/admin/aulas/equipamientos"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin', 'admin_catalogos']}>
+                              <EquipamientosAdminPage />
+                            </ProtectedRoute>
+                          }
+                        />
 
-                <Route path="/configuracion" element={<ConfiguracionPage />} />
+                        {/* ===== Otros Módulos ===== */}
+                        <Route path="/cuotas" element={<CuotasPage />} />
+                        <Route path="/categorias" element={<CategoriasPage />} />
+                        <Route path="/medios-pago" element={<MediosPagoPage />} />
+                        <Route path="/recibos" element={<RecibosPage />} />
+                        <Route path="/participacion" element={<ParticipacionPage />} />
+                        <Route path="/familiares" element={<FamiliaresPage />} />
 
-                {/* Redirects para rutas antiguas (compatibilidad hacia atrás) */}
-                <Route path="/tipos-actividad" element={<Navigate to="/admin/actividades/tipos" replace />} />
-                <Route path="/categorias-actividad" element={<Navigate to="/admin/actividades/categorias" replace />} />
-              </Routes>
-            </DashboardLayout>
+                        {/* ===== Reservas ===== */}
+                        <Route path="/reservas" element={<ReservasPage />} />
+                        <Route path="/reservas/dashboard" element={<DashboardReservasPage />} />
+                        <Route path="/reservas/:id" element={<ReservaDetallePage />} />
+
+                        {/* ===== Configuración ===== */}
+                        <Route
+                          path="/configuracion"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin']}>
+                              <ConfiguracionPage />
+                            </ProtectedRoute>
+                          }
+                        />
+
+                        {/* ===== Redirects para rutas antiguas ===== */}
+                        <Route path="/tipos-actividad" element={<Navigate to="/admin/actividades/tipos" replace />} />
+                        <Route path="/categorias-actividad" element={<Navigate to="/admin/actividades/categorias" replace />} />
+                      </Routes>
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
           </Router>
         </CatalogosProvider>
       </ThemeProvider>
