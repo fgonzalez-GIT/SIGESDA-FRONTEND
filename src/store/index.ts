@@ -13,6 +13,8 @@ import categoriasReducer from './slices/categoriasSlice';
 import tiposActividadReducer from './slices/tiposActividadSlice';
 import categoriasActividadReducer from './slices/categoriasActividadSlice';
 import equipamientosReducer from './slices/equipamientosSlice';
+import ajustesReducer from './slices/ajustesSlice';
+import exencionesReducer from './slices/exencionesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -30,6 +32,8 @@ export const store = configureStore({
     tiposActividad: tiposActividadReducer,
     categoriasActividad: categoriasActividadReducer,
     equipamientos: equipamientosReducer,
+    ajustes: ajustesReducer,
+    exenciones: exencionesReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -1,386 +1,247 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { CategoriaSocio } from '../../types/categoria.types';
+import cuotasService from '../../services/cuotasService';
+import { Cuota, DashboardData, GenerarCuotasRequest, ItemCuota, RecalcularCuotaRequest, RecalculoResponse } from '../../types/cuota.types';
 
-export interface Cuota {
-  id: number;
-  personaId: number;
-  personaNombre: string;
-  personaApellido: string;
-  personaTipo: 'socio' | 'docente' | 'estudiante';
-  categoriaId: string; // FK a CategoriaSocio (requerido por backend)
-  categoria?: CategoriaSocio; // Relación populada (cuando se incluye en la query)
-  monto: number;
-  concepto: string;
-  mesVencimiento: string; // YYYY-MM
-  fechaVencimiento: string; // YYYY-MM-DD
-  fechaCreacion: string;
-  fechaPago?: string;
-  estado: 'pendiente' | 'pagada' | 'vencida' | 'cancelada';
-  metodoPago?: 'efectivo' | 'transferencia' | 'tarjeta_debito' | 'tarjeta_credito';
-  numeroRecibo?: string;
-  observaciones?: string;
-  descuento?: number;
-  recargo?: number;
-  montoFinal: number;
-}
-
-export interface GenerarCuotasRequest {
-  personaIds: number[];
-  concepto: string;
-  monto: number;
-  mesVencimiento: string;
-  fechaVencimiento: string;
-  aplicarDescuentos?: boolean;
-}
-
-export interface PagarCuotaRequest {
-  cuotaId: number;
-  metodoPago: 'efectivo' | 'transferencia' | 'tarjeta_debito' | 'tarjeta_credito';
-  fechaPago: string;
-  observaciones?: string;
-  descuento?: number;
-  recargo?: number;
-}
-
+// State definition
 export interface CuotasFilters {
-  estado?: 'pendiente' | 'pagada' | 'vencida' | 'cancelada';
-  personaTipo?: 'socio' | 'docente' | 'estudiante';
-  mesVencimiento?: string;
-  personaId?: number;
-  fechaDesde?: string;
-  fechaHasta?: string;
+  mes?: number;
+  anio?: number;
+  categoria?: string;
+  page?: number;
+  limit?: number;
+  soloImpagas?: boolean;
+  soloVencidas?: boolean;
+  ordenarPor?: string;
+  orden?: 'asc' | 'desc';
+  personaId?: number; // Para filtrar por socio
 }
+
+
 
 interface CuotasState {
   cuotas: Cuota[];
-  filteredCuotas: Cuota[];
+  selectedCuota: Cuota | null;
+  itemsCuota: ItemCuota[];
+  desgloseCuota: any | null;
+  dashboardData: DashboardData | null;
   filters: CuotasFilters;
+  pagination: {
+    total: number;
+    pages: number;
+    currentPage: number;
+    limit: number;
+  };
   loading: boolean;
   error: string | null;
-  totalCuotas: number;
-  totalRecaudado: number;
-  totalPendiente: number;
-  estadisticas: {
-    pendientes: number;
-    pagadas: number;
-    vencidas: number;
-    canceladas: number;
-    recaudacionMensual: { [key: string]: number };
-  };
+  operationLoading: boolean; // For create/update/delete operations
 }
 
 const initialState: CuotasState = {
   cuotas: [],
-  filteredCuotas: [],
-  filters: {},
+  selectedCuota: null,
+  itemsCuota: [],
+  desgloseCuota: null,
+  dashboardData: null,
+  filters: {
+    page: 1,
+    limit: 20,
+    soloImpagas: false
+  },
+  pagination: {
+    total: 0,
+    pages: 0,
+    currentPage: 1,
+    limit: 20
+  },
   loading: false,
   error: null,
-  totalCuotas: 0,
-  totalRecaudado: 0,
-  totalPendiente: 0,
-  estadisticas: {
-    pendientes: 0,
-    pagadas: 0,
-    vencidas: 0,
-    canceladas: 0,
-    recaudacionMensual: {},
-  },
+  operationLoading: false
 };
 
-// Mock API functions - reemplazar con llamadas reales
-const cuotasAPI = {
-  getAll: async (filters: CuotasFilters = {}): Promise<Cuota[]> => {
-    await new Promise(resolve => setTimeout(resolve, 500));
+// Async Thunks
 
-    const mockCuotas: Cuota[] = [
-      {
-        id: 1,
-        personaId: 1,
-        personaNombre: 'Juan',
-        personaApellido: 'Pérez',
-        personaTipo: 'socio',
-        categoriaId: 'clwactivo000001', // Categoría ACTIVO
-        monto: 5000,
-        concepto: 'Cuota mensual - Septiembre 2025',
-        mesVencimiento: '2025-09',
-        fechaVencimiento: '2025-09-10',
-        fechaCreacion: '2025-09-01',
-        estado: 'pendiente',
-        montoFinal: 5000,
-      },
-      {
-        id: 2,
-        personaId: 2,
-        personaNombre: 'María',
-        personaApellido: 'García',
-        personaTipo: 'socio',
-        categoriaId: 'clwactivo000001', // Categoría ACTIVO
-        monto: 5000,
-        concepto: 'Cuota mensual - Septiembre 2025',
-        mesVencimiento: '2025-09',
-        fechaVencimiento: '2025-09-10',
-        fechaCreacion: '2025-09-01',
-        fechaPago: '2025-09-08',
-        estado: 'pagada',
-        metodoPago: 'transferencia',
-        numeroRecibo: 'REC-001',
-        montoFinal: 5000,
-      },
-      {
-        id: 3,
-        personaId: 3,
-        personaNombre: 'Carlos',
-        personaApellido: 'López',
-        personaTipo: 'estudiante',
-        categoriaId: 'clwestudiant001', // Categoría ESTUDIANTE
-        monto: 3000,
-        concepto: 'Cuota mensual - Agosto 2025',
-        mesVencimiento: '2025-08',
-        fechaVencimiento: '2025-08-10',
-        fechaCreacion: '2025-08-01',
-        estado: 'vencida',
-        recargo: 500,
-        montoFinal: 3500,
-      },
-    ];
-
-    return mockCuotas.filter(cuota => {
-      if (filters.estado && cuota.estado !== filters.estado) return false;
-      if (filters.personaTipo && cuota.personaTipo !== filters.personaTipo) return false;
-      if (filters.mesVencimiento && cuota.mesVencimiento !== filters.mesVencimiento) return false;
-      if (filters.personaId && cuota.personaId !== filters.personaId) return false;
-      return true;
-    });
-  },
-
-  create: async (cuota: Omit<Cuota, 'id'>): Promise<Cuota> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return { ...cuota, id: Date.now() };
-  },
-
-  update: async (id: number, cuota: Partial<Cuota>): Promise<Cuota> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return { id, ...cuota } as Cuota;
-  },
-
-  delete: async (id: number): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-  },
-
-  generarCuotas: async (request: GenerarCuotasRequest): Promise<Cuota[]> => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return request.personaIds.map((personaId, index) => ({
-      id: Date.now() + index,
-      personaId,
-      personaNombre: `Persona ${personaId}`,
-      personaApellido: `Apellido ${personaId}`,
-      personaTipo: 'socio' as const,
-      categoriaId: 'clwactivo000001', // Categoría por defecto ACTIVO
-      monto: request.monto,
-      concepto: request.concepto,
-      mesVencimiento: request.mesVencimiento,
-      fechaVencimiento: request.fechaVencimiento,
-      fechaCreacion: new Date().toISOString().split('T')[0],
-      estado: 'pendiente' as const,
-      montoFinal: request.monto,
-    }));
-  },
-
-  pagarCuota: async (request: PagarCuotaRequest): Promise<Cuota> => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return {
-      id: request.cuotaId,
-      personaId: 1,
-      personaNombre: 'Juan',
-      personaApellido: 'Pérez',
-      personaTipo: 'socio',
-      categoriaId: 'clwactivo000001', // Categoría ACTIVO
-      monto: 5000,
-      concepto: 'Cuota mensual',
-      mesVencimiento: '2025-09',
-      fechaVencimiento: '2025-09-10',
-      fechaCreacion: '2025-09-01',
-      fechaPago: request.fechaPago,
-      estado: 'pagada',
-      metodoPago: request.metodoPago,
-      numeroRecibo: `REC-${Date.now()}`,
-      observaciones: request.observaciones,
-      descuento: request.descuento,
-      recargo: request.recargo,
-      montoFinal: 5000 - (request.descuento || 0) + (request.recargo || 0),
-    };
-  },
-};
-
-// Async thunks
 export const fetchCuotas = createAsyncThunk(
   'cuotas/fetchCuotas',
-  async (filters: CuotasFilters = {}) => {
-    const result = await cuotasAPI.getAll(filters);
-    // Cuando se conecte a la API real, usar: result.data || result
-    return result;
+  async (filters: CuotasFilters, { rejectWithValue }) => {
+    try {
+      const response = await cuotasService.getCuotas(filters);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al cargar cuotas');
+    }
   }
 );
 
-export const createCuota = createAsyncThunk(
-  'cuotas/createCuota',
-  async (cuota: Omit<Cuota, 'id'>) => {
-    const result = await cuotasAPI.create(cuota);
-    // Cuando se conecte a la API real, usar: result.data || result
-    return result;
+export const fetchCuotaById = createAsyncThunk(
+  'cuotas/fetchCuotaById',
+  async (id: number, { rejectWithValue }) => {
+    try {
+      return await cuotasService.getCuotaById(id);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al cargar la cuota');
+    }
   }
 );
 
-export const updateCuota = createAsyncThunk(
-  'cuotas/updateCuota',
-  async ({ id, cuota }: { id: number; cuota: Partial<Cuota> }) => {
-    const result = await cuotasAPI.update(id, cuota);
-    // Cuando se conecte a la API real, usar: result.data || result
-    return result;
+export const fetchItemsCuota = createAsyncThunk(
+  'cuotas/fetchItems',
+  async (cuotaId: number, { rejectWithValue }) => {
+    try {
+      return await cuotasService.getItemsCuota(cuotaId);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al cargar items');
+    }
   }
 );
 
-export const deleteCuota = createAsyncThunk(
-  'cuotas/deleteCuota',
-  async (id: number) => {
-    await cuotasAPI.delete(id);
-    return id;
+export const fetchDesgloseCuota = createAsyncThunk(
+  'cuotas/fetchDesglose',
+  async (cuotaId: number, { rejectWithValue }) => {
+    try {
+      return await cuotasService.getDesgloseItems(cuotaId);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al cargar desglose');
+    }
   }
 );
 
 export const generarCuotasMasivas = createAsyncThunk(
-  'cuotas/generarCuotasMasivas',
-  async (request: GenerarCuotasRequest) => {
-    const result = await cuotasAPI.generarCuotas(request);
-    // Cuando se conecte a la API real, usar: result.data || result
-    return result;
+  'cuotas/generarMasivas',
+  async (request: GenerarCuotasRequest, { rejectWithValue }) => {
+    try {
+      return await cuotasService.generarCuotasV2(request);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al generar cuotas');
+    }
   }
 );
 
-export const pagarCuota = createAsyncThunk(
-  'cuotas/pagarCuota',
-  async (request: PagarCuotaRequest) => {
-    const result = await cuotasAPI.pagarCuota(request);
-    // Cuando se conecte a la API real, usar: result.data || result
-    return result;
+export const recalcularCuota = createAsyncThunk(
+  'cuotas/recalcular',
+  async ({ id, options }: { id: number; options: RecalcularCuotaRequest }, { rejectWithValue }) => {
+    try {
+      return await cuotasService.recalcularCuota(id, options);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al recalcular cuota');
+    }
   }
 );
 
+export const fetchDashboard = createAsyncThunk(
+  'cuotas/fetchDashboard',
+  async ({ mes, anio }: { mes: number; anio: number }, { rejectWithValue }) => {
+    try {
+      return await cuotasService.getDashboard(mes, anio);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al cargar dashboard');
+    }
+  }
+);
+
+export const deleteCuota = createAsyncThunk(
+  'cuotas/delete',
+  async (id: number, { rejectWithValue }) => {
+    try {
+      await cuotasService.deleteCuota(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al eliminar cuota');
+    }
+  }
+);
+
+// Slice
 const cuotasSlice = createSlice({
   name: 'cuotas',
   initialState,
   reducers: {
     setFilters: (state, action: PayloadAction<CuotasFilters>) => {
-      state.filters = action.payload;
-      state.filteredCuotas = state.cuotas.filter(cuota => {
-        const filters = action.payload;
-        if (filters.estado && cuota.estado !== filters.estado) return false;
-        if (filters.personaTipo && cuota.personaTipo !== filters.personaTipo) return false;
-        if (filters.mesVencimiento && cuota.mesVencimiento !== filters.mesVencimiento) return false;
-        if (filters.personaId && cuota.personaId !== filters.personaId) return false;
-        return true;
-      });
+      state.filters = { ...state.filters, ...action.payload };
+      // Reset page when filters change (except paging itself)
+      if (action.payload.page === undefined) {
+        state.filters.page = 1;
+      }
     },
     clearFilters: (state) => {
-      state.filters = {};
-      state.filteredCuotas = state.cuotas;
+      state.filters = { page: 1, limit: 20 };
     },
     clearError: (state) => {
       state.error = null;
     },
+    setSelectedCuota: (state, action: PayloadAction<Cuota | null>) => {
+      state.selectedCuota = action.payload;
+    }
   },
   extraReducers: (builder) => {
     builder
-      // Fetch cuotas
+      // Fetch Cuotas
       .addCase(fetchCuotas.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchCuotas.fulfilled, (state, action) => {
         state.loading = false;
-        state.cuotas = action.payload;
-        state.filteredCuotas = action.payload;
-
-        // Calcular estadísticas
-        state.totalCuotas = action.payload.length;
-        state.totalRecaudado = action.payload
-          .filter(c => c.estado === 'pagada')
-          .reduce((sum, c) => sum + c.montoFinal, 0);
-        state.totalPendiente = action.payload
-          .filter(c => c.estado === 'pendiente' || c.estado === 'vencida')
-          .reduce((sum, c) => sum + c.montoFinal, 0);
-
-        state.estadisticas = {
-          pendientes: action.payload.filter(c => c.estado === 'pendiente').length,
-          pagadas: action.payload.filter(c => c.estado === 'pagada').length,
-          vencidas: action.payload.filter(c => c.estado === 'vencida').length,
-          canceladas: action.payload.filter(c => c.estado === 'cancelada').length,
-          recaudacionMensual: action.payload
-            .filter(c => c.estado === 'pagada')
-            .reduce((acc, c) => {
-              const mes = c.mesVencimiento;
-              acc[mes] = (acc[mes] || 0) + c.montoFinal;
-              return acc;
-            }, {} as { [key: string]: number }),
+        state.cuotas = action.payload.data;
+        state.pagination = {
+          total: action.payload.total,
+          pages: action.payload.pages,
+          currentPage: action.payload.currentPage,
+          limit: state.filters.limit || 20
         };
       })
       .addCase(fetchCuotas.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Error al cargar cuotas';
+        state.error = action.payload as string;
       })
 
-      // Create cuota
-      .addCase(createCuota.fulfilled, (state, action) => {
-        state.cuotas.push(action.payload);
-        state.filteredCuotas.push(action.payload);
+      // Fetch Cuota By ID
+      .addCase(fetchCuotaById.fulfilled, (state, action) => {
+        state.selectedCuota = action.payload;
+      })
+      .addCase(fetchItemsCuota.fulfilled, (state, action) => {
+        state.itemsCuota = action.payload;
+      })
+      .addCase(fetchDesgloseCuota.fulfilled, (state, action) => {
+        state.desgloseCuota = action.payload;
       })
 
-      // Update cuota
-      .addCase(updateCuota.fulfilled, (state, action) => {
-        const index = state.cuotas.findIndex(c => c.id === action.payload.id);
-        if (index !== -1) {
-          state.cuotas[index] = action.payload;
-          const filteredIndex = state.filteredCuotas.findIndex(c => c.id === action.payload.id);
-          if (filteredIndex !== -1) {
-            state.filteredCuotas[filteredIndex] = action.payload;
-          }
-        }
-      })
-
-      // Delete cuota
-      .addCase(deleteCuota.fulfilled, (state, action) => {
-        state.cuotas = state.cuotas.filter(c => c.id !== action.payload);
-        state.filteredCuotas = state.filteredCuotas.filter(c => c.id !== action.payload);
-      })
-
-      // Generar cuotas masivas
+      // Generar Masivas
       .addCase(generarCuotasMasivas.pending, (state) => {
-        state.loading = true;
+        state.operationLoading = true;
         state.error = null;
       })
       .addCase(generarCuotasMasivas.fulfilled, (state, action) => {
-        state.loading = false;
-        state.cuotas.push(...action.payload);
-        state.filteredCuotas.push(...action.payload);
+        state.operationLoading = false;
+        // Optionally refresh list or add new ones if feasible
       })
       .addCase(generarCuotasMasivas.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Error al generar cuotas';
+        state.operationLoading = false;
+        state.error = action.payload as string;
       })
 
-      // Pagar cuota
-      .addCase(pagarCuota.fulfilled, (state, action) => {
-        const index = state.cuotas.findIndex(c => c.id === action.payload.id);
+      // Recalcular
+      .addCase(recalcularCuota.fulfilled, (state, action) => {
+        // Update the cuota in the list
+        const index = state.cuotas.findIndex(c => c.id === action.payload.cuotaRecalculada.id);
         if (index !== -1) {
-          state.cuotas[index] = action.payload;
-          const filteredIndex = state.filteredCuotas.findIndex(c => c.id === action.payload.id);
-          if (filteredIndex !== -1) {
-            state.filteredCuotas[filteredIndex] = action.payload;
-          }
+          state.cuotas[index] = action.payload.cuotaRecalculada;
         }
+        if (state.selectedCuota?.id === action.payload.cuotaRecalculada.id) {
+          state.selectedCuota = action.payload.cuotaRecalculada;
+        }
+      })
+
+      // Dashboard
+      .addCase(fetchDashboard.fulfilled, (state, action) => {
+        state.dashboardData = action.payload;
+      })
+
+      // Delete
+      .addCase(deleteCuota.fulfilled, (state, action) => {
+        state.cuotas = state.cuotas.filter(c => c.id !== action.payload);
       });
   },
 });
 
-export const { setFilters, clearFilters, clearError } = cuotasSlice.actions;
+export const { setFilters, clearFilters, clearError, setSelectedCuota } = cuotasSlice.actions;
 export default cuotasSlice.reducer;

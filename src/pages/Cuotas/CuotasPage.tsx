@@ -13,7 +13,6 @@ import {
   IconButton,
   Chip,
   TextField,
-  InputAdornment,
   FormControl,
   InputLabel,
   Select,
@@ -25,215 +24,124 @@ import {
   Card,
   CardContent,
   Menu,
+  MenuItem as MenuItemMui,
   ListItemIcon,
   ListItemText,
+  TablePagination
 } from '@mui/material';
 import {
   Add,
-  Search,
   FilterList,
   Edit,
   Delete,
-  Payment,
-  Receipt,
-  Send,
   MoreVert,
   TrendingUp,
   AttachMoney,
   Warning,
   CheckCircle,
   Schedule,
-  Cancel,
-  GetApp,
   Refresh,
-  ReceiptLong,
+  GetApp,
+  Description
 } from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { es } from 'date-fns/locale';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import {
   fetchCuotas,
   deleteCuota,
   setFilters,
   clearFilters,
-  generarCuotasMasivas,
-  pagarCuota,
-  Cuota,
-  CuotasFilters,
+  fetchDashboard
 } from '../../store/slices/cuotasSlice';
-import { fetchPersonas } from '../../store/slices/personasSlice';
-import CuotaForm from '../../components/forms/CuotaForm';
-import GenerarCuotasMasivasDialog from '../../components/forms/GenerarCuotasMasivasDialog';
+import { CategoriaSocio, EstadoRecibo } from '../../types/cuota.types';
+// import GenerarCuotasDialog from '../../components/Cuotas/GenerarCuotasDialog'; // To be created
+// import CuotaDetalleDialog from '../../components/Cuotas/CuotaDetalleDialog'; // To be created
 
 const CuotasPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const {
-    filteredCuotas,
+    cuotas,
     loading,
     error,
     filters,
-    estadisticas,
-    totalRecaudado,
-    totalPendiente,
+    pagination,
+    dashboardData
   } = useAppSelector((state) => state.cuotas);
 
-  const [cuotaFormOpen, setCuotaFormOpen] = useState(false);
-  const [generarMasivasOpen, setGenerarMasivasOpen] = useState(false);
-  const [selectedCuota, setSelectedCuota] = useState<Cuota | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: 'success' | 'error' | 'warning' | 'info';
-  }>({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [menuCuotaId, setMenuCuotaId] = useState<number | null>(null);
+  const [selectedCuotaId, setSelectedCuotaId] = useState<number | null>(null);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' } | null>(null);
 
+  // Initial load
   useEffect(() => {
-    dispatch(fetchCuotas());
-    dispatch(fetchPersonas({}));
-  }, [dispatch]);
+    dispatch(fetchCuotas(filters));
 
-  const handleFilterChange = (newFilters: Partial<CuotasFilters>) => {
-    dispatch(setFilters({ ...filters, ...newFilters }));
+    // Default current month for dashboard
+    const now = new Date();
+    dispatch(fetchDashboard({ mes: now.getMonth() + 1, anio: now.getFullYear() }));
+  }, [dispatch, filters.page, filters.limit, filters.soloImpagas]); // Reload when these change
+
+  const handleFilterChange = (key: string, value: any) => {
+    dispatch(setFilters({ ...filters, [key]: value }));
   };
 
-  const handleClearFilters = () => {
-    dispatch(clearFilters());
-    setSearchTerm('');
+  const handlePageChange = (event: unknown, newPage: number) => {
+    dispatch(setFilters({ ...filters, page: newPage + 1 }));
   };
 
-  const handleDeleteCuota = async (id: number) => {
-    try {
-      await dispatch(deleteCuota(id)).unwrap();
-      setSnackbar({
-        open: true,
-        message: 'Cuota eliminada exitosamente',
-        severity: 'success',
-      });
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: 'Error al eliminar la cuota',
-        severity: 'error',
-      });
+  const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(setFilters({ ...filters, limit: parseInt(event.target.value, 10), page: 1 }));
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm('¿Está seguro de eliminar esta cuota?')) {
+      try {
+        await dispatch(deleteCuota(id)).unwrap();
+        setSnackbar({ open: true, message: 'Cuota eliminada', severity: 'success' });
+      } catch (err: any) {
+        setSnackbar({ open: true, message: err, severity: 'error' });
+      }
     }
   };
 
-  const handlePagarCuota = async (cuotaId: number) => {
-    try {
-      await dispatch(pagarCuota({
-        cuotaId,
-        metodoPago: 'efectivo',
-        fechaPago: new Date().toISOString().split('T')[0],
-      })).unwrap();
-      setSnackbar({
-        open: true,
-        message: 'Cuota marcada como pagada',
-        severity: 'success',
-      });
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: 'Error al procesar el pago',
-        severity: 'error',
-      });
+  const getEstadoColor = (estado: EstadoRecibo) => {
+    switch (estado) {
+      case 'PAGADO': return 'success';
+      case 'PENDIENTE': return 'warning';
+      case 'VENCIDO': return 'error';
+      case 'ANULADO': return 'default';
+      default: return 'default';
     }
-  };
-
-  const getEstadoColor = (estado: Cuota['estado']) => {
-    const colorMap = {
-      pendiente: 'warning',
-      pagada: 'success',
-      vencida: 'error',
-      cancelada: 'default',
-    };
-    return colorMap[estado] as any;
-  };
-
-  const getEstadoIcon = (estado: Cuota['estado']) => {
-    const iconMap = {
-      pendiente: <Schedule fontSize="small" />,
-      pagada: <CheckCircle fontSize="small" />,
-      vencida: <Warning fontSize="small" />,
-      cancelada: <Cancel fontSize="small" />,
-    };
-    return iconMap[estado];
-  };
-
-  const filteredData = filteredCuotas.filter(cuota =>
-    searchTerm === '' ||
-    cuota.personaNombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cuota.personaApellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cuota.concepto.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, cuotaId: number) => {
-    setMenuAnchor(event.currentTarget);
-    setMenuCuotaId(cuotaId);
-  };
-
-  const handleMenuClose = () => {
-    setMenuAnchor(null);
-    setMenuCuotaId(null);
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
-      <Box>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Box>
-            <Typography variant="h4" component="h1" gutterBottom>
-              Gestión de Cuotas
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Administra las cuotas mensuales y recaudación del sistema
-            </Typography>
-          </Box>
-          <Stack direction="row" spacing={2}>
-            <Button
-              variant="outlined"
-              startIcon={<GetApp />}
-              onClick={() => console.log('Exportar')}
-            >
-              Exportar
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Add />}
-              onClick={setGenerarMasivasOpen.bind(null, true)}
-            >
-              Generar Masivas
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={setCuotaFormOpen.bind(null, true)}
-            >
-              Nueva Cuota
-            </Button>
-          </Stack>
+    <Box>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Gestión de Cuotas
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Administración de cuotas, generación masiva y seguimiento de cobranzas.
+          </Typography>
         </Box>
+        <Stack direction="row" spacing={2}>
+          {/* TODO: Add Generar Dialog Button */}
+          <Button variant="contained" startIcon={<Add />} onClick={() => console.log("Open Generate Dialog")}>
+            Generar Cuotas
+          </Button>
+        </Stack>
+      </Box>
 
-        {/* Estadísticas */}
+      {/* KPI Cards */}
+      {dashboardData && (
         <Box display="flex" gap={2} mb={3}>
           <Card sx={{ flex: 1 }}>
             <CardContent>
               <Box display="flex" alignItems="center">
-                <AttachMoney color="success" sx={{ mr: 1 }} />
+                <AttachMoney color="primary" sx={{ mr: 1 }} />
                 <Box>
-                  <Typography variant="h5" color="success.main">
-                    ${totalRecaudado.toLocaleString()}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Recaudado
-                  </Typography>
+                  <Typography variant="h5">${dashboardData.metricas.totalRecaudado.toLocaleString()}</Typography>
+                  <Typography variant="body2" color="text.secondary">Recaudado ({dashboardData.periodo.nombreMes})</Typography>
                 </Box>
               </Box>
             </CardContent>
@@ -244,12 +152,8 @@ const CuotasPage: React.FC = () => {
               <Box display="flex" alignItems="center">
                 <Schedule color="warning" sx={{ mr: 1 }} />
                 <Box>
-                  <Typography variant="h5" color="warning.main">
-                    ${totalPendiente.toLocaleString()}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Pendiente
-                  </Typography>
+                  <Typography variant="h5">${dashboardData.metricas.totalPendiente.toLocaleString()}</Typography>
+                  <Typography variant="body2" color="text.secondary">Pendiente</Typography>
                 </Box>
               </Box>
             </CardContent>
@@ -260,370 +164,178 @@ const CuotasPage: React.FC = () => {
               <Box display="flex" alignItems="center">
                 <CheckCircle color="success" sx={{ mr: 1 }} />
                 <Box>
-                  <Typography variant="h5">
-                    {estadisticas.pagadas}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Cuotas Pagadas
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-
-          <Card sx={{ flex: 1 }}>
-            <CardContent>
-              <Box display="flex" alignItems="center">
-                <Warning color="error" sx={{ mr: 1 }} />
-                <Box>
-                  <Typography variant="h5" color="error.main">
-                    {estadisticas.vencidas}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Cuotas Vencidas
-                  </Typography>
+                  <Typography variant="h5">{dashboardData.metricas.tasaCobro.toFixed(1)}%</Typography>
+                  <Typography variant="body2" color="text.secondary">Tasa de Cobro</Typography>
                 </Box>
               </Box>
             </CardContent>
           </Card>
         </Box>
+      )}
 
-        {/* Filtros */}
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
-            <TextField
-              size="small"
-              placeholder="Buscar por persona o concepto..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ minWidth: 300 }}
-            />
-
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Estado</InputLabel>
-              <Select
-                value={filters.estado || ''}
-                onChange={(e) => handleFilterChange({ estado: e.target.value as any })}
-              >
-                <MenuItem value="">Todos</MenuItem>
-                <MenuItem value="pendiente">Pendiente</MenuItem>
-                <MenuItem value="pagada">Pagada</MenuItem>
-                <MenuItem value="vencida">Vencida</MenuItem>
-                <MenuItem value="cancelada">Cancelada</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Tipo Persona</InputLabel>
-              <Select
-                value={filters.personaTipo || ''}
-                onChange={(e) => handleFilterChange({ personaTipo: e.target.value as any })}
-              >
-                <MenuItem value="">Todos</MenuItem>
-                <MenuItem value="socio">Socio</MenuItem>
-                <MenuItem value="docente">Docente</MenuItem>
-                <MenuItem value="estudiante">Estudiante</MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              size="small"
-              type="month"
+      {/* Filters */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Stack direction="row" spacing={2} alignItems="center">
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Mes</InputLabel>
+            <Select
+              value={filters.mes || ''}
               label="Mes"
-              value={filters.mesVencimiento || ''}
-              onChange={(e) => handleFilterChange({ mesVencimiento: e.target.value })}
-              InputLabelProps={{ shrink: true }}
-              sx={{ minWidth: 150 }}
-            />
-
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleClearFilters}
-              startIcon={<FilterList />}
+              onChange={(e) => handleFilterChange('mes', e.target.value)}
             >
-              Limpiar
-            </Button>
+              <MenuItem value="">Todos</MenuItem>
+              {[...Array(12)].map((_, i) => (
+                <MenuItem key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('es', { month: 'long' })}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => dispatch(fetchCuotas())}
-              startIcon={<Refresh />}
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Año</InputLabel>
+            <Select
+              value={filters.anio || ''}
+              label="Año"
+              onChange={(e) => handleFilterChange('anio', e.target.value)}
             >
-              Actualizar
-            </Button>
-          </Box>
-        </Paper>
+              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value={2025}>2025</MenuItem>
+              <MenuItem value={2024}>2024</MenuItem>
+            </Select>
+          </FormControl>
 
-        {/* Tabla de cuotas */}
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Categoría</InputLabel>
+            <Select
+              value={filters.categoria || ''}
+              label="Categoría"
+              onChange={(e) => handleFilterChange('categoria', e.target.value)}
+            >
+              <MenuItem value="">Todas</MenuItem>
+              <MenuItem value="ACTIVO">Activo</MenuItem>
+              <MenuItem value="ESTUDIANTE">Estudiante</MenuItem>
+              <MenuItem value="JUBILADO">Jubilado</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Button
+            variant="outlined"
+            startIcon={<Refresh />}
+            onClick={() => dispatch(fetchCuotas(filters))}
+          >
+            Refrescar
+          </Button>
+
+          <Button
+            variant="text"
+            onClick={() => dispatch(clearFilters())}
+          >
+            Limpiar Filtros
+          </Button>
+        </Stack>
+      </Paper>
+
+      {/* Table */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Recibo #</TableCell>
+              <TableCell>Socio</TableCell>
+              <TableCell>Período</TableCell>
+              <TableCell>Categoría</TableCell>
+              <TableCell>Monto Total</TableCell>
+              <TableCell>Estado</TableCell>
+              <TableCell>Acciones</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
               <TableRow>
-                <TableCell>Persona</TableCell>
-                <TableCell>Concepto</TableCell>
-                <TableCell>Monto</TableCell>
-                <TableCell>Vencimiento</TableCell>
-                <TableCell>Estado</TableCell>
-                <TableCell>Fecha Pago</TableCell>
-                <TableCell>Método Pago</TableCell>
-                <TableCell align="right">Acciones</TableCell>
+                <TableCell colSpan={7} align="center">Cargando...</TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading && (
-                <TableRow>
-                  <TableCell colSpan={8} align="center">
-                    Cargando...
-                  </TableCell>
-                </TableRow>
-              )}
-              {!loading && filteredData.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={8} align="center">
-                    No se encontraron cuotas
-                  </TableCell>
-                </TableRow>
-              )}
-              {filteredData.map((cuota) => (
+            ) : cuotas.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center">No hay cuotas registradas</TableCell>
+              </TableRow>
+            ) : (
+              cuotas.map((cuota) => (
                 <TableRow key={cuota.id} hover>
+                  <TableCell>{cuota.recibo?.numero || '-'}</TableCell>
                   <TableCell>
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {cuota.personaNombre} {cuota.personaApellido}
-                      </Typography>
-                      <Chip
-                        label={cuota.personaTipo}
-                        size="small"
-                        color={
-                          cuota.personaTipo === 'socio' ? 'primary' :
-                          cuota.personaTipo === 'docente' ? 'secondary' : 'default'
-                        }
-                      />
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {cuota.concepto}
+                    {cuota.recibo?.receptor?.nombre} {cuota.recibo?.receptor?.apellido}
+                    <Typography variant="caption" display="block" color="text.secondary">
+                      {cuota.recibo?.receptor?.dni}
                     </Typography>
                   </TableCell>
+                  <TableCell>{cuota.mes}/{cuota.anio}</TableCell>
                   <TableCell>
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        ${cuota.montoFinal.toLocaleString()}
-                      </Typography>
-                      {cuota.montoFinal !== cuota.monto && (
-                        <Typography variant="caption" color="text.secondary">
-                          Base: ${cuota.monto.toLocaleString()}
-                        </Typography>
-                      )}
-                    </Box>
+                    <Chip label={cuota.categoria} size="small" variant="outlined" />
                   </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {new Date(cuota.fechaVencimiento).toLocaleDateString('es-AR')}
-                    </Typography>
-                  </TableCell>
+                  <TableCell>${cuota.montoTotal?.toLocaleString()}</TableCell>
                   <TableCell>
                     <Chip
-                      icon={getEstadoIcon(cuota.estado)}
-                      label={cuota.estado}
-                      color={getEstadoColor(cuota.estado)}
+                      label={cuota.recibo?.estado}
+                      color={getEstadoColor(cuota.recibo?.estado)}
                       size="small"
                     />
                   </TableCell>
                   <TableCell>
-                    {cuota.fechaPago ? (
-                      <Typography variant="body2">
-                        {new Date(cuota.fechaPago).toLocaleDateString('es-AR')}
-                      </Typography>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        -
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {cuota.metodoPago ? (
-                      <Chip
-                        label={cuota.metodoPago.replace('_', ' ')}
-                        size="small"
-                        variant="outlined"
-                      />
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        -
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell align="right">
-                    <Box display="flex" justifyContent="flex-end">
-                      {cuota.estado === 'pendiente' && (
-                        <>
-                          <Tooltip title="Generar recibo">
-                            <IconButton
-                              size="small"
-                              onClick={() => console.log('Generar recibo para cuota', cuota.id)}
-                              color="primary"
-                            >
-                              <ReceiptLong />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Marcar como pagada">
-                            <IconButton
-                              size="small"
-                              onClick={() => handlePagarCuota(cuota.id)}
-                              color="success"
-                            >
-                              <Payment />
-                            </IconButton>
-                          </Tooltip>
-                        </>
-                      )}
-                      <Tooltip title="Editar">
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            setSelectedCuota(cuota);
-                            setCuotaFormOpen(true);
-                          }}
-                        >
-                          <Edit />
-                        </IconButton>
-                      </Tooltip>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuOpen(e, cuota.id)}
-                      >
-                        <MoreVert />
-                      </IconButton>
-                    </Box>
+                    <IconButton size="small" onClick={(e) => {
+                      setMenuAnchor(e.currentTarget);
+                      setSelectedCuotaId(cuota.id);
+                    }}>
+                      <MoreVert />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        {/* Menú contextual */}
-        <Menu
-          anchorEl={menuAnchor}
-          open={Boolean(menuAnchor)}
-          onClose={handleMenuClose}
-        >
-          <MenuItem onClick={() => {
-            console.log('Generar recibo', menuCuotaId);
-            handleMenuClose();
-          }}>
-            <ListItemIcon>
-              <Receipt fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Generar Recibo</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => {
-            console.log('Enviar recordatorio', menuCuotaId);
-            handleMenuClose();
-          }}>
-            <ListItemIcon>
-              <Send fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Enviar Recordatorio</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => {
-            if (menuCuotaId) handleDeleteCuota(menuCuotaId);
-            handleMenuClose();
-          }}>
-            <ListItemIcon>
-              <Delete fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Eliminar</ListItemText>
-          </MenuItem>
-        </Menu>
-
-        {/* Diálogos */}
-        <CuotaForm
-          open={cuotaFormOpen}
-          onClose={() => {
-            setCuotaFormOpen(false);
-            setSelectedCuota(null);
-          }}
-          cuota={selectedCuota}
-          onSubmit={async (cuotaData) => {
-            try {
-              // Aquí iría la lógica de crear/actualizar
-              console.log('Cuota enviada:', cuotaData);
-              setCuotaFormOpen(false);
-              setSelectedCuota(null);
-              dispatch(fetchCuotas());
-              setSnackbar({
-                open: true,
-                message: selectedCuota ? 'Cuota actualizada exitosamente' : 'Cuota creada exitosamente',
-                severity: 'success',
-              });
-            } catch (error) {
-              setSnackbar({
-                open: true,
-                message: 'Error al guardar la cuota',
-                severity: 'error',
-              });
-            }
-          }}
+              ))
+            )}
+          </TableBody>
+        </Table>
+        <TablePagination
+          component="div"
+          count={pagination.total}
+          page={pagination.currentPage - 1} // MUI is 0-indexed
+          onPageChange={handlePageChange}
+          rowsPerPage={pagination.limit}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          rowsPerPageOptions={[10, 20, 50, 100]}
         />
+      </TableContainer>
 
-        <GenerarCuotasMasivasDialog
-          open={generarMasivasOpen}
-          onClose={() => setGenerarMasivasOpen(false)}
-          onSubmit={async (request) => {
-            try {
-              await dispatch(generarCuotasMasivas(request)).unwrap();
-              setGenerarMasivasOpen(false);
-              setSnackbar({
-                open: true,
-                message: `${request.personaIds.length} cuotas generadas exitosamente`,
-                severity: 'success',
-              });
-            } catch (error) {
-              setSnackbar({
-                open: true,
-                message: 'Error al generar las cuotas',
-                severity: 'error',
-              });
-            }
-          }}
-        />
+      {/* Context Menu */}
+      <Menu
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={() => setMenuAnchor(null)}
+      >
+        <MenuItemMui onClick={() => {
+          console.log("Ver detalle", selectedCuotaId);
+          setMenuAnchor(null);
+        }}>
+          <ListItemIcon><Description fontSize="small" /></ListItemIcon>
+          <ListItemText>Ver Detalle</ListItemText>
+        </MenuItemMui>
+        <MenuItemMui onClick={() => {
+          if (selectedCuotaId) handleDelete(selectedCuotaId);
+          setMenuAnchor(null);
+        }}>
+          <ListItemIcon><Delete fontSize="small" /></ListItemIcon>
+          <ListItemText>Eliminar</ListItemText>
+        </MenuItemMui>
+      </Menu>
 
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        >
-          <Alert
-            onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-            severity={snackbar.severity}
-            sx={{ width: '100%' }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-
-        {/* Error global */}
-        {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {error}
-          </Alert>
-        )}
-      </Box>
-    </LocalizationProvider>
+      <Snackbar
+        open={Boolean(snackbar)}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(null)}
+        message={snackbar?.message}
+      >
+        <Alert severity={snackbar?.severity} onClose={() => setSnackbar(null)}>
+          {snackbar?.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 };
 
