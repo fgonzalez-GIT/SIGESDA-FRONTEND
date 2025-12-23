@@ -22,6 +22,7 @@ import TiposContactoAdminPage from './pages/Personas/Admin/TiposContactoAdminPag
 import AulasPage from './pages/Aulas/AulasPage';
 import EquipamientosAdminPage from './pages/Equipamientos/Admin/EquipamientosAdminPage';
 import CuotasPage from './pages/Cuotas/CuotasPage';
+import ReportesCuotasPage from './pages/Cuotas/ReportesCuotasPage';
 import MediosPagoPage from './pages/MediosPago/MediosPagoPage';
 import RecibosPage from './pages/Recibos/RecibosPage';
 import ParticipacionPage from './pages/Participacion/ParticipacionPage';
@@ -138,13 +139,16 @@ function App() {
                           }
                         />
 
-                        {/* ===== Otros Módulos ===== */}
+                        {/* ===== Cuotas y Pagos ===== */}
                         <Route path="/cuotas" element={<CuotasPage />} />
-                        <Route path="/categorias" element={<CategoriasPage />} />
+                        <Route path="/cuotas/reportes" element={<ReportesCuotasPage />} />
                         <Route path="/medios-pago" element={<MediosPagoPage />} />
                         <Route path="/recibos" element={<RecibosPage />} />
                         <Route path="/participacion" element={<ParticipacionPage />} />
                         <Route path="/familiares" element={<FamiliaresPage />} />
+
+                        {/* ===== Otros Módulos ===== */}
+                        <Route path="/categorias" element={<CategoriasPage />} />
 
                         {/* ===== Reservas ===== */}
                         <Route path="/reservas" element={<ReservasPage />} />

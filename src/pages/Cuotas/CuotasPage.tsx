@@ -50,11 +50,13 @@ import {
   deleteCuota,
   setFilters,
   clearFilters,
-  fetchDashboard
+  fetchDashboard,
+  fetchCuotaById,
+  setSelectedCuota
 } from '../../store/slices/cuotasSlice';
 import { CategoriaSocio, EstadoRecibo } from '../../types/cuota.types';
-// import GenerarCuotasDialog from '../../components/Cuotas/GenerarCuotasDialog'; // To be created
-// import CuotaDetalleDialog from '../../components/Cuotas/CuotaDetalleDialog'; // To be created
+import GeneracionMasivaModal from '../../components/Cuotas/GeneracionMasivaModal';
+import DetalleCuotaModal from '../../components/Cuotas/DetalleCuotaModal';
 
 const CuotasPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -64,11 +66,14 @@ const CuotasPage: React.FC = () => {
     error,
     filters,
     pagination,
-    dashboardData
+    dashboardData,
+    selectedCuota
   } = useAppSelector((state) => state.cuotas);
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedCuotaId, setSelectedCuotaId] = useState<number | null>(null);
+  const [openGenerarModal, setOpenGenerarModal] = useState(false);
+  const [openDetalleModal, setOpenDetalleModal] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' } | null>(null);
 
   // Initial load
@@ -103,6 +108,18 @@ const CuotasPage: React.FC = () => {
     }
   };
 
+  const handleOpenDetalle = async (id: number) => {
+    setSelectedCuotaId(id);
+    try {
+      // Fetch full cuota details (needed for modal)
+      await dispatch(fetchCuotaById(id)).unwrap();
+      setOpenDetalleModal(true);
+    } catch (error) {
+      console.error("Error fetching cuota details:", error);
+      setSnackbar({ open: true, message: 'Error al cargar detalles de la cuota', severity: 'error' });
+    }
+  };
+
   const getEstadoColor = (estado: EstadoRecibo) => {
     switch (estado) {
       case 'PAGADO': return 'success';
@@ -125,23 +142,22 @@ const CuotasPage: React.FC = () => {
           </Typography>
         </Box>
         <Stack direction="row" spacing={2}>
-          {/* TODO: Add Generar Dialog Button */}
-          <Button variant="contained" startIcon={<Add />} onClick={() => console.log("Open Generate Dialog")}>
+          <Button variant="contained" startIcon={<Add />} onClick={() => setOpenGenerarModal(true)}>
             Generar Cuotas
           </Button>
         </Stack>
       </Box>
 
       {/* KPI Cards */}
-      {dashboardData && (
+      {dashboardData && dashboardData.metricas && (
         <Box display="flex" gap={2} mb={3}>
           <Card sx={{ flex: 1 }}>
             <CardContent>
               <Box display="flex" alignItems="center">
                 <AttachMoney color="primary" sx={{ mr: 1 }} />
                 <Box>
-                  <Typography variant="h5">${dashboardData.metricas.totalRecaudado.toLocaleString()}</Typography>
-                  <Typography variant="body2" color="text.secondary">Recaudado ({dashboardData.periodo.nombreMes})</Typography>
+                  <Typography variant="h5">${(dashboardData.metricas.totalRecaudado || 0).toLocaleString()}</Typography>
+                  <Typography variant="body2" color="text.secondary">Recaudado ({dashboardData.periodo?.nombreMes || '-'})</Typography>
                 </Box>
               </Box>
             </CardContent>
@@ -152,7 +168,7 @@ const CuotasPage: React.FC = () => {
               <Box display="flex" alignItems="center">
                 <Schedule color="warning" sx={{ mr: 1 }} />
                 <Box>
-                  <Typography variant="h5">${dashboardData.metricas.totalPendiente.toLocaleString()}</Typography>
+                  <Typography variant="h5">${(dashboardData.metricas.totalPendiente || 0).toLocaleString()}</Typography>
                   <Typography variant="body2" color="text.secondary">Pendiente</Typography>
                 </Box>
               </Box>
@@ -164,7 +180,7 @@ const CuotasPage: React.FC = () => {
               <Box display="flex" alignItems="center">
                 <CheckCircle color="success" sx={{ mr: 1 }} />
                 <Box>
-                  <Typography variant="h5">{dashboardData.metricas.tasaCobro.toFixed(1)}%</Typography>
+                  <Typography variant="h5">{(dashboardData.metricas.tasaCobro || 0).toFixed(1)}%</Typography>
                   <Typography variant="body2" color="text.secondary">Tasa de Cobro</Typography>
                 </Box>
               </Box>
@@ -253,12 +269,12 @@ const CuotasPage: React.FC = () => {
               <TableRow>
                 <TableCell colSpan={7} align="center">Cargando...</TableCell>
               </TableRow>
-            ) : cuotas.length === 0 ? (
+            ) : !cuotas || cuotas.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center">No hay cuotas registradas</TableCell>
               </TableRow>
             ) : (
-              cuotas.map((cuota) => (
+              (cuotas || []).map((cuota) => (
                 <TableRow key={cuota.id} hover>
                   <TableCell>{cuota.recibo?.numero || '-'}</TableCell>
                   <TableCell>
@@ -310,8 +326,10 @@ const CuotasPage: React.FC = () => {
         onClose={() => setMenuAnchor(null)}
       >
         <MenuItemMui onClick={() => {
-          console.log("Ver detalle", selectedCuotaId);
-          setMenuAnchor(null);
+          if (selectedCuotaId) {
+            handleOpenDetalle(selectedCuotaId);
+            setMenuAnchor(null);
+          }
         }}>
           <ListItemIcon><Description fontSize="small" /></ListItemIcon>
           <ListItemText>Ver Detalle</ListItemText>
@@ -335,6 +353,21 @@ const CuotasPage: React.FC = () => {
           {snackbar?.message}
         </Alert>
       </Snackbar>
+
+      <GeneracionMasivaModal
+        open={openGenerarModal}
+        onClose={() => setOpenGenerarModal(false)}
+        onSuccess={() => {
+          dispatch(fetchCuotas(filters));
+          dispatch(fetchDashboard({ mes: new Date().getMonth() + 1, anio: new Date().getFullYear() }));
+        }}
+      />
+
+      <DetalleCuotaModal
+        open={openDetalleModal}
+        onClose={() => setOpenDetalleModal(false)}
+        cuota={selectedCuota}
+      />
     </Box>
   );
 };

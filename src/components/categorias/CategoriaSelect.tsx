@@ -14,8 +14,8 @@ import { fetchCategorias } from '../../store/slices/categoriasSlice';
 import { CategoriaSocio } from '../../types/categoria.types';
 
 interface CategoriaSelectProps {
-  value?: string;
-  onChange: (categoriaId: string) => void;
+  value?: string | number;
+  onChange: (categoriaId: string | number) => void;
   error?: string;
   includeInactive?: boolean;
   required?: boolean;

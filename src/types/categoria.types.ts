@@ -11,7 +11,7 @@
  * Representa una categoría de socio dinámica en el sistema
  */
 export interface CategoriaSocio {
-  id: string;
+  id: number;
   codigo: string;
   nombre: string;
   descripcion?: string | null;
@@ -32,7 +32,7 @@ export interface CategoriaSocio {
  * Se usa cuando solo se necesita información básica
  */
 export interface CategoriaResumen {
-  id: string;
+  id: number;
   codigo: string;
   nombre: string;
   montoCuota: string;

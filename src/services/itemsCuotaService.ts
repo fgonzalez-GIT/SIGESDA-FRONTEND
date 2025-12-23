@@ -34,6 +34,16 @@ export const itemsCuotaService = {
     getCategoriasItems: async (): Promise<CategoriaItem[]> => {
         const response = await itemsAPI.get<ApiResponse<CategoriaItem[]>>('/catalogos/categorias-items');
         return response.data.data;
+    },
+
+    // Operaciones sobre items individuales
+    updateItem: async (id: number, cambios: Partial<any>): Promise<any> => {
+        const response = await itemsAPI.put<ApiResponse<any>>(`/${id}`, cambios);
+        return response.data.data;
+    },
+
+    deleteItem: async (id: number): Promise<void> => {
+        await itemsAPI.delete(`/${id}`);
     }
 };
 

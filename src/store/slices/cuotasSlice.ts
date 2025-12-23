@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import cuotasService from '../../services/cuotasService';
-import { Cuota, DashboardData, GenerarCuotasRequest, ItemCuota, RecalcularCuotaRequest, RecalculoResponse } from '../../types/cuota.types';
+import reportesService from '../../services/reportesService';
+import { Cuota, DashboardData, GenerarCuotasRequest, ItemCuota, RecalcularCuotaRequest, RecalculoResponse, ValidacionGeneracionResponse } from '../../types/cuota.types';
 
 // State definition
 export interface CuotasFilters {
@@ -34,6 +35,11 @@ interface CuotasState {
   loading: boolean;
   error: string | null;
   operationLoading: boolean; // For create/update/delete operations
+
+  // New state properties
+  validacionGeneracion: ValidacionGeneracionResponse | null;
+  previewRecalculo: any | null;
+  comparacionCuota: any | null;
 }
 
 const initialState: CuotasState = {
@@ -55,7 +61,10 @@ const initialState: CuotasState = {
   },
   loading: false,
   error: null,
-  operationLoading: false
+  operationLoading: false,
+  validacionGeneracion: null,
+  previewRecalculo: null,
+  comparacionCuota: null
 };
 
 // Async Thunks
@@ -116,6 +125,17 @@ export const generarCuotasMasivas = createAsyncThunk(
   }
 );
 
+export const validarGeneracion = createAsyncThunk(
+  'cuotas/validarGeneracion',
+  async ({ mes, anio, categoriaIds }: { mes: number; anio: number; categoriaIds?: number[] }, { rejectWithValue }) => {
+    try {
+      return await cuotasService.validarGeneracion(mes, anio, categoriaIds);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al validar generación');
+    }
+  }
+);
+
 export const recalcularCuota = createAsyncThunk(
   'cuotas/recalcular',
   async ({ id, options }: { id: number; options: RecalcularCuotaRequest }, { rejectWithValue }) => {
@@ -127,11 +147,44 @@ export const recalcularCuota = createAsyncThunk(
   }
 );
 
+export const previewRecalculo = createAsyncThunk(
+  'cuotas/previewRecalculo',
+  async (request: any, { rejectWithValue }) => {
+    try {
+      return await cuotasService.previewRecalculo(request);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al generar preview');
+    }
+  }
+);
+
+export const regenerarCuotas = createAsyncThunk(
+  'cuotas/regenerar',
+  async (request: any, { rejectWithValue }) => {
+    try {
+      return await cuotasService.regenerarCuotas(request);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al regenerar cuotas');
+    }
+  }
+);
+
+export const compararCuota = createAsyncThunk(
+  'cuotas/comparar',
+  async (cuotaId: number, { rejectWithValue }) => {
+    try {
+      return cuotasService.compararCuota(cuotaId);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al comparar cuota');
+    }
+  }
+);
+
 export const fetchDashboard = createAsyncThunk(
   'cuotas/fetchDashboard',
   async ({ mes, anio }: { mes: number; anio: number }, { rejectWithValue }) => {
     try {
-      return await cuotasService.getDashboard(mes, anio);
+      return await reportesService.getDashboard(mes, anio);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.error || 'Error al cargar dashboard');
     }
@@ -170,6 +223,13 @@ const cuotasSlice = createSlice({
     },
     setSelectedCuota: (state, action: PayloadAction<Cuota | null>) => {
       state.selectedCuota = action.payload;
+    },
+    clearValidacion: (state) => {
+      state.validacionGeneracion = null;
+    },
+    clearPreview: (state) => {
+      state.previewRecalculo = null;
+      state.comparacionCuota = null;
     }
   },
   extraReducers: (builder) => {
@@ -181,13 +241,26 @@ const cuotasSlice = createSlice({
       })
       .addCase(fetchCuotas.fulfilled, (state, action) => {
         state.loading = false;
-        state.cuotas = action.payload.data;
-        state.pagination = {
-          total: action.payload.total,
-          pages: action.payload.pages,
-          currentPage: action.payload.currentPage,
-          limit: state.filters.limit || 20
-        };
+        // Handle potential different response structures
+        if (Array.isArray(action.payload)) {
+          state.cuotas = action.payload;
+          state.pagination = {
+            ...state.pagination,
+            total: action.payload.length
+          };
+        } else if (action.payload && Array.isArray(action.payload.data)) {
+          state.cuotas = action.payload.data;
+          state.pagination = {
+            total: action.payload.total,
+            pages: action.payload.pages,
+            currentPage: action.payload.currentPage,
+            limit: state.filters.limit || 20
+          };
+        } else {
+          // Fallback
+          state.cuotas = [];
+          console.error('Unexpected cuotas response format', action.payload);
+        }
       })
       .addCase(fetchCuotas.rejected, (state, action) => {
         state.loading = false;
@@ -219,6 +292,21 @@ const cuotasSlice = createSlice({
         state.error = action.payload as string;
       })
 
+      // Validar Generación
+      .addCase(validarGeneracion.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.validacionGeneracion = null;
+      })
+      .addCase(validarGeneracion.fulfilled, (state, action) => {
+        state.loading = false;
+        state.validacionGeneracion = action.payload;
+      })
+      .addCase(validarGeneracion.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
       // Recalcular
       .addCase(recalcularCuota.fulfilled, (state, action) => {
         // Update the cuota in the list
@@ -229,6 +317,18 @@ const cuotasSlice = createSlice({
         if (state.selectedCuota?.id === action.payload.cuotaRecalculada.id) {
           state.selectedCuota = action.payload.cuotaRecalculada;
         }
+      })
+
+      // Preview Recalculo
+      .addCase(previewRecalculo.pending, (state) => { state.operationLoading = true; })
+      .addCase(previewRecalculo.fulfilled, (state, action) => {
+        state.operationLoading = false;
+        state.previewRecalculo = action.payload;
+      })
+
+      // Comparar
+      .addCase(compararCuota.fulfilled, (state, action) => {
+        state.comparacionCuota = action.payload;
       })
 
       // Dashboard
@@ -243,5 +343,5 @@ const cuotasSlice = createSlice({
   },
 });
 
-export const { setFilters, clearFilters, clearError, setSelectedCuota } = cuotasSlice.actions;
+export const { setFilters, clearFilters, clearError, setSelectedCuota, clearValidacion, clearPreview } = cuotasSlice.actions;
 export default cuotasSlice.reducer;

@@ -42,7 +42,7 @@ export const fetchCategorias = createAsyncThunk(
  */
 export const fetchCategoriaById = createAsyncThunk(
   'categorias/fetchCategoriaById',
-  async (id: string, { rejectWithValue }) => {
+  async (id: number, { rejectWithValue }) => {
     try {
       const response = await categoriasApi.getById(id);
       return response.data;
@@ -93,7 +93,7 @@ export const createCategoria = createAsyncThunk(
  */
 export const updateCategoria = createAsyncThunk(
   'categorias/updateCategoria',
-  async ({ id, data }: { id: string; data: UpdateCategoriaDto }, { rejectWithValue }) => {
+  async ({ id, data }: { id: number; data: UpdateCategoriaDto }, { rejectWithValue }) => {
     try {
       const response = await categoriasApi.update(id, data);
       return response.data;
@@ -110,7 +110,7 @@ export const updateCategoria = createAsyncThunk(
  */
 export const toggleCategoria = createAsyncThunk(
   'categorias/toggleCategoria',
-  async (id: string, { rejectWithValue }) => {
+  async (id: number, { rejectWithValue }) => {
     try {
       const response = await categoriasApi.toggle(id);
       return response.data;
@@ -127,7 +127,7 @@ export const toggleCategoria = createAsyncThunk(
  */
 export const reorderCategorias = createAsyncThunk(
   'categorias/reorderCategorias',
-  async (categoriaIds: string[], { rejectWithValue }) => {
+  async (categoriaIds: number[], { rejectWithValue }) => {
     try {
       await categoriasApi.reorder(categoriaIds);
       return categoriaIds;
@@ -144,7 +144,7 @@ export const reorderCategorias = createAsyncThunk(
  */
 export const deleteCategoria = createAsyncThunk(
   'categorias/deleteCategoria',
-  async (id: string, { rejectWithValue }) => {
+  async (id: number, { rejectWithValue }) => {
     try {
       await categoriasApi.delete(id);
       return id;

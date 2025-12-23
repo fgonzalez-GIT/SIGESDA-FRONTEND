@@ -26,7 +26,7 @@ export const categoriasApi = {
    * Obtener una categoría por ID
    * GET /api/categorias-socios/:id
    */
-  getById: async (id: string): Promise<ApiResponse<CategoriaSocio>> => {
+  getById: async (id: number): Promise<ApiResponse<CategoriaSocio>> => {
     const response = await api.get(`/categorias-socios/${id}`);
     return response.data;
   },
@@ -53,7 +53,7 @@ export const categoriasApi = {
    * Actualizar una categoría existente
    * PUT /api/categorias-socios/:id
    */
-  update: async (id: string, categoria: UpdateCategoriaDto): Promise<ApiResponse<CategoriaSocio>> => {
+  update: async (id: number, categoria: UpdateCategoriaDto): Promise<ApiResponse<CategoriaSocio>> => {
     const response = await api.put(`/categorias-socios/${id}`, categoria);
     return response.data;
   },
@@ -62,7 +62,7 @@ export const categoriasApi = {
    * Activar/Desactivar una categoría (toggle)
    * PATCH /api/categorias-socios/:id/toggle
    */
-  toggle: async (id: string): Promise<ApiResponse<CategoriaSocio>> => {
+  toggle: async (id: number): Promise<ApiResponse<CategoriaSocio>> => {
     const response = await api.patch(`/categorias-socios/${id}/toggle`);
     return response.data;
   },
@@ -71,7 +71,7 @@ export const categoriasApi = {
    * Reordenar categorías
    * POST /api/categorias-socios/reorder
    */
-  reorder: async (categoriaIds: string[]): Promise<ApiResponse<null>> => {
+  reorder: async (categoriaIds: number[]): Promise<ApiResponse<null>> => {
     const response = await api.post('/categorias-socios/reorder', { categoriaIds });
     return response.data;
   },
@@ -80,7 +80,7 @@ export const categoriasApi = {
    * Obtener estadísticas de una categoría
    * GET /api/categorias-socios/:id/stats
    */
-  getStats: async (id: string): Promise<CategoriaStatsResponse> => {
+  getStats: async (id: number): Promise<CategoriaStatsResponse> => {
     const response = await api.get(`/categorias-socios/${id}/stats`);
     return response.data;
   },
@@ -90,7 +90,7 @@ export const categoriasApi = {
    * DELETE /api/categorias-socios/:id
    * Nota: No se puede eliminar si tiene socios o cuotas asociadas
    */
-  delete: async (id: string): Promise<ApiResponse<null>> => {
+  delete: async (id: number): Promise<ApiResponse<null>> => {
     const response = await api.delete(`/categorias-socios/${id}`);
     return response.data;
   },
