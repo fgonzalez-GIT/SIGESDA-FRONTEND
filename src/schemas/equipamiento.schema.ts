@@ -59,13 +59,6 @@ export const createEquipamientoSchema = z.object({
     .min(1, 'Cantidad debe ser al menos 1')
     .optional()
     .default(1),
-
-  orden: z
-    .number()
-    .int('Orden debe ser un número entero')
-    .min(0, 'Orden no puede ser negativo')
-    .optional()
-    .default(0),
 });
 
 /**
@@ -121,12 +114,6 @@ export const updateEquipamientoSchema = z.object({
     .optional(),
 
   activo: z.boolean().optional(),
-
-  orden: z
-    .number()
-    .int('Orden debe ser un número entero')
-    .min(0, 'Orden no puede ser negativo')
-    .optional(),
 });
 
 // ==================== SCHEMA DE QUERY PARAMS ====================

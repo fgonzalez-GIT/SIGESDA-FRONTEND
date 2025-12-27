@@ -17,12 +17,11 @@ export interface Equipamiento {
   descripcion?: string | null;
   observaciones?: string | null;
   categoriaEquipamientoId: number;
-  categoriaEquipamiento: CategoriaEquipamiento;
-  estadoEquipamientoId?: number; // NUEVO: ID del estado del equipamiento (nullable)
+  categoriaEquipamiento?: CategoriaEquipamiento; // Opcional porque puede no venir incluida
+  estadoEquipamientoId?: number | null; // NUEVO: ID del estado del equipamiento (nullable)
   estadoEquipamiento?: EstadoEquipamiento; // NUEVO: Relación con estado del equipamiento
   cantidad: number; // NUEVO: Cantidad/stock total del equipamiento (default: 1)
   activo: boolean;
-  orden: number;
   createdAt?: string;
   updatedAt?: string;
   _count?: {
@@ -255,26 +254,29 @@ export interface EquipamientoDisponibilidadResponse {
 /**
  * Obtiene el label legible de una categoría
  */
-export const getCategoriaLabel = (categoria: CategoriaEquipamiento): string => {
+export const getCategoriaLabel = (categoria: CategoriaEquipamiento | undefined): string => {
   // Si categoria es un objeto (del backend), usar su nombre
-  if (typeof categoria === 'object' && categoria.nombre) {
+  if (categoria && typeof categoria === 'object' && categoria.nombre) {
     return categoria.nombre;
   }
-  // Fallback a labels hardcodeados
-  return categoria.nombre || 'Sin categoría';
+  // Fallback
+  return 'Sin categoría';
 };
 
 /**
  * Obtiene el color del chip de una categoría
  */
-export const getCategoriaColor = (categoria: CategoriaEquipamiento): 'primary' | 'secondary' | 'success' | 'warning' | 'info' | 'error' | 'default' => {
+export const getCategoriaColor = (categoria: CategoriaEquipamiento | undefined): 'primary' | 'secondary' | 'success' | 'warning' | 'info' | 'error' | 'default' => {
   // Si categoria es un objeto y tiene color definido, usarlo
-  if (typeof categoria === 'object' && categoria.color) {
+  if (categoria && typeof categoria === 'object' && categoria.color) {
     return categoria.color as any;
   }
   // Fallback a colores por código
-  const codigo = (typeof categoria === 'object' ? categoria.codigo : categoria) as CategoriaEquipamientoCodigo;
-  return CATEGORIA_EQUIPAMIENTO_COLORS[codigo] || 'default';
+  if (categoria && typeof categoria === 'object' && categoria.codigo) {
+    const codigo = categoria.codigo as CategoriaEquipamientoCodigo;
+    return CATEGORIA_EQUIPAMIENTO_COLORS[codigo] || 'default';
+  }
+  return 'default';
 };
 
 /**

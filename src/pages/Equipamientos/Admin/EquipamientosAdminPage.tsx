@@ -149,7 +149,6 @@ const EquipamientosAdminPage: React.FC = () => {
           categoriaEquipamientoId: selectedItem.categoriaEquipamiento?.id,
           estadoEquipamientoId: selectedItem.estadoEquipamientoId, // NUEVO
           cantidad: selectedItem.cantidad || 1, // NUEVO
-          orden: selectedItem.orden,
         }
       : {
           nombre: '',
@@ -158,7 +157,6 @@ const EquipamientosAdminPage: React.FC = () => {
           categoriaEquipamientoId: '' as any,
           estadoEquipamientoId: '' as any, // NUEVO
           cantidad: 1, // NUEVO: Default 1
-          orden: 0,
         },
   });
 
@@ -172,7 +170,6 @@ const EquipamientosAdminPage: React.FC = () => {
         categoriaEquipamientoId: selectedItem.categoriaEquipamiento?.id,
         estadoEquipamientoId: selectedItem.estadoEquipamientoId, // NUEVO
         cantidad: selectedItem.cantidad || 1, // NUEVO
-        orden: selectedItem.orden,
       });
     } else {
       reset({
@@ -182,7 +179,6 @@ const EquipamientosAdminPage: React.FC = () => {
         categoriaEquipamientoId: '' as any,
         estadoEquipamientoId: '' as any, // NUEVO
         cantidad: 1, // NUEVO
-        orden: 0,
       });
     }
   }, [selectedItem, reset]);
@@ -373,9 +369,8 @@ const EquipamientosAdminPage: React.FC = () => {
     return matchesSearch && matchesCategoria && matchesEstado && matchesStock;
   });
 
-  // Ordenar items filtrados
+  // Ordenar items filtrados (por nombre)
   const itemsOrdenados = [...itemsFiltrados].sort((a, b) => {
-    if (a.orden !== b.orden) return a.orden - b.orden;
     return a.nombre.localeCompare(b.nombre);
   });
 
@@ -615,7 +610,6 @@ const EquipamientosAdminPage: React.FC = () => {
                         size="small"
                       />
                     </TableCell>
-                    <TableCell align="center">{item.orden}</TableCell>
                     <TableCell align="center">
                       <Tooltip title="Ver detalles">
                         <IconButton size="small" onClick={() => handleViewClick(item)} color="info">
@@ -794,24 +788,6 @@ const EquipamientosAdminPage: React.FC = () => {
                   />
                 )}
               />
-
-              <Controller
-                name="orden"
-                control={control}
-                render={({ field: { value, onChange, ...field } }) => (
-                  <TextField
-                    {...field}
-                    value={value ?? 0}
-                    onChange={(e) => onChange(parseInt(e.target.value) || 0)}
-                    label="Orden"
-                    type="number"
-                    placeholder="0"
-                    error={!!errors.orden}
-                    helperText={errors.orden?.message || 'Orden de visualización (0 = primero)'}
-                    fullWidth
-                  />
-                )}
-              />
             </Box>
           </DialogContent>
           <DialogActions>
@@ -915,13 +891,6 @@ const EquipamientosAdminPage: React.FC = () => {
                       size="small"
                     />
                   </Box>
-                </Box>
-
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Orden
-                  </Typography>
-                  <Typography variant="body1">{itemToView.orden}</Typography>
                 </Box>
 
                 <Box sx={{ gridColumn: '1 / -1' }}>
