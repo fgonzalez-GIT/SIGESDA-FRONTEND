@@ -27,6 +27,7 @@ export const updateContactoSchema = z.object({
 
 const personaTipoBaseSchema = z.object({
   tipoPersonaCodigo: z.string().min(1).trim(),
+  tipoPersonaId: z.number().int().positive().optional(), // ID del tipo asignado (solo en modo edición)
   observaciones: z.string().max(500).optional().nullable().transform(val => val === '' || val === null ? undefined : val),
 });
 

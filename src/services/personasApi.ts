@@ -277,13 +277,14 @@ export const personasApi = {
 
   /**
    * Actualizar un tipo asignado
-   * PUT /api/personas/tipos/:tipoId
+   * PUT /api/personas/:personaId/tipos/:tipoId
    */
   actualizarTipo: async (
+    personaId: number,
     tipoId: number,
     data: UpdatePersonaTipoDTO
   ): Promise<ApiResponse<PersonaTipo>> => {
-    const response = await api.put(`/personas/tipos/${tipoId}`, data);
+    const response = await api.put(`/personas/${personaId}/tipos/${tipoId}`, data);
     return response.data;
   },
 

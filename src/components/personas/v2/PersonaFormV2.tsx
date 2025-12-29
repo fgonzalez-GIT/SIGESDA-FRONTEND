@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -174,6 +174,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
 
         const tipo: any = {
           tipoPersonaCodigo: codigo,
+          tipoPersonaId: pt.tipoPersonaId, // ← FIX: Agregar tipoPersonaId para permitir actualización de tipos
         };
 
         // Cargar campos específicos según el tipo
@@ -277,50 +278,51 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
     }
   };
 
-  // Nuevo handler para TipoPersonaMultiSelect
-  const handleTiposChange = (newCodigos: string[]) => {
+  // Nuevo handler para TipoPersonaMultiSelect - OPTIMIZADO
+  const handleTiposChange = useCallback((newCodigos: string[]) => {
     const currentTipos = tiposWatch || [];
 
-    // Determinar qué tipos agregar y cuáles eliminar
-    const tiposToAdd = newCodigos.filter(codigo => !selectedTipos.includes(codigo));
-    const tiposToRemove = selectedTipos.filter(codigo => !newCodigos.includes(codigo));
+    // Crear Set para búsquedas O(1) en vez de O(n)
+    const selectedSet = new Set(selectedTipos);
+    const newSet = new Set(newCodigos);
 
-    let updatedTipos = [...currentTipos];
+    // Determinar cambios de forma más eficiente
+    const tiposToAdd = newCodigos.filter(codigo => !selectedSet.has(codigo));
+    const tiposToRemove = selectedTipos.filter(codigo => !newSet.has(codigo));
 
-    // Eliminar tipos desmarcados
-    tiposToRemove.forEach(codigo => {
-      updatedTipos = updatedTipos.filter((t: any) => t.tipoPersonaCodigo !== codigo);
-    });
+    // Si no hay cambios, no hacer nada (evitar re-renders innecesarios)
+    if (tiposToAdd.length === 0 && tiposToRemove.length === 0) {
+      return;
+    }
 
-    // Agregar nuevos tipos con campos por defecto
-    tiposToAdd.forEach(codigo => {
-      const codigoUpper = codigo.toUpperCase();
-      const newTipo: any = {
-        tipoPersonaCodigo: codigo,
-      };
+    // Construir nuevo array de tipos de una sola pasada
+    const updatedTipos = currentTipos
+      .filter((t: any) => !tiposToRemove.includes(t.tipoPersonaCodigo))
+      .concat(
+        tiposToAdd.map(codigo => {
+          const codigoUpper = codigo.toUpperCase();
+          const newTipo: any = { tipoPersonaCodigo: codigo };
 
-      // Inicializar campos específicos según el tipo
-      if (codigoUpper === 'SOCIO') {
-        // Buscar "General" como categoría predeterminada
-        const generalCat = catalogos?.categoriasSocio?.find(c => c.codigo === 'GENERAL');
-        newTipo.categoriaId = generalCat?.id || 0;
-      } else if (codigoUpper === 'DOCENTE') {
-        // Buscar "General" como especialidad predeterminada
-        const generalEsp = catalogos?.especialidadesDocentes?.find(e => e.codigo === 'GENERAL');
-        newTipo.especialidadId = generalEsp?.id || 0;
-        newTipo.honorariosPorHora = 0;
-      } else if (codigoUpper === 'PROVEEDOR') {
-        newTipo.cuit = '';
-        newTipo.razonSocialId = 0;
-      }
-      // NO_SOCIO no requiere campos adicionales
+          // Inicializar campos específicos según el tipo
+          if (codigoUpper === 'SOCIO') {
+            const generalCat = catalogos?.categoriasSocio?.find(c => c.codigo === 'GENERAL');
+            newTipo.categoriaId = generalCat?.id || 0;
+          } else if (codigoUpper === 'DOCENTE') {
+            const generalEsp = catalogos?.especialidadesDocentes?.find(e => e.codigo === 'GENERAL');
+            newTipo.especialidadId = generalEsp?.id || 0;
+            newTipo.honorariosPorHora = 0;
+          } else if (codigoUpper === 'PROVEEDOR') {
+            newTipo.cuit = '';
+            newTipo.razonSocialId = 0;
+          }
 
-      updatedTipos.push(newTipo);
-    });
+          return newTipo;
+        })
+      );
 
-    setValue('tipos', updatedTipos);
+    setValue('tipos', updatedTipos, { shouldValidate: false }); // Evitar validación innecesaria
     setSelectedTipos(newCodigos);
-  };
+  }, [selectedTipos, tiposWatch, catalogos, setValue]);
 
   const handleFormSubmit = async (data: CreatePersonaFormData) => {
     // Validar que no haya error de DNI
@@ -359,202 +361,202 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
     }
   };
 
-  const renderCamposTipo = (codigoTipo: string, index: number) => {
-    // Validación defensiva: si no hay código, no renderizar nada
-    if (!codigoTipo) {
-      console.warn('renderCamposTipo llamado con codigoTipo undefined/null');
-      return null;
-    }
+  // Memoizar los campos dinámicos renderizados para evitar recalcularlos
+  const camposDinamicos = useMemo(() => {
+    return tiposWatch
+      ?.filter((tipo: any) => tipo?.tipoPersonaCodigo)
+      .map((tipo: any, index: number) => {
+        const codigoTipo = tipo.tipoPersonaCodigo;
+        const tipoUpper = codigoTipo.toUpperCase();
 
-    const tipoUpper = codigoTipo.toUpperCase();
-
-    switch (tipoUpper) {
-      case 'SOCIO':
-        return (
-          <Box key={`tipo-${codigoTipo}-${index}`} sx={{ mt: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
-            <Typography variant="subtitle2" gutterBottom color="primary">
-              Campos de Socio
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12 }}>
-                <Controller
-                  name={`tipos.${index}.categoriaId` as any}
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth size="small" error={!!errors.tipos?.[index]?.categoriaId}>
-                      <InputLabel>Categoría *</InputLabel>
-                      <Select {...field} label="Categoría *">
-                        <MenuItem value="">Seleccionar categoría</MenuItem>
-                        {catalogos?.categoriasSocio
-                          .filter((c) => c.activa)
-                          .sort((a, b) => a.orden - b.orden)
-                          .map((cat) => (
-                            <MenuItem key={cat.id} value={cat.id}>
-                              {cat.nombre}{cat.montoCuota && Number(cat.montoCuota) > 0 ? ` - $${cat.montoCuota}` : ''}
-                            </MenuItem>
-                          ))}
-                      </Select>
-                      {errors.tipos?.[index]?.categoriaId && (
-                        <FormHelperText>{errors.tipos[index]?.categoriaId?.message}</FormHelperText>
+        switch (tipoUpper) {
+          case 'SOCIO':
+            return (
+              <Box key={`tipo-${codigoTipo}-${index}`} sx={{ mt: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                <Typography variant="subtitle2" gutterBottom color="primary">
+                  Campos de Socio
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12 }}>
+                    <Controller
+                      name={`tipos.${index}.categoriaId` as any}
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl fullWidth size="small" error={!!errors.tipos?.[index]?.categoriaId}>
+                          <InputLabel>Categoría *</InputLabel>
+                          <Select {...field} label="Categoría *">
+                            <MenuItem value="">Seleccionar categoría</MenuItem>
+                            {catalogos?.categoriasSocio
+                              .filter((c) => c.activa)
+                              .sort((a, b) => a.orden - b.orden)
+                              .map((cat) => (
+                                <MenuItem key={cat.id} value={cat.id}>
+                                  {cat.nombre}{cat.montoCuota && Number(cat.montoCuota) > 0 ? ` - $${cat.montoCuota}` : ''}
+                                </MenuItem>
+                              ))}
+                          </Select>
+                          {errors.tipos?.[index]?.categoriaId && (
+                            <FormHelperText>{errors.tipos[index]?.categoriaId?.message}</FormHelperText>
+                          )}
+                        </FormControl>
                       )}
-                    </FormControl>
-                  )}
-                />
-              </Grid>
-            </Grid>
-          </Box>
-        );
-
-      case 'DOCENTE':
-        return (
-          <Box key={`tipo-${codigoTipo}-${index}`} sx={{ mt: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
-            <Typography variant="subtitle2" gutterBottom color="success.main">
-              Campos de Docente
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12 }}>
-                <Controller
-                  name={`tipos.${index}.especialidadId` as any}
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth size="small" error={!!errors.tipos?.[index]?.especialidadId}>
-                      <InputLabel>Especialidad *</InputLabel>
-                      <Select
-                        {...field}
-                        value={field.value || ''}
-                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                        label="Especialidad *"
-                      >
-                        <MenuItem value="">Seleccionar especialidad</MenuItem>
-                        {catalogos?.especialidadesDocentes
-                          .filter((e) => e.activo)
-                          .sort((a, b) => a.orden - b.orden)
-                          .map((esp) => (
-                            <MenuItem key={esp.id} value={esp.id}>
-                              {esp.nombre}
-                            </MenuItem>
-                          ))}
-                      </Select>
-                      {errors.tipos?.[index]?.especialidadId && (
-                        <FormHelperText>{errors.tipos[index]?.especialidadId?.message}</FormHelperText>
-                      )}
-                    </FormControl>
-                  )}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Controller
-                  name={`tipos.${index}.honorariosPorHora` as any}
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      value={field.value ?? 0}
-                      onChange={(e) => {
-                        const numValue = parseFloat(e.target.value);
-                        field.onChange(isNaN(numValue) ? 0 : numValue);
-                      }}
-                      fullWidth
-                      size="small"
-                      label="Honorarios por hora *"
-                      type="number"
-                      inputProps={{ min: 0, step: 0.01 }}
-                      error={!!errors.tipos?.[index]?.honorariosPorHora}
-                      helperText={errors.tipos?.[index]?.honorariosPorHora?.message}
                     />
-                  )}
-                />
-              </Grid>
-            </Grid>
-          </Box>
-        );
+                  </Grid>
+                </Grid>
+              </Box>
+            );
 
-      case 'PROVEEDOR':
-        return (
-          <Box key={`tipo-${codigoTipo}-${index}`} sx={{ mt: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
-            <Typography variant="subtitle2" gutterBottom color="warning.main">
-              Campos de Proveedor
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Controller
-                  name={`tipos.${index}.cuit` as any}
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      size="small"
-                      label="CUIT *"
-                      placeholder="XX-XXXXXXXX-X"
-                      inputProps={{ maxLength: 13 }}
-                      error={!!errors.tipos?.[index]?.cuit}
-                      helperText={errors.tipos?.[index]?.cuit?.message || 'Formato: XX-XXXXXXXX-X'}
-                      onChange={(e) => {
-                        // Formato CUIT: XX-XXXXXXXX-X (solo números y guiones)
-                        let value = e.target.value.replace(/[^0-9-]/g, '');
-
-                        // Eliminar guiones para trabajar solo con números
-                        const onlyNumbers = value.replace(/-/g, '');
-
-                        // Formatear con guiones en posiciones correctas
-                        if (onlyNumbers.length <= 2) {
-                          value = onlyNumbers;
-                        } else if (onlyNumbers.length <= 10) {
-                          value = `${onlyNumbers.slice(0, 2)}-${onlyNumbers.slice(2)}`;
-                        } else {
-                          value = `${onlyNumbers.slice(0, 2)}-${onlyNumbers.slice(2, 10)}-${onlyNumbers.slice(10, 11)}`;
-                        }
-
-                        // Actualizar campo CUIT
-                        field.onChange(value);
-                      }}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Controller
-                  name={`tipos.${index}.razonSocialId` as any}
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl
-                      fullWidth
-                      size="small"
-                      error={!!errors.tipos?.[index]?.razonSocialId}
-                    >
-                      <InputLabel>Razón Social *</InputLabel>
-                      <Select
-                        {...field}
-                        label="Razón Social *"
-                      >
-                        <MenuItem value={0}>Seleccionar razón social</MenuItem>
-                        {catalogos?.razonesSociales
-                          ?.filter((r) => r.activo)
-                          .sort((a, b) => a.orden - b.orden)
-                          .map((razon) => (
-                            <MenuItem key={razon.id} value={razon.id}>
-                              {razon.nombre}
-                            </MenuItem>
-                          ))}
-                      </Select>
-                      {errors.tipos?.[index]?.razonSocialId && (
-                        <FormHelperText>
-                          {errors.tipos?.[index]?.razonSocialId?.message}
-                        </FormHelperText>
+          case 'DOCENTE':
+            return (
+              <Box key={`tipo-${codigoTipo}-${index}`} sx={{ mt: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                <Typography variant="subtitle2" gutterBottom color="success.main">
+                  Campos de Docente
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12 }}>
+                    <Controller
+                      name={`tipos.${index}.especialidadId` as any}
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl fullWidth size="small" error={!!errors.tipos?.[index]?.especialidadId}>
+                          <InputLabel>Especialidad *</InputLabel>
+                          <Select
+                            {...field}
+                            value={field.value || ''}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                            label="Especialidad *"
+                          >
+                            <MenuItem value="">Seleccionar especialidad</MenuItem>
+                            {catalogos?.especialidadesDocentes
+                              .filter((e) => e.activo)
+                              .sort((a, b) => a.orden - b.orden)
+                              .map((esp) => (
+                                <MenuItem key={esp.id} value={esp.id}>
+                                  {esp.nombre}
+                                </MenuItem>
+                              ))}
+                          </Select>
+                          {errors.tipos?.[index]?.especialidadId && (
+                            <FormHelperText>{errors.tipos[index]?.especialidadId?.message}</FormHelperText>
+                          )}
+                        </FormControl>
                       )}
-                    </FormControl>
-                  )}
-                />
-              </Grid>
-            </Grid>
-          </Box>
-        );
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <Controller
+                      name={`tipos.${index}.honorariosPorHora` as any}
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          value={field.value ?? 0}
+                          onChange={(e) => {
+                            const numValue = parseFloat(e.target.value);
+                            field.onChange(isNaN(numValue) ? 0 : numValue);
+                          }}
+                          fullWidth
+                          size="small"
+                          label="Honorarios por hora *"
+                          type="number"
+                          inputProps={{ min: 0, step: 0.01 }}
+                          error={!!errors.tipos?.[index]?.honorariosPorHora}
+                          helperText={errors.tipos?.[index]?.honorariosPorHora?.message}
+                        />
+                      )}
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+            );
 
-      default:
-        return null;
-    }
-  };
+          case 'PROVEEDOR':
+            return (
+              <Box key={`tipo-${codigoTipo}-${index}`} sx={{ mt: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                <Typography variant="subtitle2" gutterBottom color="warning.main">
+                  Campos de Proveedor
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Controller
+                      name={`tipos.${index}.cuit` as any}
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          fullWidth
+                          size="small"
+                          label="CUIT *"
+                          placeholder="XX-XXXXXXXX-X"
+                          inputProps={{ maxLength: 13 }}
+                          error={!!errors.tipos?.[index]?.cuit}
+                          helperText={errors.tipos?.[index]?.cuit?.message || 'Formato: XX-XXXXXXXX-X'}
+                          onChange={(e) => {
+                            // Formato CUIT: XX-XXXXXXXX-X (solo números y guiones)
+                            let value = e.target.value.replace(/[^0-9-]/g, '');
+
+                            // Eliminar guiones para trabajar solo con números
+                            const onlyNumbers = value.replace(/-/g, '');
+
+                            // Formatear con guiones en posiciones correctas
+                            if (onlyNumbers.length <= 2) {
+                              value = onlyNumbers;
+                            } else if (onlyNumbers.length <= 10) {
+                              value = `${onlyNumbers.slice(0, 2)}-${onlyNumbers.slice(2)}`;
+                            } else {
+                              value = `${onlyNumbers.slice(0, 2)}-${onlyNumbers.slice(2, 10)}-${onlyNumbers.slice(10, 11)}`;
+                            }
+
+                            // Actualizar campo CUIT
+                            field.onChange(value);
+                          }}
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Controller
+                      name={`tipos.${index}.razonSocialId` as any}
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl
+                          fullWidth
+                          size="small"
+                          error={!!errors.tipos?.[index]?.razonSocialId}
+                        >
+                          <InputLabel>Razón Social *</InputLabel>
+                          <Select
+                            {...field}
+                            label="Razón Social *"
+                          >
+                            <MenuItem value={0}>Seleccionar razón social</MenuItem>
+                            {catalogos?.razonesSociales
+                              ?.filter((r) => r.activo)
+                              .sort((a, b) => a.orden - b.orden)
+                              .map((razon) => (
+                                <MenuItem key={razon.id} value={razon.id}>
+                                  {razon.nombre}
+                                </MenuItem>
+                              ))}
+                          </Select>
+                          {errors.tipos?.[index]?.razonSocialId && (
+                            <FormHelperText>
+                              {errors.tipos?.[index]?.razonSocialId?.message}
+                            </FormHelperText>
+                          )}
+                        </FormControl>
+                      )}
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+            );
+
+          default:
+            return null;
+        }
+      });
+  }, [tiposWatch, control, errors, catalogos]);
 
   if (!catalogos) {
     return (
@@ -599,12 +601,8 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                 helperText={errors.tipos && typeof errors.tipos.message === 'string' ? errors.tipos.message : undefined}
               />
 
-              {/* Campos dinámicos según tipos seleccionados */}
-              {tiposWatch
-                ?.filter((tipo: any) => tipo?.tipoPersonaCodigo)
-                .map((tipo: any, index: number) =>
-                  renderCamposTipo(tipo.tipoPersonaCodigo, index)
-                )}
+              {/* Campos dinámicos según tipos seleccionados - MEMOIZADOS */}
+              {camposDinamicos}
             </Box>
 
             <Divider />

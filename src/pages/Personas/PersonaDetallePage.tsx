@@ -92,11 +92,58 @@ const PersonaDetallePage: React.FC = () => {
     if (!personaId) return;
 
     try {
-      // Separar contactos del resto de datos
+      // Separar contactos y tipos del resto de datos
       const { contactos, tipos, ...personaData } = data;
 
       // Actualizar datos básicos de la persona
       await personasApi.update(personaId, personaData);
+
+      // Actualizar tipos específicos (especialidadId, categoriaId, etc.)
+      if (tipos && tipos.length > 0 && persona?.tipos) {
+        const updatePromises = tipos.map(async (tipoFormData) => {
+          // Buscar el PersonaTipo correspondiente en los datos actuales de la persona
+          const personaTipo = persona.tipos?.find(
+            t => t.tipoPersonaId === tipoFormData.tipoPersonaId
+          );
+
+          if (personaTipo && personaTipo.id) {
+            // Preparar datos a actualizar (solo campos específicos del tipo)
+            const updateData: any = {};
+
+            if (tipoFormData.especialidadId !== undefined) {
+              updateData.especialidadId = tipoFormData.especialidadId;
+            }
+            if (tipoFormData.categoriaId !== undefined) {
+              updateData.categoriaId = tipoFormData.categoriaId;
+            }
+            if (tipoFormData.honorariosPorHora !== undefined) {
+              updateData.honorariosPorHora = tipoFormData.honorariosPorHora;
+            }
+            if (tipoFormData.numeroSocio !== undefined) {
+              updateData.numeroSocio = tipoFormData.numeroSocio;
+            }
+            if (tipoFormData.fechaIngreso !== undefined) {
+              updateData.fechaIngreso = tipoFormData.fechaIngreso;
+            }
+            if (tipoFormData.cuit !== undefined) {
+              updateData.cuit = tipoFormData.cuit;
+            }
+            if (tipoFormData.razonSocialId !== undefined) {
+              updateData.razonSocialId = tipoFormData.razonSocialId;
+            }
+            if (tipoFormData.observaciones !== undefined) {
+              updateData.observaciones = tipoFormData.observaciones;
+            }
+
+            // Solo actualizar si hay cambios
+            if (Object.keys(updateData).length > 0) {
+              await personasApi.actualizarTipo(personaId, personaTipo.id, updateData);
+            }
+          }
+        });
+
+        await Promise.all(updatePromises);
+      }
 
       // Agregar contactos nuevos (si hay)
       if (contactos && contactos.length > 0) {
