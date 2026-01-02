@@ -13,8 +13,9 @@ import type { TipoActividadBadgeProps } from '../../types/tipoActividad.types';
 /**
  * Componente Badge reutilizable para mostrar Tipos de Actividad
  * Muestra un chip con color e ícono según el código del tipo
+ * Optimizado con React.memo para evitar re-renders innecesarios
  */
-export const TipoActividadBadge: React.FC<TipoActividadBadgeProps> = ({
+export const TipoActividadBadge: React.FC<TipoActividadBadgeProps> = React.memo(({
   tipo,
   showCodigo = false,
   size = 'medium',
@@ -82,6 +83,6 @@ export const TipoActividadBadge: React.FC<TipoActividadBadgeProps> = ({
       variant={tipo.activo ? 'filled' : 'outlined'}
     />
   );
-};
+});
 
 export default TipoActividadBadge;

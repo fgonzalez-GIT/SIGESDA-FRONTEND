@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, startTransition } from 'react';
 import {
   Box,
   Typography,
@@ -45,8 +45,8 @@ const TiposPersonaAdminPage: React.FC = () => {
   const [tipoToDelete, setTipoToDelete] = useState<TipoPersona | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Definición de columnas de la tabla
-  const columns: CatalogoColumn<TipoPersona>[] = [
+  // Definición de columnas de la tabla (memoizada para evitar re-renders)
+  const columns = useMemo<CatalogoColumn<TipoPersona>[]>(() => [
     {
       id: 'codigo',
       label: 'Código',
@@ -113,10 +113,10 @@ const TiposPersonaAdminPage: React.FC = () => {
       width: '80px',
       align: 'center',
     },
-  ];
+  ], []);
 
-  // Definición de campos del formulario
-  const formFields: CatalogoField[] = [
+  // Definición de campos del formulario (memoizada)
+  const formFields = useMemo<CatalogoField[]>(() => [
     {
       name: 'codigo',
       label: 'Código',
@@ -162,28 +162,28 @@ const TiposPersonaAdminPage: React.FC = () => {
       placeholder: '1, 2, 3...',
       helperText: 'Orden de visualización',
     },
-  ];
+  ], [selectedTipo]);
 
-  // Handlers
-  const handleAddClick = () => {
+  // Handlers (memoizados para evitar re-renders)
+  const handleAddClick = useCallback(() => {
     setSelectedTipo(null);
     setFormOpen(true);
-  };
+  }, []);
 
-  const handleEditClick = (tipo: TipoPersona) => {
+  const handleEditClick = useCallback((tipo: TipoPersona) => {
     setSelectedTipo(tipo);
     setFormOpen(true);
-  };
+  }, []);
 
-  const handleDeleteClick = (tipo: TipoPersona) => {
+  const handleDeleteClick = useCallback((tipo: TipoPersona) => {
     setTipoToDelete(tipo);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleFormClose = () => {
+  const handleFormClose = useCallback(() => {
     setFormOpen(false);
     setSelectedTipo(null);
-  };
+  }, []);
 
   const handleFormSubmit = async (
     data: CreateTipoPersonaFormData | UpdateTipoPersonaFormData
@@ -214,9 +214,15 @@ const TiposPersonaAdminPage: React.FC = () => {
         );
       }
 
-      refetch();
+      // Cerrar el formulario inmediatamente para mejor UX
       setFormOpen(false);
       setSelectedTipo(null);
+      setSubmitting(false);
+
+      // Refrescar catálogos en segundo plano (no bloqueante)
+      startTransition(() => {
+        refetch();
+      });
     } catch (error: any) {
       console.error('Error al guardar tipo de persona:', error);
 
@@ -227,9 +233,8 @@ const TiposPersonaAdminPage: React.FC = () => {
         })
       );
 
-      throw error;
-    } finally {
       setSubmitting(false);
+      throw error;
     }
   };
 
@@ -247,9 +252,15 @@ const TiposPersonaAdminPage: React.FC = () => {
         })
       );
 
+      // Cerrar el diálogo inmediatamente
       setDeleteDialogOpen(false);
       setTipoToDelete(null);
-      refetch();
+      setSubmitting(false);
+
+      // Refrescar catálogos en segundo plano (no bloqueante)
+      startTransition(() => {
+        refetch();
+      });
     } catch (error: any) {
       console.error('Error al eliminar tipo de persona:', error);
 
@@ -259,12 +270,39 @@ const TiposPersonaAdminPage: React.FC = () => {
           severity: 'error',
         })
       );
-    } finally {
       setSubmitting(false);
     }
   };
 
-  const tiposPersona = catalogos?.tiposPersona || [];
+  // Memoizar tiposPersona para evitar re-renders innecesarios
+  const tiposPersona = useMemo(
+    () => catalogos?.tiposPersona || [],
+    [catalogos?.tiposPersona]
+  );
+
+  // Memoizar defaultValues para evitar que cambien en cada render
+  const defaultValues = useMemo(
+    () =>
+      selectedTipo
+        ? {
+            nombre: selectedTipo.nombre,
+            descripcion: selectedTipo.descripcion || '',
+            requiresCategoria: selectedTipo.requiresCategoria || false,
+            requiresEspecialidad: selectedTipo.requiresEspecialidad || false,
+            requiresCuit: selectedTipo.requiresCuit || false,
+            orden: selectedTipo.orden,
+            activo: selectedTipo.activo,
+          }
+        : {
+            codigo: '',
+            nombre: '',
+            descripcion: '',
+            requiresCategoria: false,
+            requiresEspecialidad: false,
+            requiresCuit: false,
+          },
+    [selectedTipo]
+  );
 
   return (
     <Box>
@@ -316,26 +354,7 @@ const TiposPersonaAdminPage: React.FC = () => {
         title="Tipo de Persona"
         fields={formFields}
         schema={selectedTipo ? updateTipoPersonaSchema : createTipoPersonaSchema}
-        defaultValues={
-          selectedTipo
-            ? {
-                nombre: selectedTipo.nombre,
-                descripcion: selectedTipo.descripcion || '',
-                requiresCategoria: selectedTipo.requiresCategoria || false,
-                requiresEspecialidad: selectedTipo.requiresEspecialidad || false,
-                requiresCuit: selectedTipo.requiresCuit || false,
-                orden: selectedTipo.orden,
-                activo: selectedTipo.activo,
-              }
-            : {
-                codigo: '',
-                nombre: '',
-                descripcion: '',
-                requiresCategoria: false,
-                requiresEspecialidad: false,
-                requiresCuit: false,
-              }
-        }
+        defaultValues={defaultValues}
         isEdit={!!selectedTipo}
         loading={submitting}
       />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -67,21 +67,21 @@ const TiposActividadPage: React.FC = () => {
     }
   }, [error, dispatch]);
 
-  const handleOpenDialog = (tipo?: TipoActividad) => {
+  const handleOpenDialog = useCallback((tipo?: TipoActividad) => {
     if (tipo) {
       dispatch(setSelectedTipo(tipo));
     } else {
       dispatch(setSelectedTipo(null));
     }
     setOpenDialog(true);
-  };
+  }, [dispatch]);
 
-  const handleCloseDialog = () => {
+  const handleCloseDialog = useCallback(() => {
     setOpenDialog(false);
     dispatch(setSelectedTipo(null));
-  };
+  }, [dispatch]);
 
-  const handleSubmit = async (data: CreateTipoActividadDto | UpdateTipoActividadDto) => {
+  const handleSubmit = useCallback(async (data: CreateTipoActividadDto | UpdateTipoActividadDto) => {
     try {
       if (selectedTipo) {
         // Actualizar
@@ -98,19 +98,19 @@ const TiposActividadPage: React.FC = () => {
       // El error ya está en el estado, se muestra en el formulario
       console.error('Error al guardar tipo de actividad:', err);
     }
-  };
+  }, [dispatch, selectedTipo, showInactive, handleCloseDialog]);
 
-  const handleOpenDeleteDialog = (tipo: TipoActividad) => {
+  const handleOpenDeleteDialog = useCallback((tipo: TipoActividad) => {
     setTipoToDelete(tipo);
     setOpenDeleteDialog(true);
-  };
+  }, []);
 
-  const handleCloseDeleteDialog = () => {
+  const handleCloseDeleteDialog = useCallback(() => {
     setOpenDeleteDialog(false);
     setTipoToDelete(null);
-  };
+  }, []);
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!tipoToDelete) return;
 
     try {
@@ -122,26 +122,28 @@ const TiposActividadPage: React.FC = () => {
       // El error ya está en el estado
       console.error('Error al eliminar tipo de actividad:', err);
     }
-  };
+  }, [dispatch, tipoToDelete, showInactive, handleCloseDeleteDialog]);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     setSearchTerm('');
     dispatch(setShowInactive(false));
-  };
+  }, [dispatch]);
 
-  // Filtrado local
-  const filteredTipos = tipos.filter((tipo) => {
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch =
-      searchTerm === '' ||
-      tipo.codigo.toLowerCase().includes(searchLower) ||
-      tipo.nombre.toLowerCase().includes(searchLower) ||
-      (tipo.descripcion && tipo.descripcion.toLowerCase().includes(searchLower));
+  // Filtrado local memoizado
+  const filteredTipos = useMemo(() => {
+    return tipos.filter((tipo) => {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch =
+        searchTerm === '' ||
+        tipo.codigo.toLowerCase().includes(searchLower) ||
+        tipo.nombre.toLowerCase().includes(searchLower) ||
+        (tipo.descripcion && tipo.descripcion.toLowerCase().includes(searchLower));
 
-    return matchesSearch;
-  });
+      return matchesSearch;
+    });
+  }, [tipos, searchTerm]);
 
-  const columns: GridColDef[] = [
+  const columns: GridColDef[] = useMemo(() => [
     {
       field: 'codigo',
       headerName: 'Código',
@@ -221,11 +223,14 @@ const TiposActividadPage: React.FC = () => {
         />,
       ],
     },
-  ];
+  ], [handleOpenDialog, handleOpenDeleteDialog]);
 
-  const totalTipos = tipos.length;
-  const activosTipos = tipos.filter((t) => t.activo).length;
-  const inactivosTipos = tipos.filter((t) => !t.activo).length;
+  // Estadísticas memoizadas
+  const stats = useMemo(() => ({
+    total: tipos.length,
+    activos: tipos.filter((t) => t.activo).length,
+    inactivos: tipos.filter((t) => !t.activo).length,
+  }), [tipos]);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -246,7 +251,7 @@ const TiposActividadPage: React.FC = () => {
               <Typography color="textSecondary" gutterBottom>
                 Total Tipos
               </Typography>
-              <Typography variant="h4">{totalTipos}</Typography>
+              <Typography variant="h4">{stats.total}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -257,7 +262,7 @@ const TiposActividadPage: React.FC = () => {
                 Activos
               </Typography>
               <Typography variant="h4" color="success.main">
-                {activosTipos}
+                {stats.activos}
               </Typography>
             </CardContent>
           </Card>
@@ -269,7 +274,7 @@ const TiposActividadPage: React.FC = () => {
                 Inactivos
               </Typography>
               <Typography variant="h4" color="error.main">
-                {inactivosTipos}
+                {stats.inactivos}
               </Typography>
             </CardContent>
           </Card>
@@ -326,7 +331,7 @@ const TiposActividadPage: React.FC = () => {
 
           <Box sx={{ ml: 'auto' }}>
             <Typography variant="body2" color="text.secondary">
-              {filteredTipos.length} de {totalTipos} tipos de actividad
+              {filteredTipos.length} de {stats.total} tipos de actividad
             </Typography>
           </Box>
         </Box>
@@ -338,9 +343,11 @@ const TiposActividadPage: React.FC = () => {
           rows={filteredTipos}
           columns={columns}
           loading={loading}
-          pageSize={10}
-          rowsPerPageOptions={[10]}
-          disableSelectionOnClick
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10 } },
+          }}
+          pageSizeOptions={[10, 25, 50]}
+          disableRowSelectionOnClick
           sx={{
             '& .MuiDataGrid-cell': {
               padding: '8px',

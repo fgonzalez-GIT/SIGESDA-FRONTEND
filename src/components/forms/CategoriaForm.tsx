@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -82,7 +82,7 @@ export const CategoriaForm: React.FC<CategoriaFormProps> = ({
     setSubmitError('');
   }, [categoria, open]);
 
-  const handleChange = (field: keyof CategoriaFormData) => (
+  const handleChange = useCallback((field: keyof CategoriaFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     let value = event.target.value;
@@ -98,16 +98,14 @@ export const CategoriaForm: React.FC<CategoriaFormProps> = ({
     }));
 
     // Limpiar error del campo
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: undefined,
-      }));
-    }
+    setErrors(prev => ({
+      ...prev,
+      [field]: undefined,
+    }));
     setSubmitError('');
-  };
+  }, []);
 
-  const validateForm = (): boolean => {
+  const validateForm = useCallback((): boolean => {
     const newErrors: CategoriaFormErrors = {};
 
     // Código
@@ -163,9 +161,9 @@ export const CategoriaForm: React.FC<CategoriaFormProps> = ({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [formData]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!validateForm()) {
       return;
     }
@@ -189,13 +187,13 @@ export const CategoriaForm: React.FC<CategoriaFormProps> = ({
     } catch (error: any) {
       setSubmitError(error.message || 'Error al guardar la categoría');
     }
-  };
+  }, [validateForm, formData, onSubmit]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (!loading) {
       onClose();
     }
-  };
+  }, [loading, onClose]);
 
   return (
     <Dialog

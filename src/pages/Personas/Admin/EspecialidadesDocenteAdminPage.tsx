@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, startTransition } from 'react';
 import {
   Box,
   Typography,
@@ -45,8 +45,8 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
   const [especialidadToDelete, setEspecialidadToDelete] = useState<EspecialidadDocente | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Definición de columnas de la tabla
-  const columns: CatalogoColumn<EspecialidadDocente>[] = [
+  // Definición de columnas de la tabla (memoizada para evitar re-renders)
+  const columns = useMemo<CatalogoColumn<EspecialidadDocente>[]>(() => [
     {
       id: 'codigo',
       label: 'Código',
@@ -77,10 +77,10 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
       width: '80px',
       align: 'center',
     },
-  ];
+  ], []);
 
-  // Definición de campos del formulario
-  const formFields: CatalogoField[] = [
+  // Definición de campos del formulario (memoizada, cambia solo si selectedEspecialidad cambia)
+  const formFields = useMemo<CatalogoField[]>(() => [
     {
       name: 'codigo',
       label: 'Código',
@@ -111,28 +111,28 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
       placeholder: '1, 2, 3...',
       helperText: 'Orden de visualización',
     },
-  ];
+  ], [selectedEspecialidad]);
 
-  // Handlers
-  const handleAddClick = () => {
+  // Handlers (memoizados para evitar re-renders de componentes hijos)
+  const handleAddClick = useCallback(() => {
     setSelectedEspecialidad(null);
     setFormOpen(true);
-  };
+  }, []);
 
-  const handleEditClick = (especialidad: EspecialidadDocente) => {
+  const handleEditClick = useCallback((especialidad: EspecialidadDocente) => {
     setSelectedEspecialidad(especialidad);
     setFormOpen(true);
-  };
+  }, []);
 
-  const handleDeleteClick = (especialidad: EspecialidadDocente) => {
+  const handleDeleteClick = useCallback((especialidad: EspecialidadDocente) => {
     setEspecialidadToDelete(especialidad);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleFormClose = () => {
+  const handleFormClose = useCallback(() => {
     setFormOpen(false);
     setSelectedEspecialidad(null);
-  };
+  }, []);
 
   const handleFormSubmit = async (
     data: CreateEspecialidadDocenteFormData | UpdateEspecialidadDocenteFormData
@@ -163,9 +163,15 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
         );
       }
 
-      refetch();
+      // Cerrar el formulario inmediatamente para mejor UX
       setFormOpen(false);
       setSelectedEspecialidad(null);
+      setSubmitting(false);
+
+      // Refrescar catálogos en segundo plano con baja prioridad (no bloqueante)
+      startTransition(() => {
+        refetch();
+      });
     } catch (error: any) {
       console.error('Error al guardar especialidad:', error);
 
@@ -176,9 +182,8 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
         })
       );
 
-      throw error;
-    } finally {
       setSubmitting(false);
+      throw error;
     }
   };
 
@@ -196,9 +201,15 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
         })
       );
 
+      // Cerrar el diálogo inmediatamente
       setDeleteDialogOpen(false);
       setEspecialidadToDelete(null);
-      refetch();
+      setSubmitting(false);
+
+      // Refrescar catálogos en segundo plano (no bloqueante)
+      startTransition(() => {
+        refetch();
+      });
     } catch (error: any) {
       console.error('Error al eliminar especialidad:', error);
 
@@ -208,12 +219,33 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
           severity: 'error',
         })
       );
-    } finally {
       setSubmitting(false);
     }
   };
 
-  const especialidades = catalogos?.especialidadesDocentes || [];
+  // Memoizar especialidades para evitar re-renders innecesarios de la tabla
+  const especialidades = useMemo(
+    () => catalogos?.especialidadesDocentes || [],
+    [catalogos?.especialidadesDocentes]
+  );
+
+  // Memoizar defaultValues para evitar que cambien en cada render
+  const defaultValues = useMemo(
+    () =>
+      selectedEspecialidad
+        ? {
+            nombre: selectedEspecialidad.nombre,
+            descripcion: selectedEspecialidad.descripcion || '',
+            orden: selectedEspecialidad.orden,
+            activo: selectedEspecialidad.activo,
+          }
+        : {
+            codigo: '',
+            nombre: '',
+            descripcion: '',
+          },
+    [selectedEspecialidad]
+  );
 
   return (
     <Box>
@@ -264,20 +296,7 @@ const EspecialidadesDocenteAdminPage: React.FC = () => {
         title="Especialidad Docente"
         fields={formFields}
         schema={selectedEspecialidad ? updateEspecialidadDocenteSchema : createEspecialidadDocenteSchema}
-        defaultValues={
-          selectedEspecialidad
-            ? {
-                nombre: selectedEspecialidad.nombre,
-                descripcion: selectedEspecialidad.descripcion || '',
-                orden: selectedEspecialidad.orden,
-                activo: selectedEspecialidad.activo,
-              }
-            : {
-                codigo: '',
-                nombre: '',
-                descripcion: '',
-              }
-        }
+        defaultValues={defaultValues}
         isEdit={!!selectedEspecialidad}
         loading={submitting}
       />

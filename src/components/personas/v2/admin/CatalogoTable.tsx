@@ -41,8 +41,10 @@ export interface CatalogoTableProps<T> {
 /**
  * Tabla genérica y reutilizable para administración de catálogos
  * Soporta edición, eliminación y reordenamiento
+ *
+ * Optimizado con React.memo para evitar re-renders innecesarios
  */
-export function CatalogoTable<T extends { id: number | string; activo?: boolean }>({
+function CatalogoTableComponent<T extends { id: number | string; activo?: boolean }>({
   items,
   columns,
   onEdit,
@@ -180,3 +182,6 @@ export function CatalogoTable<T extends { id: number | string; activo?: boolean 
     </TableContainer>
   );
 }
+
+// Exportar versión memoizada para evitar re-renders cuando el padre cambia estado no relacionado
+export const CatalogoTable = React.memo(CatalogoTableComponent) as typeof CatalogoTableComponent;

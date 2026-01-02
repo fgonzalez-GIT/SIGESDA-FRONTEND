@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -59,21 +59,25 @@ export function CatalogoFormDialog<T extends Record<string, any>>({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<T>({
+  } = useForm({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as any,
+    // Modo menos estricto para mejor performance inicial
+    mode: 'onSubmit',
+    // Prevenir re-validación en cada cambio
+    reValidateMode: 'onSubmit',
   });
 
+  // Reset form when defaultValues change (already memoized in parent)
   React.useEffect(() => {
     if (open) {
       reset(defaultValues as any);
     }
   }, [open, defaultValues, reset]);
 
-  const handleFormSubmit = async (data: T) => {
+  const handleFormSubmit = async (data: any) => {
     try {
-      await onSubmit(data);
-      reset();
+      await onSubmit(data as T);
       onClose();
     } catch (error) {
       console.error('Error en formulario:', error);
@@ -83,18 +87,29 @@ export function CatalogoFormDialog<T extends Record<string, any>>({
 
   const handleClose = () => {
     if (!isSubmitting) {
-      reset();
       onClose();
     }
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      slotProps={{
+        backdrop: {
+          timeout: 200,
+        },
+      }}
+      // Deshabilitar scroll lock para evitar forced reflows
+      disableScrollLock
+    >
       <DialogTitle>
         {isEdit ? `Editar ${title}` : `Nuevo ${title}`}
       </DialogTitle>
 
-      <form onSubmit={handleSubmit(handleFormSubmit)}>
+      <form onSubmit={handleSubmit(handleFormSubmit)} noValidate>
         <DialogContent>
           <Box display="flex" flexDirection="column" gap={2} pt={1}>
             {fields.map((field) => (
@@ -144,8 +159,11 @@ export function CatalogoFormDialog<T extends Record<string, any>>({
                       multiline={field.multiline || field.type === 'textarea'}
                       rows={field.rows || (field.type === 'textarea' ? 3 : 1)}
                       fullWidth
-                      InputProps={{
-                        readOnly: field.readOnly,
+                      autoFocus={false}
+                      slotProps={{
+                        input: {
+                          readOnly: field.readOnly,
+                        },
                       }}
                     />
                   );

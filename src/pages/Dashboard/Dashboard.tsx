@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -31,8 +31,13 @@ const Dashboard: React.FC = () => {
   const { relaciones, loading: familiaresLoading } = useAppSelector((state) => state.familiares);
 
   const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const hasFetchedDataRef = useRef(false);
 
   useEffect(() => {
+    // Protección contra llamadas duplicadas en React.StrictMode
+    if (hasFetchedDataRef.current) return;
+    hasFetchedDataRef.current = true;
+
     const loadDashboardData = async () => {
       try {
         // Cargar datos con manejo de errores individual
@@ -48,48 +53,111 @@ const Dashboard: React.FC = () => {
     loadDashboardData();
   }, [dispatch]);
 
-  // Estadísticas calculadas con validación de arrays
-  const personasArray = Array.isArray(personas) ? personas : [];
-  const actividadesArray = Array.isArray(actividades) ? actividades : [];
-  const aulasArray = Array.isArray(aulas) ? aulas : [];
-  const relacionesArray = Array.isArray(relaciones) ? relaciones : [];
+  // Estadísticas calculadas con validación de arrays memoizadas
+  const personasArray = useMemo(() => Array.isArray(personas) ? personas : [], [personas]);
+  const actividadesArray = useMemo(() => Array.isArray(actividades) ? actividades : [], [actividades]);
+  const aulasArray = useMemo(() => Array.isArray(aulas) ? aulas : [], [aulas]);
+  const relacionesArray = useMemo(() => Array.isArray(relaciones) ? relaciones : [], [relaciones]);
 
-  const totalPersonas = personasArray.length;
-  // En V2, las personas tienen múltiples tipos, usamos los booleanos calculados
-  const totalSocios = personasArray.filter(p => p.esSocio).length;
-  const totalDocentes = personasArray.filter(p => p.esDocente).length;
-  const totalEstudiantes = personasArray.filter(p => p.tipos?.some(t => t.tipoPersonaCodigo === 'ESTUDIANTE')).length;
-  const totalActividades = actividadesArray.length;
-  const actividadesActivas = actividadesArray.filter(a => a.estado === 'activo').length;
-  const totalAulas = aulasArray.length;
-  const aulasDisponibles = aulasArray.filter(a => a.estado === 'disponible').length;
-  const totalRelaciones = relacionesArray.length;
-  const personasConFamiliares = [...new Set(relacionesArray.map(r => r.personaId))].length;
+  // Estadísticas memoizadas para evitar cálculos repetidos
+  const stats = useMemo(() => {
+    const totalPersonas = personasArray.length;
+    // En V2, las personas tienen múltiples tipos, usamos los booleanos calculados
+    const totalSocios = personasArray.filter(p => p.esSocio).length;
+    const totalDocentes = personasArray.filter(p => p.esDocente).length;
+    const totalEstudiantes = personasArray.filter(p => p.tipos?.some(t => t.tipoPersonaCodigo === 'ESTUDIANTE')).length;
+    const totalActividades = actividadesArray.length;
+    const actividadesActivas = actividadesArray.filter(a => a.estado === 'activo').length;
+    const totalAulas = aulasArray.length;
+    const aulasDisponibles = aulasArray.filter(a => a.estado === 'disponible').length;
+    const totalRelaciones = relacionesArray.length;
+    const personasConFamiliares = [...new Set(relacionesArray.map(r => r.personaId))].length;
 
-  // Datos para gráficos
-  const personasPorTipo = [
-    { label: 'Socios', value: totalSocios, color: '#1976d2' },
-    { label: 'Docentes', value: totalDocentes, color: '#9c27b0' },
-    { label: 'Estudiantes', value: totalEstudiantes, color: '#2e7d32' },
-  ];
+    return {
+      totalPersonas,
+      totalSocios,
+      totalDocentes,
+      totalEstudiantes,
+      totalActividades,
+      actividadesActivas,
+      totalAulas,
+      aulasDisponibles,
+      totalRelaciones,
+      personasConFamiliares,
+    };
+  }, [personasArray, actividadesArray, aulasArray, relacionesArray]);
 
-  const actividadesPorTipo = [
+  // Datos para gráficos memoizados
+  const personasPorTipo = useMemo(() => [
+    { label: 'Socios', value: stats.totalSocios, color: '#1976d2' },
+    { label: 'Docentes', value: stats.totalDocentes, color: '#9c27b0' },
+    { label: 'Estudiantes', value: stats.totalEstudiantes, color: '#2e7d32' },
+  ], [stats.totalSocios, stats.totalDocentes, stats.totalEstudiantes]);
+
+  const actividadesPorTipo = useMemo(() => [
     { label: 'Coros', value: actividadesArray.filter(a => a.tipo === 'coro').length, color: '#1976d2' },
     { label: 'Clases', value: actividadesArray.filter(a => a.tipo === 'clase').length, color: '#9c27b0' },
     { label: 'Talleres', value: actividadesArray.filter(a => a.tipo === 'taller').length, color: '#2e7d32' },
     { label: 'Eventos', value: actividadesArray.filter(a => a.tipo === 'evento').length, color: '#ed6c02' },
-  ];
+  ], [actividadesArray]);
 
-  const ocupacionActividades = [
+  const ocupacionActividades = useMemo(() => [
     { label: 'Ene', value: 45 },
     { label: 'Feb', value: 52 },
     { label: 'Mar', value: 48 },
     { label: 'Abr', value: 61 },
     { label: 'May', value: 55 },
     { label: 'Jun', value: 67 },
-  ];
+  ], []);
 
   const isLoading = personasLoading || actividadesLoading || aulasLoading || familiaresLoading;
+
+  // Memoizar iconos para evitar recrearlos
+  const peopleIcon = useMemo(() => <People />, []);
+  const musicIcon = useMemo(() => <MusicNote />, []);
+  const roomIcon = useMemo(() => <Room />, []);
+  const trendingIcon = useMemo(() => <TrendingUp />, []);
+
+  // Memoizar trends estáticos
+  const personasTrend = useMemo(() => ({
+    value: 8.5,
+    isPositive: true,
+    label: 'este mes',
+  }), []);
+
+  const actividadesTrend = useMemo(() => ({
+    value: 12.3,
+    isPositive: true,
+    label: 'desde el mes pasado',
+  }), []);
+
+  const aulasTrend = useMemo(() => ({
+    value: 0,
+    isPositive: true,
+    label: 'sin cambios',
+  }), []);
+
+  const ocupacionTrend = useMemo(() => ({
+    value: 5.2,
+    isPositive: true,
+    label: 'mejora',
+  }), []);
+
+  // Memoizar subtitles dinámicos
+  const personasSubtitle = useMemo(
+    () => `${stats.totalSocios} socios, ${stats.totalDocentes} docentes`,
+    [stats.totalSocios, stats.totalDocentes]
+  );
+
+  const actividadesSubtitle = useMemo(
+    () => `de ${stats.totalActividades} totales`,
+    [stats.totalActividades]
+  );
+
+  const aulasSubtitle = useMemo(
+    () => `de ${stats.totalAulas} aulas totales`,
+    [stats.totalAulas]
+  );
 
   return (
     <Box>
@@ -106,46 +174,34 @@ const Dashboard: React.FC = () => {
           <Box minWidth={250} flex={1}>
             <StatCard
               title="Total Personas"
-              value={totalPersonas}
-              subtitle={`${totalSocios} socios, ${totalDocentes} docentes`}
-              icon={<People />}
+              value={stats.totalPersonas}
+              subtitle={personasSubtitle}
+              icon={peopleIcon}
               color="primary"
               loading={isLoading}
-              trend={{
-                value: 8.5,
-                isPositive: true,
-                label: 'este mes',
-              }}
+              trend={personasTrend}
             />
           </Box>
           <Box minWidth={250} flex={1}>
             <StatCard
               title="Actividades Activas"
-              value={actividadesActivas}
-              subtitle={`de ${totalActividades} totales`}
-              icon={<MusicNote />}
+              value={stats.actividadesActivas}
+              subtitle={actividadesSubtitle}
+              icon={musicIcon}
               color="secondary"
               loading={isLoading}
-              trend={{
-                value: 12.3,
-                isPositive: true,
-                label: 'desde el mes pasado',
-              }}
+              trend={actividadesTrend}
             />
           </Box>
           <Box minWidth={250} flex={1}>
             <StatCard
               title="Aulas Disponibles"
-              value={aulasDisponibles}
-              subtitle={`de ${totalAulas} aulas totales`}
-              icon={<Room />}
+              value={stats.aulasDisponibles}
+              subtitle={aulasSubtitle}
+              icon={roomIcon}
               color="success"
               loading={isLoading}
-              trend={{
-                value: 0,
-                isPositive: true,
-                label: 'sin cambios',
-              }}
+              trend={aulasTrend}
             />
           </Box>
           <Box minWidth={250} flex={1}>
@@ -153,14 +209,10 @@ const Dashboard: React.FC = () => {
               title="Ocupación Promedio"
               value="73%"
               subtitle="de capacidad utilizada"
-              icon={<TrendingUp />}
+              icon={trendingIcon}
               color="warning"
               loading={isLoading}
-              trend={{
-                value: 5.2,
-                isPositive: true,
-                label: 'mejora',
-              }}
+              trend={ocupacionTrend}
             />
           </Box>
         </Box>

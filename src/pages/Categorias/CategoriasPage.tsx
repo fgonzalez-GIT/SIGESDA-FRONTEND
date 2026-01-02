@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -85,22 +85,22 @@ const CategoriasPage: React.FC = () => {
     }
   }, [error, dispatch]);
 
-  const handleAddClick = () => {
+  const handleAddClick = useCallback(() => {
     dispatch(setSelectedCategoria(null));
     setFormOpen(true);
-  };
+  }, [dispatch]);
 
-  const handleEditClick = (categoria: CategoriaSocio) => {
+  const handleEditClick = useCallback((categoria: CategoriaSocio) => {
     dispatch(setSelectedCategoria(categoria));
     setFormOpen(true);
-  };
+  }, [dispatch]);
 
-  const handleDeleteClick = (categoria: CategoriaSocio) => {
+  const handleDeleteClick = useCallback((categoria: CategoriaSocio) => {
     setCategoriaToDelete(categoria);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleToggleClick = async (categoria: CategoriaSocio) => {
+  const handleToggleClick = useCallback(async (categoria: CategoriaSocio) => {
     try {
       await dispatch(toggleCategoria(categoria.id)).unwrap();
       dispatch(
@@ -117,9 +117,9 @@ const CategoriasPage: React.FC = () => {
         })
       );
     }
-  };
+  }, [dispatch]);
 
-  const handleFormSubmit = async (data: any) => {
+  const handleFormSubmit = useCallback(async (data: any) => {
     try {
       if (selectedCategoria) {
         // Actualizar categoría existente
@@ -146,14 +146,14 @@ const CategoriasPage: React.FC = () => {
         );
       }
       setFormOpen(false);
-      dispatch(fetchCategorias({ includeInactive }));
+      // Remover recarga innecesaria - el slice ya actualiza el estado
     } catch (error: any) {
       // El error se manejará en el formulario
       throw error;
     }
-  };
+  }, [dispatch, selectedCategoria]);
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (categoriaToDelete) {
       try {
         await dispatch(deleteCategoria(categoriaToDelete.id)).unwrap();
@@ -174,9 +174,9 @@ const CategoriasPage: React.FC = () => {
         );
       }
     }
-  };
+  }, [dispatch, categoriaToDelete]);
 
-  const formatMonto = (monto: string) => {
+  const formatMonto = useCallback((monto: string) => {
     const numero = parseFloat(monto);
     return new Intl.NumberFormat('es-AR', {
       style: 'currency',
@@ -184,28 +184,32 @@ const CategoriasPage: React.FC = () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(numero);
-  };
+  }, []);
 
   // Función para limpiar filtros
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     setSearchTerm('');
-  };
+  }, []);
 
-  // Filtrar y ordenar categorías
-  const categoriasFiltered = categorias.filter((cat) => {
-    // Filtro por estado activo/inactivo
-    const matchesActive = includeInactive || cat.activa;
+  // Filtrar y ordenar categorías memoizadas
+  const categoriasFiltered = useMemo(() => {
+    return categorias.filter((cat) => {
+      // Filtro por estado activo/inactivo
+      const matchesActive = includeInactive || cat.activa;
 
-    // Filtro de búsqueda (nombre, descripción)
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = searchTerm === '' ||
-      cat.nombre.toLowerCase().includes(searchLower) ||
-      (cat.descripcion && cat.descripcion.toLowerCase().includes(searchLower));
+      // Filtro de búsqueda (nombre, descripción)
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = searchTerm === '' ||
+        cat.nombre.toLowerCase().includes(searchLower) ||
+        (cat.descripcion && cat.descripcion.toLowerCase().includes(searchLower));
 
-    return matchesActive && matchesSearch;
-  });
+      return matchesActive && matchesSearch;
+    });
+  }, [categorias, includeInactive, searchTerm]);
 
-  const categoriasOrdenadas = [...categoriasFiltered].sort((a, b) => a.orden - b.orden);
+  const categoriasOrdenadas = useMemo(() => {
+    return [...categoriasFiltered].sort((a, b) => a.orden - b.orden);
+  }, [categoriasFiltered]);
 
   return (
     <Box>

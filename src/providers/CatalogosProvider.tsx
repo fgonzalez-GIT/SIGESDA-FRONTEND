@@ -3,7 +3,7 @@
  * Carga los catálogos una vez al inicio y los hace disponibles globalmente
  */
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, startTransition } from 'react';
 import { Box, CircularProgress, Alert } from '@mui/material';
 import { useCatalogos } from '../hooks/useActividades';
 import estadosReservasApi from '../services/estadosReservasApi';
@@ -41,9 +41,14 @@ export const CatalogosProvider: React.FC<CatalogosProviderProps> = ({ children }
   const [estadosReservas, setEstadosReservas] = useState<EstadoReserva[]>([]);
   const [loadingReservas, setLoadingReservas] = useState(true);
   const [errorReservas, setErrorReservas] = useState<string | null>(null);
+  const hasFetchedReservasRef = useRef(false);
 
   // Cargar estados de reservas al montar
   useEffect(() => {
+    // Protección contra llamadas duplicadas en React.StrictMode
+    if (hasFetchedReservasRef.current) return;
+    hasFetchedReservasRef.current = true;
+
     const loadEstadosReservas = async () => {
       try {
         setLoadingReservas(true);
@@ -52,8 +57,13 @@ export const CatalogosProvider: React.FC<CatalogosProviderProps> = ({ children }
           orderBy: 'orden',
           orderDir: 'asc'
         });
-        setEstadosReservas(estados);
-        setErrorReservas(null);
+
+        // Usar startTransition para actualizaciones no urgentes
+        startTransition(() => {
+          setEstadosReservas(estados);
+          setErrorReservas(null);
+        });
+
         console.log('✅ Estados de reservas cargados:', estados.length);
       } catch (err: any) {
         console.error('❌ Error al cargar estados de reservas:', err);
@@ -99,13 +109,11 @@ export const CatalogosProvider: React.FC<CatalogosProviderProps> = ({ children }
       .filter(dia => dia.orden >= 1 && dia.orden <= 7)
       .sort((a, b) => a.orden - b.orden); // Ordenar por orden (Lunes=1, Domingo=7)
 
-    // Debug: verificar los días cargados
-    console.log('🔍 Días de semana originales:', catalogos.diasSemana.map(d => ({ id: d.id, nombre: d.nombre, orden: d.orden })));
-    console.log('✅ Días de semana usados:', diasUnicos.map(d => ({ id: d.id, nombre: d.nombre, orden: d.orden })));
-
-    // Validación adicional: advertir si no hay exactamente 7 días
-    if (diasUnicos.length !== 7) {
-      console.warn(`⚠️ Se esperaban 7 días de semana, pero se encontraron ${diasUnicos.length}`);
+    // Validación solo en desarrollo y solo la primera vez
+    if (process.env.NODE_ENV === 'development' && catalogos.diasSemana.length > 0) {
+      if (diasUnicos.length !== 7) {
+        console.warn(`⚠️ Se esperaban 7 días de semana, pero se encontraron ${diasUnicos.length}`);
+      }
     }
 
     return {

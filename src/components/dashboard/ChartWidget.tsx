@@ -28,7 +28,7 @@ interface ChartWidgetProps {
   onExport?: () => void;
 }
 
-export const ChartWidget: React.FC<ChartWidgetProps> = ({
+export const ChartWidget: React.FC<ChartWidgetProps> = React.memo(({
   title,
   subtitle,
   data,
@@ -41,24 +41,24 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+  const handleMenuClick = React.useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
-  };
+  }, []);
 
-  const handleMenuClose = () => {
+  const handleMenuClose = React.useCallback(() => {
     setAnchorEl(null);
-  };
+  }, []);
 
-  const colors = [
+  const colors = React.useMemo(() => [
     theme.palette.primary.main,
     theme.palette.secondary.main,
     theme.palette.success.main,
     theme.palette.warning.main,
     theme.palette.error.main,
     theme.palette.info.main,
-  ];
+  ], [theme]);
 
-  const getBarChart = () => {
+  const getBarChart = React.useCallback(() => {
     const maxValue = Math.max(...data.map(d => d.value));
 
     return (
@@ -93,9 +93,9 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({
         ))}
       </Box>
     );
-  };
+  }, [data, colors]);
 
-  const getPieChart = () => {
+  const getPieChart = React.useCallback(() => {
     const total = data.reduce((sum, item) => sum + item.value, 0);
 
     // Si no hay datos, mostrar mensaje
@@ -171,9 +171,9 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({
         )}
       </Box>
     );
-  };
+  }, [data, colors, theme, showLegend]);
 
-  const getLineChart = () => {
+  const getLineChart = React.useCallback(() => {
     const maxValue = Math.max(...data.map(d => d.value));
     const minValue = Math.min(...data.map(d => d.value));
     const range = maxValue - minValue || 1;
@@ -216,9 +216,9 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({
         </Box>
       </Box>
     );
-  };
+  }, [data, theme]);
 
-  const renderChart = () => {
+  const renderChart = React.useCallback(() => {
     switch (type) {
       case 'bar':
         return getBarChart();
@@ -230,7 +230,7 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({
       default:
         return getBarChart();
     }
-  };
+  }, [type, getBarChart, getPieChart, getLineChart]);
 
   if (loading) {
     return (
@@ -294,6 +294,6 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({
       </Menu>
     </Paper>
   );
-};
+});
 
 export default ChartWidget;

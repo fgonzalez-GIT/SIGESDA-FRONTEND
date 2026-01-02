@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, startTransition } from 'react';
 import {
   Box,
   Typography,
@@ -45,8 +45,8 @@ const TiposContactoAdminPage: React.FC = () => {
   const [tipoToDelete, setTipoToDelete] = useState<TipoContacto | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Definición de columnas de la tabla
-  const columns: CatalogoColumn<TipoContacto>[] = [
+  // Definición de columnas de la tabla (memoizada)
+  const columns = useMemo<CatalogoColumn<TipoContacto>[]>(() => [
     {
       id: 'codigo',
       label: 'Código',
@@ -83,10 +83,10 @@ const TiposContactoAdminPage: React.FC = () => {
       width: '80px',
       align: 'center',
     },
-  ];
+  ], []);
 
-  // Definición de campos del formulario
-  const formFields: CatalogoField[] = [
+  // Definición de campos del formulario (memoizada)
+  const formFields = useMemo<CatalogoField[]>(() => [
     {
       name: 'codigo',
       label: 'Código',
@@ -124,28 +124,28 @@ const TiposContactoAdminPage: React.FC = () => {
       placeholder: '1, 2, 3...',
       helperText: 'Orden de visualización',
     },
-  ];
+  ], [selectedTipo]);
 
-  // Handlers
-  const handleAddClick = () => {
+  // Handlers (memoizados)
+  const handleAddClick = useCallback(() => {
     setSelectedTipo(null);
     setFormOpen(true);
-  };
+  }, []);
 
-  const handleEditClick = (tipo: TipoContacto) => {
+  const handleEditClick = useCallback((tipo: TipoContacto) => {
     setSelectedTipo(tipo);
     setFormOpen(true);
-  };
+  }, []);
 
-  const handleDeleteClick = (tipo: TipoContacto) => {
+  const handleDeleteClick = useCallback((tipo: TipoContacto) => {
     setTipoToDelete(tipo);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleFormClose = () => {
+  const handleFormClose = useCallback(() => {
     setFormOpen(false);
     setSelectedTipo(null);
-  };
+  }, []);
 
   const handleFormSubmit = async (
     data: CreateTipoContactoFormData | UpdateTipoContactoFormData
@@ -176,9 +176,15 @@ const TiposContactoAdminPage: React.FC = () => {
         );
       }
 
-      refetch();
+      // Cerrar inmediatamente para mejor UX
       setFormOpen(false);
       setSelectedTipo(null);
+      setSubmitting(false);
+
+      // Refrescar en segundo plano (no bloqueante)
+      startTransition(() => {
+        refetch();
+      });
     } catch (error: any) {
       console.error('Error al guardar tipo de contacto:', error);
 
@@ -189,9 +195,8 @@ const TiposContactoAdminPage: React.FC = () => {
         })
       );
 
-      throw error;
-    } finally {
       setSubmitting(false);
+      throw error;
     }
   };
 
@@ -209,9 +214,15 @@ const TiposContactoAdminPage: React.FC = () => {
         })
       );
 
+      // Cerrar inmediatamente
       setDeleteDialogOpen(false);
       setTipoToDelete(null);
-      refetch();
+      setSubmitting(false);
+
+      // Refrescar en segundo plano (no bloqueante)
+      startTransition(() => {
+        refetch();
+      });
     } catch (error: any) {
       console.error('Error al eliminar tipo de contacto:', error);
 
@@ -221,12 +232,35 @@ const TiposContactoAdminPage: React.FC = () => {
           severity: 'error',
         })
       );
-    } finally {
       setSubmitting(false);
     }
   };
 
-  const tiposContacto = catalogos?.tiposContacto || [];
+  // Memoizar tiposContacto para evitar re-renders innecesarios
+  const tiposContacto = useMemo(
+    () => catalogos?.tiposContacto || [],
+    [catalogos?.tiposContacto]
+  );
+
+  // Memoizar defaultValues
+  const defaultValues = useMemo(
+    () =>
+      selectedTipo
+        ? {
+            nombre: selectedTipo.nombre,
+            descripcion: selectedTipo.descripcion || '',
+            icono: selectedTipo.icono || '',
+            orden: selectedTipo.orden,
+            activo: selectedTipo.activo,
+          }
+        : {
+            codigo: '',
+            nombre: '',
+            descripcion: '',
+            icono: '',
+          },
+    [selectedTipo]
+  );
 
   return (
     <Box>
@@ -277,22 +311,7 @@ const TiposContactoAdminPage: React.FC = () => {
         title="Tipo de Contacto"
         fields={formFields}
         schema={selectedTipo ? updateTipoContactoSchema : createTipoContactoSchema}
-        defaultValues={
-          selectedTipo
-            ? {
-                nombre: selectedTipo.nombre,
-                descripcion: selectedTipo.descripcion || '',
-                icono: selectedTipo.icono || '',
-                orden: selectedTipo.orden,
-                activo: selectedTipo.activo,
-              }
-            : {
-                codigo: '',
-                nombre: '',
-                descripcion: '',
-                icono: '',
-              }
-        }
+        defaultValues={defaultValues}
         isEdit={!!selectedTipo}
         loading={submitting}
       />

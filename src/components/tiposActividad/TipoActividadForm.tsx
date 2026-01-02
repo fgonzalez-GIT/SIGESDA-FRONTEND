@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   TextField,
@@ -60,7 +60,7 @@ export const TipoActividadForm: React.FC<TipoActividadFormProps> = ({
     }
   }, [initialData]);
 
-  const validateField = (name: string, value: any): string | undefined => {
+  const validateField = useCallback((name: string, value: any): string | undefined => {
     switch (name) {
       case 'codigo':
         if (!value || value.trim() === '') {
@@ -111,9 +111,9 @@ export const TipoActividadForm: React.FC<TipoActividadFormProps> = ({
         break;
     }
     return undefined;
-  };
+  }, []);
 
-  const handleChange = (field: keyof typeof formData) => (
+  const handleChange = useCallback((field: keyof typeof formData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const value = e.target.value;
@@ -132,9 +132,9 @@ export const TipoActividadForm: React.FC<TipoActividadFormProps> = ({
       ...prev,
       [field]: errorMsg,
     }));
-  };
+  }, [validateField]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
 
     // Validar todos los campos
@@ -157,7 +157,7 @@ export const TipoActividadForm: React.FC<TipoActividadFormProps> = ({
       codigo: formData.codigo.trim(),
       nombre: formData.nombre.trim(),
       descripcion: formData.descripcion?.trim() || undefined,
-      orden: formData.orden !== undefined && formData.orden !== null && formData.orden !== ''
+      orden: formData.orden !== undefined && formData.orden !== null
         ? Number(formData.orden)
         : undefined,
     };
@@ -168,7 +168,7 @@ export const TipoActividadForm: React.FC<TipoActividadFormProps> = ({
     }
 
     onSubmit(dataToSubmit);
-  };
+  }, [formData, initialData, validateField, onSubmit]);
 
   const isEditing = !!initialData;
 

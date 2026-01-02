@@ -3,7 +3,7 @@
  * Basados en la documentación y guía rápida del backend
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, startTransition } from 'react';
 import type {
   Actividad,
   ActividadesQueryParams,
@@ -72,6 +72,7 @@ export const useCatalogos = (): UseCatalogosResult => {
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasFetchedRef = useRef(false);
 
   const fetchCatalogos = useCallback(async () => {
     try {
@@ -93,12 +94,15 @@ export const useCatalogos = (): UseCatalogosResult => {
         obtenerRolesDocentes(),
       ]);
 
-      setCatalogos({
-        tiposActividades,
-        categoriasActividades,
-        estadosActividades,
-        diasSemana,
-        rolesDocentes,
+      // Usar startTransition para actualizaciones no urgentes
+      startTransition(() => {
+        setCatalogos({
+          tiposActividades,
+          categoriasActividades,
+          estadosActividades,
+          diasSemana,
+          rolesDocentes,
+        });
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar catálogos');
@@ -109,6 +113,9 @@ export const useCatalogos = (): UseCatalogosResult => {
   }, []);
 
   useEffect(() => {
+    // Protección contra llamadas duplicadas en React.StrictMode
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
     fetchCatalogos();
   }, [fetchCatalogos]);
 

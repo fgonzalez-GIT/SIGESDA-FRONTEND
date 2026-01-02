@@ -3,7 +3,7 @@
  * Sistema de múltiples tipos por persona con catálogos dinámicos
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useTransition } from 'react';
 import type {
   Persona,
   PersonasQueryParams,
@@ -52,21 +52,29 @@ export const useCatalogosPersonas = (): UseCatalogosPersonasResult => {
   const [catalogos, setCatalogos] = useState<CatalogosPersonas | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const fetchCatalogos = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await personasApi.getCatalogos();
-      setCatalogos(response.data);
+
+      // Actualizar estado con baja prioridad para no bloquear UI
+      startTransition(() => {
+        setCatalogos(response.data);
+      });
     } catch (err) {
       // Error inesperado - getCatalogos() ya maneja 404s gracefully
       console.error('❌ Error crítico al cargar catálogos:', err);
-      setCatalogos({
-        tiposPersona: [],
-        categoriasSocio: [],
-        especialidadesDocentes: [],
-        tiposContacto: [],
+      startTransition(() => {
+        setCatalogos({
+          tiposPersona: [],
+          categoriasSocio: [],
+          especialidadesDocentes: [],
+          tiposContacto: [],
+          razonesSociales: [],
+        });
       });
       setError(err instanceof Error ? err.message : 'Error al cargar catálogos');
     } finally {
