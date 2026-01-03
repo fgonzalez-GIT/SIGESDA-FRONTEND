@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Chip } from '@mui/material';
 import {
   MusicNote as CoroIcon,
@@ -13,7 +13,7 @@ import type { TipoActividadBadgeProps } from '../../types/tipoActividad.types';
 /**
  * Componente Badge reutilizable para mostrar Tipos de Actividad
  * Muestra un chip con color e ícono según el código del tipo
- * Optimizado con React.memo para evitar re-renders innecesarios
+ * Optimizado con React.memo y useMemo para evitar re-renders innecesarios
  */
 export const TipoActividadBadge: React.FC<TipoActividadBadgeProps> = React.memo(({
   tipo,
@@ -21,9 +21,9 @@ export const TipoActividadBadge: React.FC<TipoActividadBadgeProps> = React.memo(
   size = 'medium',
 }) => {
   /**
-   * Obtiene el color del chip según el código del tipo
+   * Obtiene el color del chip según el código del tipo (memoizado)
    */
-  const getColor = (): 'primary' | 'success' | 'info' | 'warning' | 'secondary' | 'default' => {
+  const color = useMemo((): 'primary' | 'success' | 'info' | 'warning' | 'secondary' | 'default' => {
     switch (tipo.codigo.toUpperCase()) {
       case 'CORO':
         return 'primary';
@@ -40,12 +40,12 @@ export const TipoActividadBadge: React.FC<TipoActividadBadgeProps> = React.memo(
       default:
         return 'default';
     }
-  };
+  }, [tipo.codigo]);
 
   /**
-   * Obtiene el ícono según el código del tipo
+   * Obtiene el ícono según el código del tipo (memoizado)
    */
-  const getIcon = () => {
+  const icon = useMemo(() => {
     switch (tipo.codigo.toUpperCase()) {
       case 'CORO':
         return <CoroIcon />;
@@ -62,23 +62,23 @@ export const TipoActividadBadge: React.FC<TipoActividadBadgeProps> = React.memo(
       default:
         return <DefaultIcon />;
     }
-  };
+  }, [tipo.codigo]);
 
   /**
-   * Genera la etiqueta del chip
+   * Genera la etiqueta del chip (memoizada)
    */
-  const getLabel = () => {
+  const label = useMemo(() => {
     if (showCodigo) {
       return `${tipo.codigo} - ${tipo.nombre}`;
     }
     return tipo.nombre;
-  };
+  }, [showCodigo, tipo.codigo, tipo.nombre]);
 
   return (
     <Chip
-      icon={getIcon()}
-      label={getLabel()}
-      color={getColor()}
+      icon={icon}
+      label={label}
+      color={color}
       size={size}
       variant={tipo.activo ? 'filled' : 'outlined'}
     />

@@ -13,7 +13,7 @@ import {
   Switch,
   Paper,
   InputAdornment,
-  Grid,
+  Grid2,
   Card,
   CardContent,
   Alert,
@@ -41,6 +41,48 @@ import {
 import type { TipoActividad, CreateTipoActividadDto, UpdateTipoActividadDto } from '../../types/tipoActividad.types';
 import { TipoActividadForm } from '../../components/tiposActividad/TipoActividadForm';
 import { TipoActividadBadge } from '../../components/tiposActividad/TipoActividadBadge';
+
+// Estilos extraídos fuera del componente para evitar recreación
+const codigoBoxStyle = { display: 'flex', alignItems: 'center', gap: 1 };
+const dataGridStyle = {
+  '& .MuiDataGrid-cell': {
+    padding: '8px',
+  },
+};
+
+// Componentes de celda memoizados para mejor rendimiento
+const CodigoCellRenderer = React.memo(({ value }: { value: string }) => (
+  <Box sx={codigoBoxStyle}>
+    <CategoryIcon color="action" fontSize="small" />
+    <strong>{value}</strong>
+  </Box>
+));
+CodigoCellRenderer.displayName = 'CodigoCellRenderer';
+
+const DescripcionCellRenderer = React.memo(({ value }: { value?: string }) => (
+  <>{value || '-'}</>
+));
+DescripcionCellRenderer.displayName = 'DescripcionCellRenderer';
+
+const ActividadesCountCellRenderer = React.memo(({ count }: { count: number }) => (
+  <Chip
+    label={count}
+    color={count > 0 ? 'primary' : 'default'}
+    size="small"
+    variant="outlined"
+  />
+));
+ActividadesCountCellRenderer.displayName = 'ActividadesCountCellRenderer';
+
+const EstadoCellRenderer = React.memo(({ activo }: { activo: boolean }) => (
+  <Chip
+    label={activo ? 'Activo' : 'Inactivo'}
+    color={activo ? 'success' : 'error'}
+    variant="outlined"
+    size="small"
+  />
+));
+EstadoCellRenderer.displayName = 'EstadoCellRenderer';
 
 const TiposActividadPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -148,12 +190,7 @@ const TiposActividadPage: React.FC = () => {
       field: 'codigo',
       headerName: 'Código',
       width: 150,
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CategoryIcon color="action" fontSize="small" />
-          <strong>{params.value}</strong>
-        </Box>
-      ),
+      renderCell: (params) => <CodigoCellRenderer value={params.value} />,
     },
     {
       field: 'nombre',
@@ -165,7 +202,7 @@ const TiposActividadPage: React.FC = () => {
       field: 'descripcion',
       headerName: 'Descripción',
       width: 300,
-      renderCell: (params) => params.value || '-',
+      renderCell: (params) => <DescripcionCellRenderer value={params.value} />,
     },
     {
       field: 'orden',
@@ -182,28 +219,14 @@ const TiposActividadPage: React.FC = () => {
       headerAlign: 'center',
       renderCell: (params) => {
         const count = params.row._count?.actividades || 0;
-        return (
-          <Chip
-            label={count}
-            color={count > 0 ? 'primary' : 'default'}
-            size="small"
-            variant="outlined"
-          />
-        );
+        return <ActividadesCountCellRenderer count={count} />;
       },
     },
     {
       field: 'activo',
       headerName: 'Estado',
       width: 120,
-      renderCell: (params) => (
-        <Chip
-          label={params.value ? 'Activo' : 'Inactivo'}
-          color={params.value ? 'success' : 'error'}
-          variant="outlined"
-          size="small"
-        />
-      ),
+      renderCell: (params) => <EstadoCellRenderer activo={params.value} />,
     },
     {
       field: 'actions',
@@ -212,11 +235,13 @@ const TiposActividadPage: React.FC = () => {
       width: 120,
       getActions: (params) => [
         <GridActionsCellItem
+          key="edit"
           icon={<EditIcon />}
           label="Editar"
           onClick={() => handleOpenDialog(params.row)}
         />,
         <GridActionsCellItem
+          key="delete"
           icon={<DeleteIcon />}
           label="Eliminar"
           onClick={() => handleOpenDeleteDialog(params.row)}
@@ -244,8 +269,8 @@ const TiposActividadPage: React.FC = () => {
       </Box>
 
       {/* Estadísticas */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+      <Grid2 container spacing={2} sx={{ mb: 3 }}>
+        <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -254,8 +279,8 @@ const TiposActividadPage: React.FC = () => {
               <Typography variant="h4">{stats.total}</Typography>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+        </Grid2>
+        <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -266,8 +291,8 @@ const TiposActividadPage: React.FC = () => {
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+        </Grid2>
+        <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -278,8 +303,8 @@ const TiposActividadPage: React.FC = () => {
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Grid2>
+      </Grid2>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => dispatch(clearError())}>
@@ -348,11 +373,7 @@ const TiposActividadPage: React.FC = () => {
           }}
           pageSizeOptions={[10, 25, 50]}
           disableRowSelectionOnClick
-          sx={{
-            '& .MuiDataGrid-cell': {
-              padding: '8px',
-            },
-          }}
+          sx={dataGridStyle}
         />
       </Box>
 
