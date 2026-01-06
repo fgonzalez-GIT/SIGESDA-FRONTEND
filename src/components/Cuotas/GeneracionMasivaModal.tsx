@@ -33,6 +33,7 @@ import { useAppDispatch, useAppSelector } from '../../store';
 import { generarCuotasMasivas, validarGeneracion, clearValidacion } from '../../store/slices/cuotasSlice';
 import { fetchCategorias } from '../../store/slices/categoriasSlice';
 import { GenerarCuotasRequest } from '../../types/cuota.types';
+import { FEATURES } from '../../config/features';
 
 interface GeneracionMasivaModalProps {
     open: boolean;
@@ -152,15 +153,17 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
                                     </Select>
                                 </FormControl>
                             </Grid>
-                            <Grid size={{ xs: 12 }}>
-                                <FormControlLabel
-                                    control={<Switch checked={aplicarDescuentos} onChange={(e) => setAplicarDescuentos(e.target.checked)} />}
-                                    label="Aplicar Motor de Descuentos Automáticamente"
-                                />
-                                <Typography variant="caption" display="block" color="text.secondary">
-                                    Si se desactiva, se generarán las cuotas base + actividades sin calcular descuentos.
-                                </Typography>
-                            </Grid>
+                            {FEATURES.MOTOR_DESCUENTOS && (
+                                <Grid size={{ xs: 12 }}>
+                                    <FormControlLabel
+                                        control={<Switch checked={aplicarDescuentos} onChange={(e) => setAplicarDescuentos(e.target.checked)} />}
+                                        label="Aplicar Motor de Descuentos Automáticamente"
+                                    />
+                                    <Typography variant="caption" display="block" color="text.secondary">
+                                        Si se desactiva, se generarán las cuotas base + actividades sin calcular descuentos.
+                                    </Typography>
+                                </Grid>
+                            )}
                             {/* 
                             <Grid item xs={12}>
                                 <FormControlLabel
@@ -249,7 +252,7 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
                             Se han generado <strong>{resultData?.generated}</strong> cuotas exitosamente.
                         </Typography>
 
-                        {resultData?.resumenDescuentos && (
+                        {FEATURES.MOTOR_DESCUENTOS && resultData?.resumenDescuentos && (
                             <Paper variant="outlined" sx={{ mt: 3, p: 2, textAlign: 'left' }}>
                                 <Typography variant="subtitle2" gutterBottom>Resumen de Descuentos:</Typography>
                                 <Grid container spacing={2}>

@@ -29,6 +29,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchDesgloseCuota, fetchItemsCuota, recalcularCuota, deleteCuota } from '../../store/slices/cuotasSlice';
 import { Cuota, ItemCuota } from '../../types/cuota.types';
+import { FEATURES } from '../../config/features';
 
 interface DetalleCuotaModalProps {
     open: boolean;
@@ -42,8 +43,10 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
 
     useEffect(() => {
         if (open && cuota) {
-            dispatch(fetchDesgloseCuota(cuota.id));
-            dispatch(fetchItemsCuota(cuota.id));
+            if (FEATURES.CUOTAS_V2) {
+                dispatch(fetchDesgloseCuota(cuota.id));
+                dispatch(fetchItemsCuota(cuota.id));
+            }
         }
     }, [open, cuota, dispatch]);
 
@@ -111,38 +114,92 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
                 </Typography>
             </DialogTitle>
             <DialogContent dividers>
-                {loading || !desgloseCuota ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
-                ) : (
-                    <Grid container spacing={3}>
-                        <Grid item xs={12} md={6}>
-                            {desgloseCuota.desglose['BASE'] && renderItemsTable(desgloseCuota.desglose['BASE'].items, 'Cuota Base')}
-                            {desgloseCuota.desglose['ACTIVIDAD'] && renderItemsTable(desgloseCuota.desglose['ACTIVIDAD'].items, 'Actividades')}
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            {desgloseCuota.desglose['DESCUENTO'] && renderItemsTable(desgloseCuota.desglose['DESCUENTO'].items, 'Descuentos y Beneficios')}
-                            {desgloseCuota.desglose['RECARGO'] && renderItemsTable(desgloseCuota.desglose['RECARGO'].items, 'Recargos')}
-                            {desgloseCuota.desglose['OTRO'] && renderItemsTable(desgloseCuota.desglose['OTRO'].items, 'Otros Conceptos')}
+                {FEATURES.CUOTAS_V2 ? (
+                    // Vista V2 con desglose detallado de ítems
+                    loading || !desgloseCuota ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
+                    ) : (
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} md={6}>
+                                {desgloseCuota.desglose['BASE'] && renderItemsTable(desgloseCuota.desglose['BASE'].items, 'Cuota Base')}
+                                {desgloseCuota.desglose['ACTIVIDAD'] && renderItemsTable(desgloseCuota.desglose['ACTIVIDAD'].items, 'Actividades')}
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                {desgloseCuota.desglose['DESCUENTO'] && renderItemsTable(desgloseCuota.desglose['DESCUENTO'].items, 'Descuentos y Beneficios')}
+                                {desgloseCuota.desglose['RECARGO'] && renderItemsTable(desgloseCuota.desglose['RECARGO'].items, 'Recargos')}
+                                {desgloseCuota.desglose['OTRO'] && renderItemsTable(desgloseCuota.desglose['OTRO'].items, 'Otros Conceptos')}
 
-                            <Paper sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText', mt: 2 }}>
-                                <Grid container alignItems="center">
-                                    <Grid item xs={6}>
-                                        <Typography variant="h6">TOTAL A PAGAR</Typography>
+                                <Paper sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText', mt: 2 }}>
+                                    <Grid container alignItems="center">
+                                        <Grid item xs={6}>
+                                            <Typography variant="h6">TOTAL A PAGAR</Typography>
+                                        </Grid>
+                                        <Grid item xs={6} textAlign="right">
+                                            <Typography variant="h4" fontWeight="bold">
+                                                ${desgloseCuota.totales.total.toFixed(2)}
+                                            </Typography>
+                                        </Grid>
                                     </Grid>
-                                    <Grid item xs={6} textAlign="right">
-                                        <Typography variant="h4" fontWeight="bold">
-                                            ${desgloseCuota.totales.total.toFixed(2)}
-                                        </Typography>
-                                    </Grid>
-                                </Grid>
-                            </Paper>
+                                </Paper>
+                            </Grid>
                         </Grid>
-                    </Grid>
+                    )
+                ) : (
+                    // Vista V1 simplificada (sin desglose de ítems)
+                    <Box sx={{ p: 3 }}>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                                <Typography variant="subtitle2" color="text.secondary">Información Básica</Typography>
+                                <Divider sx={{ my: 1 }} />
+                            </Grid>
+                            <Grid item xs={6}>
+                                <Typography variant="body2" color="text.secondary">Socio:</Typography>
+                                <Typography variant="body1">{cuota.recibo.persona?.nombre} {cuota.recibo.persona?.apellido}</Typography>
+                            </Grid>
+                            <Grid item xs={6}>
+                                <Typography variant="body2" color="text.secondary">Período:</Typography>
+                                <Typography variant="body1">{cuota.mes}/{cuota.anio}</Typography>
+                            </Grid>
+                            <Grid item xs={6}>
+                                <Typography variant="body2" color="text.secondary">Categoría:</Typography>
+                                <Typography variant="body1">{cuota.categoria}</Typography>
+                            </Grid>
+                            <Grid item xs={6}>
+                                <Typography variant="body2" color="text.secondary">Estado:</Typography>
+                                <Chip label={cuota.recibo.estado} color={cuota.recibo.estado === 'PAGADO' ? 'success' : 'warning'} size="small" />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Divider sx={{ my: 2 }} />
+                            </Grid>
+                            <Grid item xs={6}>
+                                <Typography variant="body2" color="text.secondary">Monto Base:</Typography>
+                                <Typography variant="h6">${cuota.montoBase?.toFixed(2) || '0.00'}</Typography>
+                            </Grid>
+                            <Grid item xs={6}>
+                                <Typography variant="body2" color="text.secondary">Actividades:</Typography>
+                                <Typography variant="h6">${cuota.montoActividades?.toFixed(2) || '0.00'}</Typography>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Paper sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText', mt: 1 }}>
+                                    <Grid container alignItems="center">
+                                        <Grid item xs={6}>
+                                            <Typography variant="h6">TOTAL A PAGAR</Typography>
+                                        </Grid>
+                                        <Grid item xs={6} textAlign="right">
+                                            <Typography variant="h4" fontWeight="bold">
+                                                ${cuota.montoTotal?.toFixed(2) || '0.00'}
+                                            </Typography>
+                                        </Grid>
+                                    </Grid>
+                                </Paper>
+                            </Grid>
+                        </Grid>
+                    </Box>
                 )}
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cerrar</Button>
-                {cuota.recibo.estado !== 'PAGADO' && (
+                {FEATURES.RECALCULO_CUOTAS && cuota.recibo.estado !== 'PAGADO' && (
                     <>
                         <Button onClick={handleRecalcular} color="warning">Recalcular</Button>
                         {/* Funcionalidad de agregar item manual pendiente de implementar modal específico */}

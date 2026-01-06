@@ -1,5 +1,4 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { recibosService } from '../../services/recibosService';
 
 export interface Recibo {
   id: number;
@@ -112,43 +111,265 @@ const initialState: RecibosState = {
   generatingPdf: false,
 };
 
+// Mock API functions
+const recibosAPI = {
+  getAll: async (filters: RecibosFilters = {}): Promise<Recibo[]> => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const mockRecibos: Recibo[] = [
+      {
+        id: 1,
+        numero: 'REC-2025-001',
+        fechaEmision: '2025-09-01',
+        fechaVencimiento: '2025-09-10',
+        personaId: 1,
+        personaNombre: 'Juan',
+        personaApellido: 'Pérez',
+        personaTipo: 'socio',
+        personaEmail: 'juan.perez@email.com',
+        conceptos: [
+          {
+            id: 1,
+            concepto: 'Cuota mensual - Septiembre 2025',
+            cantidad: 1,
+            precio: 5000,
+            subtotal: 5000,
+            cuotaId: 1,
+          }
+        ],
+        subtotal: 5000,
+        descuentos: 0,
+        recargos: 0,
+        total: 5000,
+        estado: 'pagado',
+        metodoPago: 'transferencia',
+        fechaPago: '2025-09-08',
+        montoPagado: 5000,
+        cuotaIds: [1],
+        enviado: true,
+        fechaEnvio: '2025-09-01',
+      },
+      {
+        id: 2,
+        numero: 'REC-2025-002',
+        fechaEmision: '2025-09-15',
+        fechaVencimiento: '2025-09-25',
+        personaId: 2,
+        personaNombre: 'María',
+        personaApellido: 'García',
+        personaTipo: 'socio',
+        personaEmail: 'maria.garcia@email.com',
+        conceptos: [
+          {
+            id: 2,
+            concepto: 'Cuota mensual - Septiembre 2025',
+            cantidad: 1,
+            precio: 5000,
+            subtotal: 5000,
+            cuotaId: 2,
+          }
+        ],
+        subtotal: 5000,
+        descuentos: 500,
+        recargos: 0,
+        total: 4500,
+        estado: 'pendiente',
+        montoPagado: 0,
+        cuotaIds: [2],
+        enviado: false,
+      },
+      {
+        id: 3,
+        numero: 'REC-2025-003',
+        fechaEmision: '2025-08-01',
+        fechaVencimiento: '2025-08-10',
+        personaId: 3,
+        personaNombre: 'Carlos',
+        personaApellido: 'López',
+        personaTipo: 'estudiante',
+        personaEmail: 'carlos.lopez@email.com',
+        conceptos: [
+          {
+            id: 3,
+            concepto: 'Cuota mensual - Agosto 2025',
+            cantidad: 1,
+            precio: 3000,
+            subtotal: 3000,
+            cuotaId: 3,
+          }
+        ],
+        subtotal: 3000,
+        descuentos: 0,
+        recargos: 500,
+        total: 3500,
+        estado: 'vencido',
+        montoPagado: 0,
+        cuotaIds: [3],
+        enviado: true,
+        fechaEnvio: '2025-08-01',
+      },
+    ];
+
+    return mockRecibos.filter(recibo => {
+      if (filters.estado && recibo.estado !== filters.estado) return false;
+      if (filters.personaTipo && recibo.personaTipo !== filters.personaTipo) return false;
+      if (filters.personaId && recibo.personaId !== filters.personaId) return false;
+      if (filters.numeroRecibo && !recibo.numero.toLowerCase().includes(filters.numeroRecibo.toLowerCase())) return false;
+      if (filters.enviado !== undefined && recibo.enviado !== filters.enviado) return false;
+      return true;
+    });
+  },
+
+  getById: async (id: number): Promise<Recibo> => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const recibos = await recibosAPI.getAll();
+    const recibo = recibos.find(r => r.id === id);
+    if (!recibo) throw new Error('Recibo no encontrado');
+    return recibo;
+  },
+
+  create: async (recibo: Omit<Recibo, 'id' | 'numero' | 'fechaEmision'>): Promise<Recibo> => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const numero = `REC-2025-${String(Date.now()).slice(-3).padStart(3, '0')}`;
+    return {
+      ...recibo,
+      id: Date.now(),
+      numero,
+      fechaEmision: new Date().toISOString().split('T')[0],
+    };
+  },
+
+  update: async (id: number, recibo: Partial<Recibo>): Promise<Recibo> => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return { id, ...recibo } as Recibo;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+  },
+
+  generarRecibo: async (request: GenerarReciboRequest): Promise<Recibo> => {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const conceptos: ReciboConcepto[] = request.cuotaIds.map((cuotaId, index) => ({
+      id: Date.now() + index,
+      concepto: `Cuota mensual - Concepto ${index + 1}`,
+      cantidad: 1,
+      precio: 5000,
+      subtotal: 5000,
+      cuotaId,
+    }));
+
+    const subtotal = conceptos.reduce((sum, c) => sum + c.subtotal, 0);
+    const descuentos = request.descuentoMonto || (request.descuentoPorcentaje ? subtotal * (request.descuentoPorcentaje / 100) : 0);
+    const total = subtotal - descuentos;
+
+    return {
+      id: Date.now(),
+      numero: `REC-2025-${String(Date.now()).slice(-3).padStart(3, '0')}`,
+      fechaEmision: new Date().toISOString().split('T')[0],
+      fechaVencimiento: request.fechaVencimiento,
+      personaId: request.personaId,
+      personaNombre: 'Persona',
+      personaApellido: 'Generada',
+      personaTipo: 'socio',
+      conceptos,
+      subtotal,
+      descuentos,
+      recargos: 0,
+      total,
+      estado: 'pendiente',
+      montoPagado: 0,
+      cuotaIds: request.cuotaIds,
+      enviado: false,
+      observaciones: request.observaciones,
+    };
+  },
+
+  pagarRecibo: async (request: PagarReciboRequest): Promise<Recibo> => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const recibo = await recibosAPI.getById(request.reciboId);
+
+    const montoPagadoTotal = recibo.montoPagado + request.montoPago;
+    let estado: Recibo['estado'] = 'pendiente';
+
+    if (montoPagadoTotal >= recibo.total) {
+      estado = 'pagado';
+    } else if (montoPagadoTotal > 0) {
+      estado = 'parcial';
+    }
+
+    return {
+      ...recibo,
+      estado,
+      metodoPago: request.metodoPago,
+      fechaPago: request.fechaPago,
+      montoPagado: montoPagadoTotal,
+      observaciones: request.observaciones,
+    };
+  },
+
+  generarPdf: async (reciboId: number): Promise<string> => {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    return `https://api.sigesda.com/recibos/${reciboId}/pdf`;
+  },
+
+  enviarRecibo: async (reciboId: number, email?: string): Promise<void> => {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  },
+
+  anularRecibo: async (reciboId: number, motivo: string): Promise<Recibo> => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const recibo = await recibosAPI.getById(reciboId);
+    return {
+      ...recibo,
+      estado: 'cancelado',
+      observaciones: `${recibo.observaciones || ''}\nAnulado: ${motivo}`,
+    };
+  },
+};
+
 // Async thunks
 export const fetchRecibos = createAsyncThunk(
   'recibos/fetchRecibos',
   async (filters: RecibosFilters = {}) => {
-    const response = await recibosService.getRecibos(filters);
-    return response;
+    const result = await recibosAPI.getAll(filters);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const fetchReciboById = createAsyncThunk(
   'recibos/fetchReciboById',
   async (id: number) => {
-    const response = await recibosService.getReciboById(id);
-    return response;
+    const result = await recibosAPI.getById(id);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const createRecibo = createAsyncThunk(
   'recibos/createRecibo',
   async (recibo: Omit<Recibo, 'id' | 'numero' | 'fechaEmision'>) => {
-    const response = await recibosService.createRecibo(recibo);
-    return response;
+    const result = await recibosAPI.create(recibo);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const updateRecibo = createAsyncThunk(
   'recibos/updateRecibo',
   async ({ id, recibo }: { id: number; recibo: Partial<Recibo> }) => {
-    const response = await recibosService.updateRecibo(id, recibo);
-    return response;
+    const result = await recibosAPI.update(id, recibo);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const deleteRecibo = createAsyncThunk(
   'recibos/deleteRecibo',
   async (id: number) => {
-    await recibosService.deleteRecibo(id);
+    await recibosAPI.delete(id);
     return id;
   }
 );
@@ -156,31 +377,34 @@ export const deleteRecibo = createAsyncThunk(
 export const generarRecibo = createAsyncThunk(
   'recibos/generarRecibo',
   async (request: GenerarReciboRequest) => {
-    const response = await recibosService.generarRecibo(request);
-    return response;
+    const result = await recibosAPI.generarRecibo(request);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const pagarRecibo = createAsyncThunk(
   'recibos/pagarRecibo',
   async (request: PagarReciboRequest) => {
-    const response = await recibosService.pagarRecibo(request);
-    return response;
+    const result = await recibosAPI.pagarRecibo(request);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const generarPdfRecibo = createAsyncThunk(
   'recibos/generarPdfRecibo',
   async (reciboId: number) => {
-    const response = await recibosService.generarPdf(reciboId);
-    return response;
+    const result = await recibosAPI.generarPdf(reciboId);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
 export const enviarRecibo = createAsyncThunk(
   'recibos/enviarRecibo',
   async ({ reciboId, email }: { reciboId: number; email?: string }) => {
-    await recibosService.enviarRecibo(reciboId, email);
+    await recibosAPI.enviarRecibo(reciboId, email);
     return reciboId;
   }
 );
@@ -188,24 +412,9 @@ export const enviarRecibo = createAsyncThunk(
 export const anularRecibo = createAsyncThunk(
   'recibos/anularRecibo',
   async ({ reciboId, motivo }: { reciboId: number; motivo: string }) => {
-    const response = await recibosService.anularRecibo(reciboId, motivo);
-    return response;
-  }
-);
-
-export const fetchEstadisticas = createAsyncThunk(
-  'recibos/fetchEstadisticas',
-  async (filtros?: { fechaDesde?: string; fechaHasta?: string; personaTipo?: string }) => {
-    const response = await recibosService.getEstadisticas(filtros);
-    return response;
-  }
-);
-
-export const fetchVencidos = createAsyncThunk(
-  'recibos/fetchVencidos',
-  async () => {
-    const response = await recibosService.getRecibosVencidos();
-    return response;
+    const result = await recibosAPI.anularRecibo(reciboId, motivo);
+    // Cuando se conecte a la API real, usar: result.data || result
+    return result;
   }
 );
 
@@ -379,42 +588,6 @@ const recibosSlice = createSlice({
             state.filteredRecibos[filteredIndex] = action.payload;
           }
         }
-      })
-
-      // Fetch estadísticas
-      .addCase(fetchEstadisticas.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchEstadisticas.fulfilled, (state, action) => {
-        state.loading = false;
-        // Las estadísticas se pueden actualizar según la estructura de la respuesta
-        if (action.payload) {
-          state.estadisticas = {
-            ...state.estadisticas,
-            ...action.payload,
-          };
-        }
-      })
-      .addCase(fetchEstadisticas.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Error al cargar estadísticas';
-      })
-
-      // Fetch vencidos
-      .addCase(fetchVencidos.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchVencidos.fulfilled, (state, action) => {
-        state.loading = false;
-        // Actualizar recibos vencidos en el estado
-        // Puedes decidir si reemplazar todos los recibos o solo agregar los vencidos
-        state.filteredRecibos = action.payload;
-      })
-      .addCase(fetchVencidos.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Error al cargar recibos vencidos';
       });
   },
 });

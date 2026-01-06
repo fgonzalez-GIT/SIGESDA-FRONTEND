@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -84,15 +84,21 @@ export const GenerarReciboDialog: React.FC<GenerarReciboDialogProps> = ({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Filtrar cuotas pendientes de la persona seleccionada
-  const cuotasDisponibles = cuotas.filter(cuota =>
-    formData.personaId &&
-    cuota.personaId === formData.personaId &&
-    (cuota.estado === 'pendiente' || cuota.estado === 'vencida')
+  // Memoizar filtrado de cuotas para evitar recálculos innecesarios
+  const cuotasDisponibles = useMemo(() =>
+    cuotas.filter(cuota =>
+      formData.personaId &&
+      cuota.personaId === formData.personaId &&
+      (cuota.estado === 'pendiente' || cuota.estado === 'vencida')
+    ),
+    [cuotas, formData.personaId]
   );
 
-  const cuotasSeleccionadas = cuotas.filter(cuota =>
-    formData.cuotaIds.includes(cuota.id)
+  const cuotasSeleccionadas = useMemo(() =>
+    cuotas.filter(cuota =>
+      formData.cuotaIds.includes(cuota.id)
+    ),
+    [cuotas, formData.cuotaIds]
   );
 
   useEffect(() => {
@@ -200,19 +206,41 @@ export const GenerarReciboDialog: React.FC<GenerarReciboDialogProps> = ({
     }));
   };
 
-  const personasOptions = personas.map(persona => ({
-    id: persona.id,
-    label: `${persona.nombre} ${persona.apellido} (${persona.tipos?.map(t => t.tipoPersonaCodigo).join(', ') || 'Sin tipo'})`,
-    persona
-  }));
+  // Memoizar opciones de personas para evitar recreación en cada render (FIX: loop infinito)
+  const personasOptions = useMemo(() =>
+    personas.map(persona => ({
+      id: persona.id,
+      label: `${persona.nombre} ${persona.apellido} (${persona.tipos?.map(t => t.tipoPersonaCodigo).join(', ') || 'Sin tipo'})`,
+      persona
+    })),
+    [personas]
+  );
 
-  const subtotal = cuotasSeleccionadas.reduce((sum, cuota) => sum + cuota.montoFinal, 0);
-  const descuentoCalculado = formData.aplicarDescuentos
-    ? (formData.tipoDescuento === 'porcentaje'
-        ? subtotal * (formData.descuentoPorcentaje / 100)
-        : formData.descuentoMonto)
-    : 0;
-  const total = subtotal - descuentoCalculado;
+  // Memoizar valor seleccionado para evitar búsquedas en cada render
+  const selectedPersonaOption = useMemo(() =>
+    personasOptions.find(p => p.id === formData.personaId) || null,
+    [personasOptions, formData.personaId]
+  );
+
+  // Memoizar cálculos de montos para evitar recálculos innecesarios
+  const subtotal = useMemo(() =>
+    cuotasSeleccionadas.reduce((sum, cuota) => sum + cuota.montoFinal, 0),
+    [cuotasSeleccionadas]
+  );
+
+  const descuentoCalculado = useMemo(() =>
+    formData.aplicarDescuentos
+      ? (formData.tipoDescuento === 'porcentaje'
+          ? subtotal * (formData.descuentoPorcentaje / 100)
+          : formData.descuentoMonto)
+      : 0,
+    [formData.aplicarDescuentos, formData.tipoDescuento, formData.descuentoPorcentaje, formData.descuentoMonto, subtotal]
+  );
+
+  const total = useMemo(() =>
+    subtotal - descuentoCalculado,
+    [subtotal, descuentoCalculado]
+  );
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
@@ -245,7 +273,7 @@ export const GenerarReciboDialog: React.FC<GenerarReciboDialogProps> = ({
               {/* Selección de persona */}
               <Autocomplete
                 options={personasOptions}
-                value={personasOptions.find(p => p.id === formData.personaId) || null}
+                value={selectedPersonaOption}
                 onChange={(_, newValue) => {
                   setFormData(prev => ({
                     ...prev,
@@ -276,6 +304,7 @@ export const GenerarReciboDialog: React.FC<GenerarReciboDialogProps> = ({
                   </li>
                 )}
                 getOptionLabel={(option) => option.label}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
                 disabled={loading}
               />
 

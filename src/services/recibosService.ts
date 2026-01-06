@@ -22,25 +22,25 @@ export const recibosService = {
   // Obtener todos los recibos con filtros opcionales
   getRecibos: async (filters: RecibosFilters = {}): Promise<Recibo[]> => {
     const response = await recibosAPI.get('/', { params: filters });
-    return response.data;
+    return response.data.data || [];
   },
 
   // Obtener un recibo por ID
   getReciboById: async (id: number): Promise<Recibo> => {
     const response = await recibosAPI.get(`/${id}`);
-    return response.data;
+    return response.data.data;
   },
 
   // Crear un nuevo recibo
   createRecibo: async (recibo: Omit<Recibo, 'id' | 'numero' | 'fechaEmision'>): Promise<Recibo> => {
     const response = await recibosAPI.post('/', recibo);
-    return response.data;
+    return response.data.data;
   },
 
   // Actualizar un recibo existente
   updateRecibo: async (id: number, recibo: Partial<Recibo>): Promise<Recibo> => {
     const response = await recibosAPI.put(`/${id}`, recibo);
-    return response.data;
+    return response.data.data;
   },
 
   // Eliminar un recibo
@@ -51,13 +51,13 @@ export const recibosService = {
   // Generar recibo desde cuotas
   generarRecibo: async (request: GenerarReciboRequest): Promise<Recibo> => {
     const response = await recibosAPI.post('/generar', request);
-    return response.data;
+    return response.data.data;
   },
 
   // Pagar un recibo
   pagarRecibo: async (request: PagarReciboRequest): Promise<Recibo> => {
     const response = await recibosAPI.post(`/${request.reciboId}/pagar`, request);
-    return response.data;
+    return response.data.data;
   },
 
   // Generar PDF del recibo
@@ -98,13 +98,13 @@ export const recibosService = {
   // Anular recibo
   anularRecibo: async (reciboId: number, motivo: string): Promise<Recibo> => {
     const response = await recibosAPI.post(`/${reciboId}/anular`, { motivo });
-    return response.data;
+    return response.data.data;
   },
 
   // Duplicar recibo
   duplicarRecibo: async (reciboId: number, fechaVencimiento?: string): Promise<Recibo> => {
     const response = await recibosAPI.post(`/${reciboId}/duplicar`, { fechaVencimiento });
-    return response.data;
+    return response.data.data;
   },
 
   // Obtener estadísticas de recibos
@@ -113,20 +113,20 @@ export const recibosService = {
     fechaHasta?: string;
     personaTipo?: string;
   }) => {
-    const response = await recibosAPI.get('/estadisticas', { params: filtros });
-    return response.data;
+    const response = await recibosAPI.get('/stats/resumen', { params: filtros });
+    return response.data.data;
   },
 
   // Obtener recibos vencidos
   getRecibosVencidos: async (): Promise<Recibo[]> => {
-    const response = await recibosAPI.get('/vencidos');
-    return response.data;
+    const response = await recibosAPI.get('/vencidos/listado');
+    return response.data.data || [];
   },
 
   // Obtener recibos por vencer (próximos N días)
   getRecibosPorVencer: async (dias: number = 7): Promise<Recibo[]> => {
     const response = await recibosAPI.get('/por-vencer', { params: { dias } });
-    return response.data;
+    return response.data.data || [];
   },
 
   // Obtener facturación por período
@@ -134,7 +134,7 @@ export const recibosService = {
     const response = await recibosAPI.get('/facturacion', {
       params: { fechaDesde, fechaHasta }
     });
-    return response.data;
+    return response.data.data;
   },
 
   // Obtener cobranza por período
@@ -142,7 +142,7 @@ export const recibosService = {
     const response = await recibosAPI.get('/cobranza', {
       params: { fechaDesde, fechaHasta }
     });
-    return response.data;
+    return response.data.data;
   },
 
   // Generar reporte de recibos
@@ -161,7 +161,7 @@ export const recibosService = {
   // Obtener recibos por persona
   getRecibosPorPersona: async (personaId: number): Promise<Recibo[]> => {
     const response = await recibosAPI.get(`/persona/${personaId}`);
-    return response.data;
+    return response.data.data || [];
   },
 
   // Obtener resumen mensual
@@ -169,7 +169,7 @@ export const recibosService = {
     const response = await recibosAPI.get('/resumen-mensual', {
       params: { año, mes }
     });
-    return response.data;
+    return response.data.data;
   },
 
   // Aplicar pago parcial
@@ -179,43 +179,43 @@ export const recibosService = {
       metodoPago,
       fecha
     });
-    return response.data;
+    return response.data.data;
   },
 
   // Revertir pago
   revertirPago: async (reciboId: number, motivo: string) => {
     const response = await recibosAPI.post(`/${reciboId}/revertir-pago`, { motivo });
-    return response.data;
+    return response.data.data;
   },
 
   // Generar recibos masivos
   generarRecibosMasivos: async (requests: GenerarReciboRequest[]): Promise<Recibo[]> => {
     const response = await recibosAPI.post('/generar-masivos', { recibos: requests });
-    return response.data;
+    return response.data.data || [];
   },
 
   // Enviar recordatorio de pago
   enviarRecordatorio: async (reciboId: number, tipo: 'email' | 'sms' = 'email') => {
     const response = await recibosAPI.post(`/${reciboId}/recordatorio`, { tipo });
-    return response.data;
+    return response.data.data;
   },
 
   // Obtener histórico de pagos
   getHistoricoPagos: async (reciboId: number) => {
     const response = await recibosAPI.get(`/${reciboId}/historico-pagos`);
-    return response.data;
+    return response.data.data;
   },
 
   // Validar datos del recibo
   validarRecibo: async (recibo: Partial<Recibo>) => {
     const response = await recibosAPI.post('/validar', recibo);
-    return response.data;
+    return response.data.data;
   },
 
   // Obtener siguiente número de recibo
   getSiguienteNumero: async (): Promise<string> => {
     const response = await recibosAPI.get('/siguiente-numero');
-    return response.data.numero;
+    return response.data.data?.numero || response.data.numero;
   },
 
   // Importar recibos desde archivo
@@ -231,7 +231,7 @@ export const recibosService = {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data;
+    return response.data.data;
   },
 
   // Exportar recibos a archivo

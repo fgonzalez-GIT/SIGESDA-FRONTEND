@@ -13,7 +13,7 @@ import {
   Switch,
   Paper,
   InputAdornment,
-  Grid2,
+  Grid,
   Card,
   CardContent,
   Alert,
@@ -269,8 +269,8 @@ const TiposActividadPage: React.FC = () => {
       </Box>
 
       {/* Estadísticas */}
-      <Grid2 container spacing={2} sx={{ mb: 3 }}>
-        <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -279,8 +279,8 @@ const TiposActividadPage: React.FC = () => {
               <Typography variant="h4">{stats.total}</Typography>
             </CardContent>
           </Card>
-        </Grid2>
-        <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -291,8 +291,8 @@ const TiposActividadPage: React.FC = () => {
               </Typography>
             </CardContent>
           </Card>
-        </Grid2>
-        <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
@@ -303,8 +303,8 @@ const TiposActividadPage: React.FC = () => {
               </Typography>
             </CardContent>
           </Card>
-        </Grid2>
-      </Grid2>
+        </Grid>
+      </Grid>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => dispatch(clearError())}>
