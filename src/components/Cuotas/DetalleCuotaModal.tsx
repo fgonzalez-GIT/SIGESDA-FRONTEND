@@ -30,6 +30,7 @@ import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchDesgloseCuota, fetchItemsCuota, recalcularCuota, deleteCuota } from '../../store/slices/cuotasSlice';
 import { Cuota, ItemCuota } from '../../types/cuota.types';
 import { FEATURES } from '../../config/features';
+import AgregarItemModal from './AgregarItemModal';
 
 interface DetalleCuotaModalProps {
     open: boolean;
@@ -40,6 +41,7 @@ interface DetalleCuotaModalProps {
 const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cuota }) => {
     const dispatch = useAppDispatch();
     const { itemsCuota, desgloseCuota, loading } = useAppSelector(state => state.cuotas);
+    const [openAgregarItem, setOpenAgregarItem] = useState(false);
 
     useEffect(() => {
         if (open && cuota) {
@@ -59,6 +61,23 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
             }));
             // Refresh
             dispatch(fetchDesgloseCuota(cuota.id));
+        }
+    };
+
+    const handleAgregarItem = () => {
+        setOpenAgregarItem(true);
+    };
+
+    const handleCloseAgregarItem = () => {
+        setOpenAgregarItem(false);
+    };
+
+    const handleItemAgregado = () => {
+        setOpenAgregarItem(false);
+        // Refresh desglose después de agregar ítem
+        if (cuota) {
+            dispatch(fetchDesgloseCuota(cuota.id));
+            dispatch(fetchItemsCuota(cuota.id));
         }
     };
 
@@ -202,11 +221,25 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
                 {FEATURES.RECALCULO_CUOTAS && cuota.recibo.estado !== 'PAGADO' && (
                     <>
                         <Button onClick={handleRecalcular} color="warning">Recalcular</Button>
-                        {/* Funcionalidad de agregar item manual pendiente de implementar modal específico */}
-                        {/* <Button startIcon={<AddIcon />} variant="outlined">Agregar Item</Button> */}
+                        <Button
+                            variant="outlined"
+                            startIcon={<AddIcon />}
+                            onClick={handleAgregarItem}
+                            disabled={cuota.recibo.estado === 'PAGADO'}
+                        >
+                            Agregar Ítem Manual
+                        </Button>
                     </>
                 )}
             </DialogActions>
+
+            {/* Modal para agregar ítem manual */}
+            <AgregarItemModal
+                open={openAgregarItem}
+                onClose={handleCloseAgregarItem}
+                cuotaId={cuota.id}
+                onSuccess={handleItemAgregado}
+            />
         </Dialog>
     );
 };
