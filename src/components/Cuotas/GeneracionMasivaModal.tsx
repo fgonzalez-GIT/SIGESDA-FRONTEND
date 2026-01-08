@@ -22,18 +22,22 @@ import {
     CircularProgress,
     Paper,
     Divider,
-    Chip
+    Chip,
+    FormHelperText
 } from '@mui/material';
 import {
     CheckCircle as CheckCircleIcon,
     Warning as WarningIcon,
     Error as ErrorIcon
 } from '@mui/icons-material';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { generarCuotasMasivas, validarGeneracion, clearValidacion } from '../../store/slices/cuotasSlice';
 import { fetchCategorias } from '../../store/slices/categoriasSlice';
 import { GenerarCuotasRequest } from '../../types/cuota.types';
 import { FEATURES } from '../../config/features';
+import { generarCuotasV2Schema, type GenerarCuotasV2FormData } from '../../schemas';
 
 interface GeneracionMasivaModalProps {
     open: boolean;
@@ -49,13 +53,26 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
     const { validacionGeneracion, loading, error, operationLoading } = useAppSelector(state => state.cuotas);
 
     const [activeStep, setActiveStep] = useState(0);
-    const [mes, setMes] = useState<number>(new Date().getMonth() + 1);
-    const [anio, setAnio] = useState<number>(new Date().getFullYear());
-    const [selectedCategorias, setSelectedCategorias] = useState<number[]>([]);
-    const [aplicarDescuentos, setAplicarDescuentos] = useState(true);
-    const [incluirInactivos, setIncluirInactivos] = useState(false);
-    const [observaciones, setObservaciones] = useState('');
     const [resultData, setResultData] = useState<any>(null);
+
+    // React Hook Form con Zod
+    const { control, handleSubmit, watch, reset, formState: { errors, isValid } } = useForm<GenerarCuotasV2FormData>({
+        resolver: zodResolver(generarCuotasV2Schema),
+        mode: 'onChange',
+        defaultValues: {
+            mes: new Date().getMonth() + 1,
+            anio: new Date().getFullYear(),
+            categoriaIds: [],
+            aplicarDescuentos: true,
+            aplicarMotorReglas: true,
+            incluirInactivos: false,
+            soloNuevas: true,
+            observaciones: ''
+        }
+    });
+
+    // Watch form values for validation step
+    const formValues = watch();
 
     useEffect(() => {
         if (open) {
@@ -63,29 +80,22 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
             dispatch(clearValidacion());
             setActiveStep(0);
             setResultData(null);
+            reset(); // Reset form on open
         }
-    }, [open, dispatch]);
+    }, [open, dispatch, reset]);
 
     const handleNext = async () => {
         if (activeStep === 0) {
             // Ir a validación
             dispatch(validarGeneracion({
-                mes,
-                anio,
-                categoriaIds: selectedCategorias.length > 0 ? selectedCategorias : undefined
+                mes: formValues.mes,
+                anio: formValues.anio,
+                categoriaIds: formValues.categoriaIds && formValues.categoriaIds.length > 0 ? formValues.categoriaIds : undefined
             }));
             setActiveStep(1);
         } else if (activeStep === 1) {
-            // Ejecutar generación
-            const request: GenerarCuotasRequest = {
-                mes,
-                anio,
-                categoriaIds: selectedCategorias.length > 0 ? selectedCategorias : undefined,
-                aplicarDescuentos,
-                incluirInactivos,
-                observaciones
-            };
-            const result = await dispatch(generarCuotasMasivas(request)).unwrap();
+            // Ejecutar generación usando los valores validados del formulario
+            const result = await dispatch(generarCuotasMasivas(formValues as any)).unwrap();
             setResultData(result);
             setActiveStep(2);
             if (onSuccess) onSuccess();
@@ -98,10 +108,6 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
         setActiveStep((prevActiveStep) => prevActiveStep - 1);
     };
 
-    const isStep1Valid = () => {
-        return mes > 0 && anio > 2000;
-    };
-
     const renderStepContent = (step: number) => {
         switch (step) {
             case 0: // Configuración
@@ -109,77 +115,106 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
                     <Box sx={{ mt: 2 }}>
                         <Grid container spacing={3}>
                             <Grid size={{ xs: 12, md: 6 }}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Mes</InputLabel>
-                                    <Select value={mes} label="Mes" onChange={(e) => setMes(Number(e.target.value))}>
-                                        {[...Array(12)].map((_, i) => (
-                                            <MenuItem key={i + 1} value={i + 1}>
-                                                {new Date(0, i).toLocaleString('es-ES', { month: 'long' }).toUpperCase()}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
+                                <Controller
+                                    name="mes"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <FormControl fullWidth error={!!errors.mes}>
+                                            <InputLabel>Mes</InputLabel>
+                                            <Select {...field} label="Mes">
+                                                {[...Array(12)].map((_, i) => (
+                                                    <MenuItem key={i + 1} value={i + 1}>
+                                                        {new Date(0, i).toLocaleString('es-ES', { month: 'long' }).toUpperCase()}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                            {errors.mes && <FormHelperText>{errors.mes.message}</FormHelperText>}
+                                        </FormControl>
+                                    )}
+                                />
                             </Grid>
                             <Grid size={{ xs: 12, md: 6 }}>
-                                <TextField
-                                    fullWidth
-                                    label="Año"
-                                    type="number"
-                                    value={anio}
-                                    onChange={(e) => setAnio(Number(e.target.value))}
+                                <Controller
+                                    name="anio"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            fullWidth
+                                            label="Año"
+                                            type="number"
+                                            error={!!errors.anio}
+                                            helperText={errors.anio?.message}
+                                        />
+                                    )}
                                 />
                             </Grid>
                             <Grid size={{ xs: 12 }}>
-                                <FormControl fullWidth>
-                                    <InputLabel>Categorías (Opcional - Vacío para todas)</InputLabel>
-                                    <Select
-                                        multiple
-                                        value={selectedCategorias}
-                                        label="Categorías (Opcional - Vacío para todas)"
-                                        onChange={(e) => setSelectedCategorias(e.target.value as number[])}
-                                        renderValue={(selected) => (
-                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                                {selected.map((value) => (
-                                                    <Chip key={value} label={categorias.find(c => c.id === value)?.nombre} />
+                                <Controller
+                                    name="categoriaIds"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <FormControl fullWidth error={!!errors.categoriaIds}>
+                                            <InputLabel>Categorías (Opcional - Vacío para todas)</InputLabel>
+                                            <Select
+                                                {...field}
+                                                multiple
+                                                label="Categorías (Opcional - Vacío para todas)"
+                                                value={field.value || []}
+                                                renderValue={(selected) => (
+                                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                        {(selected as number[]).map((value) => (
+                                                            <Chip key={value} label={categorias.find(c => c.id === value)?.nombre} />
+                                                        ))}
+                                                    </Box>
+                                                )}
+                                            >
+                                                {categorias.map((cat) => (
+                                                    <MenuItem key={cat.id} value={cat.id}>
+                                                        {cat.nombre}
+                                                    </MenuItem>
                                                 ))}
-                                            </Box>
-                                        )}
-                                    >
-                                        {categorias.map((cat) => (
-                                            <MenuItem key={cat.id} value={cat.id}>
-                                                {cat.nombre}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
+                                            </Select>
+                                            {errors.categoriaIds && <FormHelperText>{errors.categoriaIds.message}</FormHelperText>}
+                                        </FormControl>
+                                    )}
+                                />
                             </Grid>
                             {FEATURES.MOTOR_DESCUENTOS && (
                                 <Grid size={{ xs: 12 }}>
-                                    <FormControlLabel
-                                        control={<Switch checked={aplicarDescuentos} onChange={(e) => setAplicarDescuentos(e.target.checked)} />}
-                                        label="Aplicar Motor de Descuentos Automáticamente"
+                                    <Controller
+                                        name="aplicarDescuentos"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <Box>
+                                                <FormControlLabel
+                                                    control={<Switch checked={field.value} onChange={field.onChange} />}
+                                                    label="Aplicar Motor de Descuentos Automáticamente"
+                                                />
+                                                <Typography variant="caption" display="block" color="text.secondary">
+                                                    Si se desactiva, se generarán las cuotas base + actividades sin calcular descuentos.
+                                                </Typography>
+                                            </Box>
+                                        )}
                                     />
-                                    <Typography variant="caption" display="block" color="text.secondary">
-                                        Si se desactiva, se generarán las cuotas base + actividades sin calcular descuentos.
-                                    </Typography>
                                 </Grid>
                             )}
-                            {/* 
-                            <Grid item xs={12}>
-                                <FormControlLabel
-                                    control={<Switch checked={incluirInactivos} onChange={(e) => setIncluirInactivos(e.target.checked)} />}
-                                    label="Incluir Socios Inactivos (No recomendado)"
-                                />
-                            </Grid>
-                            */}
                             <Grid size={{ xs: 12 }}>
-                                <TextField
-                                    fullWidth
-                                    multiline
-                                    rows={2}
-                                    label="Observaciones"
-                                    value={observaciones}
-                                    onChange={(e) => setObservaciones(e.target.value)}
+                                <Controller
+                                    name="observaciones"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            fullWidth
+                                            multiline
+                                            rows={2}
+                                            label="Observaciones"
+                                            error={!!errors.observaciones}
+                                            helperText={errors.observaciones?.message}
+                                            value={field.value || ''}
+                                        />
+                                    )}
                                 />
                             </Grid>
                         </Grid>
@@ -222,7 +257,7 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
 
                         <Typography variant="body2" sx={{ mt: 2 }} color="text.secondary">
                             Se generarán las cuotas para {validacionGeneracion.sociosPorGenerar} socios.
-                            {aplicarDescuentos && ' Se aplicarán las reglas de descuento configuradas.'}
+                            {formValues.aplicarDescuentos && ' Se aplicarán las reglas de descuento configuradas.'}
                         </Typography>
                     </Box>
                 );
@@ -296,7 +331,7 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
                     <Button onClick={handleBack}>Atrás</Button>
                 )}
                 {activeStep === 0 && (
-                    <Button variant="contained" onClick={handleNext} disabled={!isStep1Valid()}>
+                    <Button variant="contained" onClick={handleNext} disabled={!isValid}>
                         Validar
                     </Button>
                 )}

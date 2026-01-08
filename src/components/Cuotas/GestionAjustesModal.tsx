@@ -12,7 +12,6 @@ import {
     IconButton,
     Typography,
     Box,
-    Fab,
     TextField,
     Select,
     MenuItem,
@@ -25,12 +24,13 @@ import {
 import {
     Add as AddIcon,
     Delete as DeleteIcon,
-    Edit as EditIcon,
-    Block as BlockIcon
 } from '@mui/icons-material';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useAppDispatch } from '../../store';
 import { ajustesCuotaService } from '../../services/ajustesCuotaService';
-import { AjusteCuotaSocio, TipoAjusteCuota, AplicaA } from '../../types/cuota.types';
+import { AjusteCuotaSocio } from '../../types/cuota.types';
+import { createAjusteSchema, type CreateAjusteFormData } from '../../schemas';
 
 interface GestionAjustesModalProps {
     open: boolean;
@@ -46,28 +46,33 @@ const GestionAjustesModal: React.FC<GestionAjustesModalProps> = ({ open, onClose
     const [isEditing, setIsEditing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Form state
-    const [newItem, setNewItem] = useState<{
-        tipoAjuste: TipoAjusteCuota;
-        valor: number;
-        concepto: string;
-        motivo: string;
-        fechaInicio: string;
-        aplicaA: AplicaA;
-    }>({
-        tipoAjuste: 'DESCUENTO_PORCENTAJE',
-        valor: 0,
-        concepto: '',
-        motivo: '',
-        fechaInicio: new Date().toISOString().split('T')[0],
-        aplicaA: 'TOTAL_CUOTA'
+    // React Hook Form con Zod Resolver
+    const { control, handleSubmit, formState: { errors }, reset, watch } = useForm<CreateAjusteFormData>({
+        resolver: zodResolver(createAjusteSchema),
+        defaultValues: {
+            personaId: personaId || 0,
+            tipoAjuste: 'DESCUENTO_PORCENTAJE',
+            valor: 0,
+            concepto: '',
+            motivo: '',
+            fechaInicio: new Date().toISOString(),
+            fechaFin: null,
+            aplicaA: 'TOTAL_CUOTA',
+            itemsEspecificos: [],
+            activo: true
+        }
     });
+
+    const watchTipoAjuste = watch('tipoAjuste');
+    const watchAplicaA = watch('aplicaA');
 
     useEffect(() => {
         if (open && personaId) {
             loadAjustes();
+            // Update personaId in form when modal opens
+            reset(prev => ({ ...prev, personaId }));
         }
-    }, [open, personaId]);
+    }, [open, personaId, reset]);
 
     const loadAjustes = async () => {
         if (!personaId) return;
@@ -83,28 +88,31 @@ const GestionAjustesModal: React.FC<GestionAjustesModalProps> = ({ open, onClose
         }
     };
 
-    const handleCreate = async () => {
+    const onFormSubmit = async (data: CreateAjusteFormData) => {
         if (!personaId) return;
         try {
             await ajustesCuotaService.createAjuste({
+                ...data,
                 personaId,
-                ...newItem,
-                activo: true
             });
             setIsEditing(false);
             loadAjustes();
             // Reset form
-            setNewItem({
+            reset({
+                personaId,
                 tipoAjuste: 'DESCUENTO_PORCENTAJE',
                 valor: 0,
                 concepto: '',
                 motivo: '',
-                fechaInicio: new Date().toISOString().split('T')[0],
-                aplicaA: 'TOTAL_CUOTA'
+                fechaInicio: new Date().toISOString(),
+                fechaFin: null,
+                aplicaA: 'TOTAL_CUOTA',
+                itemsEspecificos: [],
+                activo: true
             });
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError('Error al crear ajuste');
+            setError(err?.response?.data?.error || 'Error al crear ajuste');
         }
     };
 
@@ -126,18 +134,35 @@ const GestionAjustesModal: React.FC<GestionAjustesModalProps> = ({ open, onClose
             case 'DESCUENTO_FIJO': return 'Desc. Fijo';
             case 'RECARGO_PORCENTAJE': return 'Recargo %';
             case 'RECARGO_FIJO': return 'Recargo Fijo';
+            case 'MONTO_FIJO_TOTAL': return 'Monto Fijo Total';
             default: return tipo;
         }
     };
 
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        reset({
+            personaId: personaId || 0,
+            tipoAjuste: 'DESCUENTO_PORCENTAJE',
+            valor: 0,
+            concepto: '',
+            motivo: '',
+            fechaInicio: new Date().toISOString(),
+            fechaFin: null,
+            aplicaA: 'TOTAL_CUOTA',
+            itemsEspecificos: [],
+            activo: true
+        });
+    };
+
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle>
                 Ajustes de Cuota
                 {nombrePersona && <Typography variant="subtitle2" color="text.secondary">Socio: {nombrePersona}</Typography>}
             </DialogTitle>
             <DialogContent dividers>
-                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
                 {!isEditing ? (
                     <Box>
@@ -173,82 +198,180 @@ const GestionAjustesModal: React.FC<GestionAjustesModalProps> = ({ open, onClose
                         </List>
                     </Box>
                 ) : (
-                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                        <Grid size={{ xs: 12 }}>
-                            <TextField
-                                fullWidth
-                                label="Concepto"
-                                value={newItem.concepto}
-                                onChange={e => setNewItem({ ...newItem, concepto: e.target.value })}
-                            />
+                    <form onSubmit={handleSubmit(onFormSubmit)}>
+                        <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                            {/* Concepto */}
+                            <Grid size={{ xs: 12 }}>
+                                <Controller
+                                    name="concepto"
+                                    control={control}
+                                    render={({ field, fieldState: { error } }) => (
+                                        <TextField
+                                            {...field}
+                                            fullWidth
+                                            label="Concepto"
+                                            required
+                                            error={!!error}
+                                            helperText={error?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+
+                            {/* Tipo de Ajuste */}
+                            <Grid size={{ xs: 6 }}>
+                                <Controller
+                                    name="tipoAjuste"
+                                    control={control}
+                                    render={({ field, fieldState: { error } }) => (
+                                        <FormControl fullWidth required error={!!error}>
+                                            <InputLabel>Tipo de Ajuste</InputLabel>
+                                            <Select {...field} label="Tipo de Ajuste">
+                                                <MenuItem value="DESCUENTO_PORCENTAJE">Descuento %</MenuItem>
+                                                <MenuItem value="DESCUENTO_FIJO">Descuento Fijo</MenuItem>
+                                                <MenuItem value="RECARGO_PORCENTAJE">Recargo %</MenuItem>
+                                                <MenuItem value="RECARGO_FIJO">Recargo Fijo</MenuItem>
+                                                <MenuItem value="MONTO_FIJO_TOTAL">Monto Fijo Total</MenuItem>
+                                            </Select>
+                                            {error && (
+                                                <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
+                                                    {error.message}
+                                                </Typography>
+                                            )}
+                                        </FormControl>
+                                    )}
+                                />
+                            </Grid>
+
+                            {/* Valor */}
+                            <Grid size={{ xs: 6 }}>
+                                <Controller
+                                    name="valor"
+                                    control={control}
+                                    render={({ field, fieldState: { error } }) => (
+                                        <TextField
+                                            {...field}
+                                            fullWidth
+                                            label={watchTipoAjuste?.includes('PORCENTAJE') ? 'Porcentaje (%)' : 'Valor ($)'}
+                                            type="number"
+                                            required
+                                            onChange={(e) => field.onChange(Number(e.target.value))}
+                                            error={!!error}
+                                            helperText={error?.message}
+                                            inputProps={{
+                                                min: 0,
+                                                max: watchTipoAjuste?.includes('PORCENTAJE') ? 100 : undefined,
+                                                step: watchTipoAjuste?.includes('PORCENTAJE') ? 1 : 0.01
+                                            }}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+
+                            {/* Fecha Inicio */}
+                            <Grid size={{ xs: 6 }}>
+                                <Controller
+                                    name="fechaInicio"
+                                    control={control}
+                                    render={({ field, fieldState: { error } }) => (
+                                        <TextField
+                                            {...field}
+                                            fullWidth
+                                            label="Fecha Inicio"
+                                            type="date"
+                                            required
+                                            slotProps={{ inputLabel: { shrink: true } }}
+                                            value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                                            onChange={(e) => field.onChange(new Date(e.target.value).toISOString())}
+                                            error={!!error}
+                                            helperText={error?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+
+                            {/* Fecha Fin (opcional) */}
+                            <Grid size={{ xs: 6 }}>
+                                <Controller
+                                    name="fechaFin"
+                                    control={control}
+                                    render={({ field, fieldState: { error } }) => (
+                                        <TextField
+                                            {...field}
+                                            fullWidth
+                                            label="Fecha Fin (opcional)"
+                                            type="date"
+                                            slotProps={{ inputLabel: { shrink: true } }}
+                                            value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                                            onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value).toISOString() : null)}
+                                            error={!!error}
+                                            helperText={error?.message || 'Dejar vacío para ajuste permanente'}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+
+                            {/* Aplica A */}
+                            <Grid size={{ xs: 12 }}>
+                                <Controller
+                                    name="aplicaA"
+                                    control={control}
+                                    render={({ field, fieldState: { error } }) => (
+                                        <FormControl fullWidth required error={!!error}>
+                                            <InputLabel>Aplica A</InputLabel>
+                                            <Select {...field} label="Aplica A">
+                                                <MenuItem value="TOTAL_CUOTA">Total Cuota</MenuItem>
+                                                <MenuItem value="BASE">Solo Base</MenuItem>
+                                                <MenuItem value="ACTIVIDADES">Solo Actividades</MenuItem>
+                                                <MenuItem value="ITEMS_ESPECIFICOS">Ítems Específicos</MenuItem>
+                                            </Select>
+                                            {error && (
+                                                <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
+                                                    {error.message}
+                                                </Typography>
+                                            )}
+                                        </FormControl>
+                                    )}
+                                />
+                            </Grid>
+
+                            {/* Ítems Específicos - mostrar solo si aplicaA es ITEMS_ESPECIFICOS */}
+                            {watchAplicaA === 'ITEMS_ESPECIFICOS' && (
+                                <Grid size={{ xs: 12 }}>
+                                    <Alert severity="info" sx={{ mt: 1 }}>
+                                        Nota: Deberá especificar los ítems al editar este ajuste
+                                    </Alert>
+                                </Grid>
+                            )}
+
+                            {/* Motivo */}
+                            <Grid size={{ xs: 12 }}>
+                                <Controller
+                                    name="motivo"
+                                    control={control}
+                                    render={({ field, fieldState: { error } }) => (
+                                        <TextField
+                                            {...field}
+                                            fullWidth
+                                            multiline
+                                            rows={2}
+                                            label="Motivo (Opcional)"
+                                            error={!!error}
+                                            helperText={error?.message || 'Explicación interna del ajuste'}
+                                        />
+                                    )}
+                                />
+                            </Grid>
                         </Grid>
-                        <Grid size={{ xs: 6 }}>
-                            <FormControl fullWidth>
-                                <InputLabel>Tipo</InputLabel>
-                                <Select
-                                    value={newItem.tipoAjuste}
-                                    label="Tipo"
-                                    onChange={e => setNewItem({ ...newItem, tipoAjuste: e.target.value as any })}
-                                >
-                                    <MenuItem value="DESCUENTO_PORCENTAJE">Descuento %</MenuItem>
-                                    <MenuItem value="DESCUENTO_FIJO">Descuento Fijo</MenuItem>
-                                    <MenuItem value="RECARGO_PORCENTAJE">Recargo %</MenuItem>
-                                    <MenuItem value="RECARGO_FIJO">Recargo Fijo</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid size={{ xs: 6 }}>
-                            <TextField
-                                fullWidth
-                                label="Valor"
-                                type="number"
-                                value={newItem.valor}
-                                onChange={e => setNewItem({ ...newItem, valor: Number(e.target.value) })}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 6 }}>
-                            <TextField
-                                fullWidth
-                                label="Fecha Inicio"
-                                type="date"
-                                InputLabelProps={{ shrink: true }}
-                                value={newItem.fechaInicio}
-                                onChange={e => setNewItem({ ...newItem, fechaInicio: e.target.value })}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 6 }}>
-                            <FormControl fullWidth>
-                                <InputLabel>Aplica A</InputLabel>
-                                <Select
-                                    value={newItem.aplicaA}
-                                    label="Aplica A"
-                                    onChange={e => setNewItem({ ...newItem, aplicaA: e.target.value as any })}
-                                >
-                                    <MenuItem value="TOTAL_CUOTA">Total Cuota</MenuItem>
-                                    <MenuItem value="BASE">Solo Base</MenuItem>
-                                    <MenuItem value="ACTIVIDADES">Solo Actividades</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid size={{ xs: 12 }}>
-                            <TextField
-                                fullWidth
-                                multiline
-                                rows={2}
-                                label="Motivo (Interno)"
-                                value={newItem.motivo}
-                                onChange={e => setNewItem({ ...newItem, motivo: e.target.value })}
-                            />
-                        </Grid>
-                    </Grid>
+                    </form>
                 )}
             </DialogContent>
             <DialogActions>
-                <Button onClick={() => isEditing ? setIsEditing(false) : onClose()}>
+                <Button onClick={() => isEditing ? handleCancelEdit() : onClose()}>
                     {isEditing ? 'Cancelar' : 'Cerrar'}
                 </Button>
                 {isEditing && (
-                    <Button variant="contained" onClick={handleCreate} disabled={!newItem.concepto || !newItem.valor}>
+                    <Button variant="contained" onClick={handleSubmit(onFormSubmit)}>
                         Guardar
                     </Button>
                 )}

@@ -17,9 +17,12 @@ import {
     Paper,
     Chip
 } from '@mui/material';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useAppDispatch } from '../../store';
 import { exencionesService } from '../../services/exencionesService';
-import { ExencionCuota, TipoExencion, MotivoExencion } from '../../types/cuota.types';
+import { ExencionCuota } from '../../types/cuota.types';
+import { createExencionSchema, type CreateExencionFormData } from '../../schemas';
 
 interface GestionExencionesModalProps {
     open: boolean;
@@ -32,30 +35,41 @@ const GestionExencionesModal: React.FC<GestionExencionesModalProps> = ({ open, o
     const [exencionActiva, setExencionActiva] = useState<ExencionCuota | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    // Form for new request
     const [isCreating, setIsCreating] = useState(false);
-    const [newRequest, setNewRequest] = useState<{
-        tipoExencion: TipoExencion;
-        motivoExencion: MotivoExencion;
-        porcentaje: number;
-        fechaInicio: string;
-        fechaFin: string;
-        justificacion: string;
-    }>({
-        tipoExencion: 'TOTAL',
-        motivoExencion: 'SITUACION_ECONOMICA',
-        porcentaje: 100,
-        fechaInicio: new Date().toISOString().split('T')[0],
-        fechaFin: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString().split('T')[0],
-        justificacion: ''
+
+    // React Hook Form con Zod Resolver
+    const { control, handleSubmit, formState: { errors }, reset, watch } = useForm<CreateExencionFormData>({
+        resolver: zodResolver(createExencionSchema),
+        defaultValues: {
+            personaId: personaId || 0,
+            tipoExencion: 'TOTAL',
+            porcentajeExencion: 100,
+            motivoExencion: 'SITUACION_ECONOMICA',
+            descripcion: '',
+            documentoRespaldo: null,
+            fechaInicio: new Date().toISOString(),
+            fechaFin: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString(),
+            estado: 'PENDIENTE_APROBACION',
+            activa: true
+        }
     });
+
+    const watchTipoExencion = watch('tipoExencion');
 
     useEffect(() => {
         if (open && personaId) {
             checkStatus();
+            // Update personaId in form when modal opens
+            reset(prev => ({ ...prev, personaId }));
         }
-    }, [open, personaId]);
+    }, [open, personaId, reset]);
+
+    // Auto-update porcentajeExencion when tipoExencion changes
+    useEffect(() => {
+        if (watchTipoExencion === 'TOTAL') {
+            reset((prev) => ({ ...prev, porcentajeExencion: 100 }));
+        }
+    }, [watchTipoExencion, reset]);
 
     const checkStatus = async () => {
         if (!personaId) return;
@@ -76,17 +90,31 @@ const GestionExencionesModal: React.FC<GestionExencionesModalProps> = ({ open, o
         }
     };
 
-    const handleSolicitar = async () => {
+    const onFormSubmit = async (data: CreateExencionFormData) => {
         if (!personaId) return;
         try {
             await exencionesService.solicitarExencion({
-                personaId,
-                ...newRequest
+                ...data,
+                personaId
             });
             await checkStatus();
-        } catch (err) {
+            setIsCreating(false);
+            // Reset form
+            reset({
+                personaId,
+                tipoExencion: 'TOTAL',
+                porcentajeExencion: 100,
+                motivoExencion: 'SITUACION_ECONOMICA',
+                descripcion: '',
+                documentoRespaldo: null,
+                fechaInicio: new Date().toISOString(),
+                fechaFin: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString(),
+                estado: 'PENDIENTE_APROBACION',
+                activa: true
+            });
+        } catch (err: any) {
             console.error(err);
-            setError('Error al solicitar exención');
+            setError(err?.response?.data?.error || 'Error al solicitar exención');
         }
     };
 
@@ -95,8 +123,8 @@ const GestionExencionesModal: React.FC<GestionExencionesModalProps> = ({ open, o
         if (window.confirm('¿Revocar exención vigente?')) {
             try {
                 await exencionesService.revocarExencion(exencionActiva.id, {
-                    motivoRevocacion: 'Solicitado por administrador',
-                    usuario: 'Current User' // Should come from auth context
+                    revocadoPor: 'Current User', // Should come from auth context
+                    motivoRevocacion: 'Solicitado por administrador'
                 });
                 checkStatus();
             } catch (err) {
@@ -106,14 +134,30 @@ const GestionExencionesModal: React.FC<GestionExencionesModalProps> = ({ open, o
         }
     };
 
+    const handleCancelCreating = () => {
+        setIsCreating(false);
+        reset({
+            personaId: personaId || 0,
+            tipoExencion: 'TOTAL',
+            porcentajeExencion: 100,
+            motivoExencion: 'SITUACION_ECONOMICA',
+            descripcion: '',
+            documentoRespaldo: null,
+            fechaInicio: new Date().toISOString(),
+            fechaFin: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString(),
+            estado: 'PENDIENTE_APROBACION',
+            activa: true
+        });
+    };
+
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle>
                 Gestión de Exenciones
                 {nombrePersona && <Typography variant="subtitle2" color="text.secondary">Socio: {nombrePersona}</Typography>}
             </DialogTitle>
             <DialogContent dividers>
-                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
                 {exencionActiva ? (
                     <Box component={Paper} variant="outlined" sx={{ p: 2, bgcolor: 'info.lighter' }}>
@@ -132,7 +176,10 @@ const GestionExencionesModal: React.FC<GestionExencionesModalProps> = ({ open, o
                             </Grid>
                             <Grid size={{ xs: 6 }}>
                                 <Typography variant="body2" color="text.secondary">Vigencia:</Typography>
-                                <Typography variant="body1">{new Date(exencionActiva.fechaInicio).toLocaleDateString()} - {exencionActiva.fechaFin ? new Date(exencionActiva.fechaFin).toLocaleDateString() : 'Indefinido'}</Typography>
+                                <Typography variant="body1">
+                                    {new Date(exencionActiva.fechaInicio).toLocaleDateString()} -
+                                    {exencionActiva.fechaFin ? new Date(exencionActiva.fechaFin).toLocaleDateString() : 'Indefinido'}
+                                </Typography>
                             </Grid>
                         </Grid>
                         <Box sx={{ mt: 2 }}>
@@ -151,90 +198,183 @@ const GestionExencionesModal: React.FC<GestionExencionesModalProps> = ({ open, o
                                 </Button>
                             </Box>
                         ) : (
-                            <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                                <Grid size={{ xs: 12 }}>
-                                    <Alert severity="info" sx={{ mb: 2 }}>
-                                        La exención se creará en estado PENDIENTE y requerirá aprobación.
-                                    </Alert>
+                            <form onSubmit={handleSubmit(onFormSubmit)}>
+                                <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                                    <Grid size={{ xs: 12 }}>
+                                        <Alert severity="info" sx={{ mb: 1 }}>
+                                            La exención se creará en estado PENDIENTE_APROBACION y requerirá aprobación.
+                                        </Alert>
+                                    </Grid>
+
+                                    {/* Tipo de Exención */}
+                                    <Grid size={{ xs: 6 }}>
+                                        <Controller
+                                            name="tipoExencion"
+                                            control={control}
+                                            render={({ field, fieldState: { error } }) => (
+                                                <FormControl fullWidth required error={!!error}>
+                                                    <InputLabel>Tipo</InputLabel>
+                                                    <Select {...field} label="Tipo">
+                                                        <MenuItem value="TOTAL">Total (100%)</MenuItem>
+                                                        <MenuItem value="PARCIAL">Parcial</MenuItem>
+                                                    </Select>
+                                                    {error && (
+                                                        <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
+                                                            {error.message}
+                                                        </Typography>
+                                                    )}
+                                                </FormControl>
+                                            )}
+                                        />
+                                    </Grid>
+
+                                    {/* Porcentaje */}
+                                    <Grid size={{ xs: 6 }}>
+                                        <Controller
+                                            name="porcentajeExencion"
+                                            control={control}
+                                            render={({ field, fieldState: { error } }) => (
+                                                <TextField
+                                                    {...field}
+                                                    fullWidth
+                                                    label="Porcentaje (%)"
+                                                    type="number"
+                                                    required
+                                                    disabled={watchTipoExencion === 'TOTAL'}
+                                                    value={watchTipoExencion === 'TOTAL' ? 100 : field.value}
+                                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                                    error={!!error}
+                                                    helperText={error?.message}
+                                                    inputProps={{
+                                                        min: 1,
+                                                        max: 100,
+                                                        step: 1
+                                                    }}
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
+
+                                    {/* Motivo */}
+                                    <Grid size={{ xs: 12 }}>
+                                        <Controller
+                                            name="motivoExencion"
+                                            control={control}
+                                            render={({ field, fieldState: { error } }) => (
+                                                <FormControl fullWidth required error={!!error}>
+                                                    <InputLabel>Motivo</InputLabel>
+                                                    <Select {...field} label="Motivo">
+                                                        <MenuItem value="BECA">Beca</MenuItem>
+                                                        <MenuItem value="SOCIO_FUNDADOR">Socio Fundador</MenuItem>
+                                                        <MenuItem value="SOCIO_HONORARIO">Socio Honorario</MenuItem>
+                                                        <MenuItem value="SITUACION_ECONOMICA">Situación Económica</MenuItem>
+                                                        <MenuItem value="MERITO_ACADEMICO">Mérito Académico</MenuItem>
+                                                        <MenuItem value="COLABORACION_INSTITUCIONAL">Colaboración Institucional</MenuItem>
+                                                        <MenuItem value="EMERGENCIA_FAMILIAR">Emergencia Familiar</MenuItem>
+                                                        <MenuItem value="OTRO">Otro</MenuItem>
+                                                    </Select>
+                                                    {error && (
+                                                        <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
+                                                            {error.message}
+                                                        </Typography>
+                                                    )}
+                                                </FormControl>
+                                            )}
+                                        />
+                                    </Grid>
+
+                                    {/* Fecha Inicio */}
+                                    <Grid size={{ xs: 6 }}>
+                                        <Controller
+                                            name="fechaInicio"
+                                            control={control}
+                                            render={({ field, fieldState: { error } }) => (
+                                                <TextField
+                                                    {...field}
+                                                    fullWidth
+                                                    label="Fecha Inicio"
+                                                    type="date"
+                                                    required
+                                                    slotProps={{ inputLabel: { shrink: true } }}
+                                                    value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                                                    onChange={(e) => field.onChange(new Date(e.target.value).toISOString())}
+                                                    error={!!error}
+                                                    helperText={error?.message}
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
+
+                                    {/* Fecha Fin */}
+                                    <Grid size={{ xs: 6 }}>
+                                        <Controller
+                                            name="fechaFin"
+                                            control={control}
+                                            render={({ field, fieldState: { error } }) => (
+                                                <TextField
+                                                    {...field}
+                                                    fullWidth
+                                                    label="Fecha Fin"
+                                                    type="date"
+                                                    slotProps={{ inputLabel: { shrink: true } }}
+                                                    value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                                                    onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value).toISOString() : null)}
+                                                    error={!!error}
+                                                    helperText={error?.message || 'Período máximo: 2 años'}
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
+
+                                    {/* Descripción / Justificación */}
+                                    <Grid size={{ xs: 12 }}>
+                                        <Controller
+                                            name="descripcion"
+                                            control={control}
+                                            render={({ field, fieldState: { error } }) => (
+                                                <TextField
+                                                    {...field}
+                                                    fullWidth
+                                                    multiline
+                                                    rows={3}
+                                                    label="Justificación / Descripción"
+                                                    required
+                                                    error={!!error}
+                                                    helperText={error?.message || 'Explique detalladamente el motivo de la exención (mínimo 10 caracteres)'}
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
+
+                                    {/* Documento de Respaldo */}
+                                    <Grid size={{ xs: 12 }}>
+                                        <Controller
+                                            name="documentoRespaldo"
+                                            control={control}
+                                            render={({ field, fieldState: { error } }) => (
+                                                <TextField
+                                                    {...field}
+                                                    fullWidth
+                                                    label="Documento de Respaldo (opcional)"
+                                                    placeholder="Ruta o referencia al documento"
+                                                    error={!!error}
+                                                    helperText={error?.message || 'Ej: /documentos/beca_2024.pdf'}
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
                                 </Grid>
-                                <Grid size={{ xs: 6 }}>
-                                    <FormControl fullWidth>
-                                        <InputLabel>Tipo</InputLabel>
-                                        <Select
-                                            value={newRequest.tipoExencion}
-                                            label="Tipo"
-                                            onChange={e => setNewRequest({ ...newRequest, tipoExencion: e.target.value as any })}
-                                        >
-                                            <MenuItem value="TOTAL">Total (100%)</MenuItem>
-                                            <MenuItem value="PARCIAL">Parcial</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                                <Grid size={{ xs: 6 }}>
-                                    <TextField
-                                        fullWidth
-                                        label="Porcentaje"
-                                        type="number"
-                                        disabled={newRequest.tipoExencion === 'TOTAL'}
-                                        value={newRequest.tipoExencion === 'TOTAL' ? 100 : newRequest.porcentaje}
-                                        onChange={e => setNewRequest({ ...newRequest, porcentaje: Number(e.target.value) })}
-                                    />
-                                </Grid>
-                                <Grid size={{ xs: 12 }}>
-                                    <FormControl fullWidth>
-                                        <InputLabel>Motivo</InputLabel>
-                                        <Select
-                                            value={newRequest.motivoExencion}
-                                            label="Motivo"
-                                            onChange={e => setNewRequest({ ...newRequest, motivoExencion: e.target.value as any })}
-                                        >
-                                            <MenuItem value="SITUACION_ECONOMICA">Situación Económica</MenuItem>
-                                            <MenuItem value="BECA">Beca</MenuItem>
-                                            <MenuItem value="SOCIO_FUNDADOR">Socio Fundador</MenuItem>
-                                            <MenuItem value="MERITO_ACADEMICO">Mérito Académico</MenuItem>
-                                            <MenuItem value="OTRO">Otro</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                                <Grid size={{ xs: 6 }}>
-                                    <TextField
-                                        fullWidth
-                                        label="Fecha Inicio"
-                                        type="date"
-                                        InputLabelProps={{ shrink: true }}
-                                        value={newRequest.fechaInicio}
-                                        onChange={e => setNewRequest({ ...newRequest, fechaInicio: e.target.value })}
-                                    />
-                                </Grid>
-                                <Grid size={{ xs: 6 }}>
-                                    <TextField
-                                        fullWidth
-                                        label="Fecha Fin"
-                                        type="date"
-                                        InputLabelProps={{ shrink: true }}
-                                        value={newRequest.fechaFin}
-                                        onChange={e => setNewRequest({ ...newRequest, fechaFin: e.target.value })}
-                                    />
-                                </Grid>
-                                <Grid size={{ xs: 12 }}>
-                                    <TextField
-                                        fullWidth
-                                        multiline
-                                        rows={3}
-                                        label="Justificación"
-                                        value={newRequest.justificacion}
-                                        onChange={e => setNewRequest({ ...newRequest, justificacion: e.target.value })}
-                                    />
-                                </Grid>
-                            </Grid>
+                            </form>
                         )}
                     </Box>
                 )}
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>Cerrar</Button>
-                {isCreating && (
-                    <Button variant="contained" onClick={handleSolicitar} disabled={!newRequest.justificacion}>
+                <Button onClick={() => isCreating ? handleCancelCreating() : onClose()}>
+                    {isCreating ? 'Cancelar' : 'Cerrar'}
+                </Button>
+                {isCreating && !exencionActiva && (
+                    <Button variant="contained" onClick={handleSubmit(onFormSubmit)}>
                         Solicitar
                     </Button>
                 )}

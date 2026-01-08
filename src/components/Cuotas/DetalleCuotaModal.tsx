@@ -120,21 +120,21 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
                         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
                     ) : (
                         <Grid container spacing={3}>
-                            <Grid item xs={12} md={6}>
+                            <Grid size={{ xs: 12, md: 6 }}>
                                 {desgloseCuota.desglose['BASE'] && renderItemsTable(desgloseCuota.desglose['BASE'].items, 'Cuota Base')}
                                 {desgloseCuota.desglose['ACTIVIDAD'] && renderItemsTable(desgloseCuota.desglose['ACTIVIDAD'].items, 'Actividades')}
                             </Grid>
-                            <Grid item xs={12} md={6}>
+                            <Grid size={{ xs: 12, md: 6 }}>
                                 {desgloseCuota.desglose['DESCUENTO'] && renderItemsTable(desgloseCuota.desglose['DESCUENTO'].items, 'Descuentos y Beneficios')}
                                 {desgloseCuota.desglose['RECARGO'] && renderItemsTable(desgloseCuota.desglose['RECARGO'].items, 'Recargos')}
                                 {desgloseCuota.desglose['OTRO'] && renderItemsTable(desgloseCuota.desglose['OTRO'].items, 'Otros Conceptos')}
 
                                 <Paper sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText', mt: 2 }}>
                                     <Grid container alignItems="center">
-                                        <Grid item xs={6}>
+                                        <Grid size={{ xs: 6 }}>
                                             <Typography variant="h6">TOTAL A PAGAR</Typography>
                                         </Grid>
-                                        <Grid item xs={6} textAlign="right">
+                                        <Grid size={{ xs: 6 }} textAlign="right">
                                             <Typography variant="h4" fontWeight="bold">
                                                 ${desgloseCuota.totales.total.toFixed(2)}
                                             </Typography>
@@ -148,44 +148,44 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
                     // Vista V1 simplificada (sin desglose de ítems)
                     <Box sx={{ p: 3 }}>
                         <Grid container spacing={2}>
-                            <Grid item xs={12}>
+                            <Grid size={{ xs: 12 }}>
                                 <Typography variant="subtitle2" color="text.secondary">Información Básica</Typography>
                                 <Divider sx={{ my: 1 }} />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <Typography variant="body2" color="text.secondary">Socio:</Typography>
-                                <Typography variant="body1">{cuota.recibo.persona?.nombre} {cuota.recibo.persona?.apellido}</Typography>
+                                <Typography variant="body1">{cuota.recibo.receptor?.nombre} {cuota.recibo.receptor?.apellido}</Typography>
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <Typography variant="body2" color="text.secondary">Período:</Typography>
                                 <Typography variant="body1">{cuota.mes}/{cuota.anio}</Typography>
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <Typography variant="body2" color="text.secondary">Categoría:</Typography>
                                 <Typography variant="body1">{cuota.categoria}</Typography>
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <Typography variant="body2" color="text.secondary">Estado:</Typography>
                                 <Chip label={cuota.recibo.estado} color={cuota.recibo.estado === 'PAGADO' ? 'success' : 'warning'} size="small" />
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid size={{ xs: 12 }}>
                                 <Divider sx={{ my: 2 }} />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <Typography variant="body2" color="text.secondary">Monto Base:</Typography>
                                 <Typography variant="h6">${cuota.montoBase?.toFixed(2) || '0.00'}</Typography>
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <Typography variant="body2" color="text.secondary">Actividades:</Typography>
                                 <Typography variant="h6">${cuota.montoActividades?.toFixed(2) || '0.00'}</Typography>
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid size={{ xs: 12 }}>
                                 <Paper sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText', mt: 1 }}>
                                     <Grid container alignItems="center">
-                                        <Grid item xs={6}>
+                                        <Grid size={{ xs: 6 }}>
                                             <Typography variant="h6">TOTAL A PAGAR</Typography>
                                         </Grid>
-                                        <Grid item xs={6} textAlign="right">
+                                        <Grid size={{ xs: 6 }} textAlign="right">
                                             <Typography variant="h4" fontWeight="bold">
                                                 ${cuota.montoTotal?.toFixed(2) || '0.00'}
                                             </Typography>
