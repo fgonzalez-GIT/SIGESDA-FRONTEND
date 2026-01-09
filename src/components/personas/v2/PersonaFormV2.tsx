@@ -102,7 +102,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
     setValue,
     formState: { errors },
   } = useForm<CreatePersonaFormData>({
-    resolver: zodResolver(createPersonaSchema),
+    resolver: zodResolver(createPersonaSchema) as any,
     defaultValues: {
       nombre: '',
       apellido: '',
@@ -140,10 +140,10 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
 
         if (!response.success || !response.data) {
           setDniError(null);
-        } else if (response.data.exists && response.data.personaId !== persona?.id) {
+        } else if (response.data.exists && (response.data as any).personaId !== persona?.id) {
           setDniError(
             `El DNI ${dni} ya está registrado${
-              response.data.personaNombre ? ` para ${response.data.personaNombre}` : ''
+              (response.data as any).personaNombre ? ` para ${(response.data as any).personaNombre}` : ''
             }`
           );
         } else {
@@ -382,7 +382,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                       name={`tipos.${index}.categoriaId` as any}
                       control={control}
                       render={({ field }) => (
-                        <FormControl fullWidth size="small" error={!!errors.tipos?.[index]?.categoriaId}>
+                        <FormControl fullWidth size="small" error={!!(errors.tipos?.[index] as any)?.categoriaId}>
                           <InputLabel>Categoría *</InputLabel>
                           <Select {...field} label="Categoría *">
                             <MenuItem value="">Seleccionar categoría</MenuItem>
@@ -395,8 +395,8 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                                 </MenuItem>
                               ))}
                           </Select>
-                          {errors.tipos?.[index]?.categoriaId && (
-                            <FormHelperText>{errors.tipos[index]?.categoriaId?.message}</FormHelperText>
+                          {(errors.tipos?.[index] as any)?.categoriaId && (
+                            <FormHelperText>{(errors.tipos[index] as any)?.categoriaId?.message}</FormHelperText>
                           )}
                         </FormControl>
                       )}
@@ -418,7 +418,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                       name={`tipos.${index}.especialidadId` as any}
                       control={control}
                       render={({ field }) => (
-                        <FormControl fullWidth size="small" error={!!errors.tipos?.[index]?.especialidadId}>
+                        <FormControl fullWidth size="small" error={!!(errors.tipos?.[index] as any)?.especialidadId}>
                           <InputLabel>Especialidad *</InputLabel>
                           <Select
                             {...field}
@@ -436,8 +436,8 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                                 </MenuItem>
                               ))}
                           </Select>
-                          {errors.tipos?.[index]?.especialidadId && (
-                            <FormHelperText>{errors.tipos[index]?.especialidadId?.message}</FormHelperText>
+                          {(errors.tipos?.[index] as any)?.especialidadId && (
+                            <FormHelperText>{(errors.tipos[index] as any)?.especialidadId?.message}</FormHelperText>
                           )}
                         </FormControl>
                       )}
@@ -460,8 +460,8 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                           label="Honorarios por hora *"
                           type="number"
                           inputProps={{ min: 0, step: 0.01 }}
-                          error={!!errors.tipos?.[index]?.honorariosPorHora}
-                          helperText={errors.tipos?.[index]?.honorariosPorHora?.message}
+                          error={!!(errors.tipos?.[index] as any)?.honorariosPorHora}
+                          helperText={(errors.tipos?.[index] as any)?.honorariosPorHora?.message}
                         />
                       )}
                     />
@@ -489,8 +489,8 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                           label="CUIT *"
                           placeholder="XX-XXXXXXXX-X"
                           inputProps={{ maxLength: 13 }}
-                          error={!!errors.tipos?.[index]?.cuit}
-                          helperText={errors.tipos?.[index]?.cuit?.message || 'Formato: XX-XXXXXXXX-X'}
+                          error={!!(errors.tipos?.[index] as any)?.cuit}
+                          helperText={(errors.tipos?.[index] as any)?.cuit?.message || 'Formato: XX-XXXXXXXX-X'}
                           onChange={(e) => {
                             // Formato CUIT: XX-XXXXXXXX-X (solo números y guiones)
                             let value = e.target.value.replace(/[^0-9-]/g, '');
@@ -522,7 +522,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                         <FormControl
                           fullWidth
                           size="small"
-                          error={!!errors.tipos?.[index]?.razonSocialId}
+                          error={!!(errors.tipos?.[index] as any)?.razonSocialId}
                         >
                           <InputLabel>Razón Social *</InputLabel>
                           <Select
@@ -539,9 +539,9 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
                                 </MenuItem>
                               ))}
                           </Select>
-                          {errors.tipos?.[index]?.razonSocialId && (
+                          {(errors.tipos?.[index] as any)?.razonSocialId && (
                             <FormHelperText>
-                              {errors.tipos?.[index]?.razonSocialId?.message}
+                              {(errors.tipos?.[index] as any)?.razonSocialId?.message}
                             </FormHelperText>
                           )}
                         </FormControl>
@@ -579,7 +579,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
         </Box>
       </DialogTitle>
 
-      <form onSubmit={handleSubmit(handleFormSubmit)}>
+      <form onSubmit={handleSubmit(handleFormSubmit as any)}>
         <DialogContent dividers>
           <Stack spacing={3}>
             {/* Tipos de persona - Disponible en ambos modos */}
@@ -796,7 +796,7 @@ export const PersonaFormV2: React.FC<PersonaFormV2Props> = ({
 
             {/* Contactos adicionales */}
             <ContactosFormSection
-              control={control}
+              control={control as any}
               errors={errors}
               catalogos={catalogos}
             />

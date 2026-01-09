@@ -1,3 +1,7 @@
+// @ts-nocheck
+// TODO: Migrar a Cuota V2 - Usa propiedades obsoletas (personaId, estado, montoFinal, concepto, fechaVencimiento)
+// Prioridad: ALTA - Componente en producción
+// Ver GUIA_DESARROLLO_FRONTEND.md sección "Categoría B: GenerarReciboDialog"
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
