@@ -264,13 +264,15 @@ const recibosSlice = createSlice({
           vencidos: action.payload.filter(r => r.estado === 'vencido').length,
           cancelados: action.payload.filter(r => r.estado === 'cancelado').length,
           parciales: action.payload.filter(r => r.estado === 'parcial').length,
-          facturacionMensual: action.payload.reduce((acc, r) => {
-            const mes = r.fechaEmision.substring(0, 7);
-            acc[mes] = (acc[mes] || 0) + r.total;
-            return acc;
-          }, {} as { [key: string]: number }),
+          facturacionMensual: action.payload
+            .filter(r => r.fechaEmision && typeof r.fechaEmision === 'string')
+            .reduce((acc, r) => {
+              const mes = r.fechaEmision.substring(0, 7);
+              acc[mes] = (acc[mes] || 0) + r.total;
+              return acc;
+            }, {} as { [key: string]: number }),
           cobranzaMensual: action.payload
-            .filter(r => r.estado === 'pagado' && r.fechaPago)
+            .filter(r => r.estado === 'pagado' && r.fechaPago && typeof r.fechaPago === 'string')
             .reduce((acc, r) => {
               const mes = r.fechaPago!.substring(0, 7);
               acc[mes] = (acc[mes] || 0) + r.montoPagado;

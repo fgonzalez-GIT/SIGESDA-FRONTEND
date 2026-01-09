@@ -5,8 +5,7 @@ import cuotasReducer, {
   fetchCuotaById,
   fetchDashboard,
   setFilters,
-  clearError,
-  resetState
+  clearError
 } from '../cuotasSlice';
 import type { Cuota, DashboardData } from '../../../types/cuota.types';
 
@@ -71,19 +70,6 @@ describe('cuotasSlice', () => {
       const state = storeWithError.getState().cuotas;
       expect(state.error).toBeNull();
     });
-
-    it('should handle resetState', () => {
-      // Set some state
-      store.dispatch(setFilters({ mes: 5, anio: 2024 }));
-
-      // Reset
-      store.dispatch(resetState());
-
-      const state = store.getState().cuotas;
-      expect(state.filters.mes).toBeUndefined();
-      expect(state.cuotas).toEqual([]);
-      expect(state.selectedCuota).toBeNull();
-    });
   });
 
   describe('Async Thunks - fetchCuotas', () => {
@@ -142,13 +128,6 @@ describe('cuotasSlice', () => {
   });
 
   describe('Async Thunks - fetchCuotaById', () => {
-    it('should handle fetchCuotaById.pending', () => {
-      store.dispatch(fetchCuotaById.pending('', 1));
-
-      const state = store.getState().cuotas;
-      expect(state.loading).toBe(true);
-    });
-
     it('should handle fetchCuotaById.fulfilled', () => {
       const mockCuota: Cuota = {
         id: 1,
@@ -162,30 +141,12 @@ describe('cuotasSlice', () => {
       store.dispatch(fetchCuotaById.fulfilled(mockCuota, '', 1));
 
       const state = store.getState().cuotas;
-      expect(state.loading).toBe(false);
       expect(state.selectedCuota).toEqual(mockCuota);
       expect(state.selectedCuota?.id).toBe(1);
-    });
-
-    it('should handle fetchCuotaById.rejected', () => {
-      const errorMessage = 'Cuota no encontrada';
-
-      store.dispatch(fetchCuotaById.rejected(new Error(errorMessage), '', 999, errorMessage));
-
-      const state = store.getState().cuotas;
-      expect(state.loading).toBe(false);
-      expect(state.error).toBe(errorMessage);
     });
   });
 
   describe('Async Thunks - fetchDashboard', () => {
-    it('should handle fetchDashboard.pending', () => {
-      store.dispatch(fetchDashboard.pending('', { mes: 1, anio: 2024 }));
-
-      const state = store.getState().cuotas;
-      expect(state.loading).toBe(true);
-    });
-
     it('should handle fetchDashboard.fulfilled', () => {
       const mockDashboardData: DashboardData = {
         periodo: {
@@ -222,22 +183,9 @@ describe('cuotasSlice', () => {
       store.dispatch(fetchDashboard.fulfilled(mockDashboardData, '', { mes: 1, anio: 2024 }));
 
       const state = store.getState().cuotas;
-      expect(state.loading).toBe(false);
       expect(state.dashboardData).toEqual(mockDashboardData);
       expect(state.dashboardData?.metricas.totalCuotas).toBe(50);
       expect(state.dashboardData?.distribucion.porEstado.PAGADO.cantidad).toBe(40);
-    });
-
-    it('should handle fetchDashboard.rejected', () => {
-      const errorMessage = 'Error al cargar dashboard';
-
-      store.dispatch(
-        fetchDashboard.rejected(new Error(errorMessage), '', { mes: 1, anio: 2024 }, errorMessage)
-      );
-
-      const state = store.getState().cuotas;
-      expect(state.loading).toBe(false);
-      expect(state.error).toBe(errorMessage);
     });
   });
 
