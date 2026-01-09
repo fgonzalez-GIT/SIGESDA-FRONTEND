@@ -33,7 +33,7 @@ export const createAjusteSchema = z.object({
   motivo: z.string().max(500, 'Motivo no puede exceder 500 caracteres').optional().nullable(),
   fechaInicio: z.string().datetime('Fecha de inicio inválida'),
   fechaFin: z.string().datetime('Fecha de fin inválida').optional().nullable(),
-  activo: z.boolean().default(true),
+  activo: z.boolean(),
 })
 .refine(data => {
   // Validar que si aplicaA es ITEMS_ESPECIFICOS, itemsEspecificos no puede estar vacío

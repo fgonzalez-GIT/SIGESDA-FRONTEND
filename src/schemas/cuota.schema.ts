@@ -12,17 +12,16 @@ import { z } from 'zod';
 
 /**
  * Schema para crear una cuota individual
+ * Basado en CrearCuotaRequest de cuota.types.ts
  */
 export const createCuotaSchema = z.object({
-  receptorId: z.number().int().positive('Receptor requerido'),
-  reciboId: z.number().int().positive().optional().nullable(),
+  reciboId: z.number().int().positive('Recibo requerido'),
+  categoriaId: z.number().int().positive('Categoría requerida'),
   mes: z.number().int().min(1, 'Mes debe estar entre 1 y 12').max(12, 'Mes debe estar entre 1 y 12'),
   anio: z.number().int().min(2020, 'Año mínimo: 2020').max(2100, 'Año máximo: 2100'),
-  montoBase: z.number().min(0, 'Monto base debe ser mayor o igual a 0').optional().nullable(),
-  montoActividades: z.number().min(0, 'Monto actividades debe ser mayor o igual a 0').optional().nullable(),
-  montoTotal: z.number().min(0, 'Monto total debe ser mayor a 0'),
-  observaciones: z.string().max(500, 'Observaciones no puede exceder 500 caracteres').optional().nullable(),
-  categoriaId: z.number().int().positive().optional().nullable(),
+  montoBase: z.number().min(0, 'Monto base debe ser mayor o igual a 0').optional().nullable(), // V2: deprecated
+  montoActividades: z.number().min(0, 'Monto actividades debe ser mayor o igual a 0').optional().nullable(), // V2: deprecated
+  montoTotal: z.number().min(0.01, 'Monto total debe ser mayor a 0'),
 });
 
 /**
@@ -71,12 +70,12 @@ export const cuotaPeriodoSchema = z.object({
 
 /**
  * Schema para recalcular una cuota existente
+ * Sincronizado con backend: RecalcularCuotaDto
  */
 export const recalcularCuotaSchema = z.object({
+  aplicarAjustes: z.boolean().default(true),
+  aplicarExenciones: z.boolean().default(true),
   aplicarDescuentos: z.boolean().default(true),
-  mantenerItemsManuales: z.boolean().default(true),
-  recalcularAjustes: z.boolean().default(false),
-  observaciones: z.string().max(500).optional().nullable(),
 });
 
 /**

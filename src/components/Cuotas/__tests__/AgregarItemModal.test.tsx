@@ -54,7 +54,7 @@ describe('AgregarItemModal', () => {
         open={true}
         onClose={mockOnClose}
         cuotaId={mockCuotaId}
-        onItemAgregado={mockOnItemAgregado}
+        onSuccess={mockOnItemAgregado}
       />
     );
 
@@ -69,7 +69,7 @@ describe('AgregarItemModal', () => {
         open={false}
         onClose={mockOnClose}
         cuotaId={mockCuotaId}
-        onItemAgregado={mockOnItemAgregado}
+        onSuccess={mockOnItemAgregado}
       />
     );
 
@@ -82,7 +82,7 @@ describe('AgregarItemModal', () => {
         open={true}
         onClose={mockOnClose}
         cuotaId={mockCuotaId}
-        onItemAgregado={mockOnItemAgregado}
+        onSuccess={mockOnItemAgregado}
       />
     );
 
@@ -99,7 +99,7 @@ describe('AgregarItemModal', () => {
         open={true}
         onClose={mockOnClose}
         cuotaId={mockCuotaId}
-        onItemAgregado={mockOnItemAgregado}
+        onSuccess={mockOnItemAgregado}
       />
     );
 
@@ -123,7 +123,7 @@ describe('AgregarItemModal', () => {
         open={true}
         onClose={mockOnClose}
         cuotaId={mockCuotaId}
-        onItemAgregado={mockOnItemAgregado}
+        onSuccess={mockOnItemAgregado}
       />
     );
 
@@ -143,7 +143,7 @@ describe('AgregarItemModal', () => {
         open={true}
         onClose={mockOnClose}
         cuotaId={mockCuotaId}
-        onItemAgregado={mockOnItemAgregado}
+        onSuccess={mockOnItemAgregado}
       />
     );
 
@@ -171,7 +171,7 @@ describe('AgregarItemModal', () => {
         open={true}
         onClose={mockOnClose}
         cuotaId={mockCuotaId}
-        onItemAgregado={mockOnItemAgregado}
+        onSuccess={mockOnItemAgregado}
       />
     );
 
@@ -194,7 +194,7 @@ describe('AgregarItemModal', () => {
         open={true}
         onClose={mockOnClose}
         cuotaId={mockCuotaId}
-        onItemAgregado={mockOnItemAgregado}
+        onSuccess={mockOnItemAgregado}
       />
     );
 

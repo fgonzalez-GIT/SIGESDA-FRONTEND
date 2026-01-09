@@ -134,8 +134,12 @@ describe('cuotasSlice', () => {
         mes: 1,
         anio: 2024,
         montoTotal: 5000,
+        montoBase: 4000,
+        montoActividades: 1000,
         reciboId: 1,
-        categoriaId: 1
+        categoriaId: 1,
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
       };
 
       store.dispatch(fetchCuotaById.fulfilled(mockCuota, '', 1));
@@ -166,12 +170,13 @@ describe('cuotasSlice', () => {
           porEstado: {
             PAGADO: { cantidad: 40, monto: 200000 },
             PENDIENTE: { cantidad: 8, monto: 40000 },
-            VENCIDO: { cantidad: 2, monto: 10000 }
+            VENCIDO: { cantidad: 2, monto: 10000 },
+            ANULADO: { cantidad: 0, monto: 0 }
           },
           porCategoria: {
             ACTIVO: { cantidad: 30, monto: 150000 },
             ESTUDIANTE: { cantidad: 15, monto: 75000 },
-            GENERAL: { cantidad: 5, monto: 25000 }
+            JUBILADO: { cantidad: 5, monto: 25000 }
           }
         },
         tendencias: {

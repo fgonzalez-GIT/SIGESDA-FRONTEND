@@ -62,7 +62,7 @@ const ConflictosAlert: React.FC<ConflictosAlertProps> = ({ conflictos, onClose }
               <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
                 <Chip
                   icon={<RoomIcon />}
-                  label={reserva.aulas?.nombre || `Aula #${reserva.aulaId}`}
+                  label={reserva.aula?.nombre || `Aula #${reserva.aulaId}`}
                   size="small"
                   color="primary"
                 />

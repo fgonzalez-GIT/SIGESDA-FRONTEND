@@ -347,7 +347,7 @@ const ReservasTable: React.FC<ReservasTableProps> = ({
                     }}
                   >
                     <TableCell>{reserva.id}</TableCell>
-                    <TableCell>{reserva.aulas?.nombre || `Aula #${reserva.aulaId}`}</TableCell>
+                    <TableCell>{reserva.aula?.nombre || `Aula #${reserva.aulaId}`}</TableCell>
                     <TableCell>
                       {reserva.personas
                         ? `${reserva.personas.nombre} ${reserva.personas.apellido}`

@@ -95,15 +95,25 @@ export interface Recibo {
 export interface Cuota {
     id: number;
     reciboId: number;
-    categoria: CategoriaSocio;
     mes: number;
     anio: number;
-    montoBase: number;
-    montoActividades: number;
+    montoBase: number | null; // V2: deprecated (usar items)
+    montoActividades: number | null; // V2: deprecated (usar items)
     montoTotal: number;
-    createdAt: string; // ISO Date
-    updatedAt: string; // ISO Date
-    recibo: Recibo;
+    categoriaId: number;
+    createdAt: string; // ISO 8601
+    updatedAt: string; // ISO 8601
+
+    // Relaciones opcionales (populated by backend when requested)
+    recibo?: Recibo;
+    items?: ItemCuota[];
+    categoria?: {
+        id: number;
+        codigo: CategoriaSocio;
+        nombre: string;
+        descripcion?: string;
+        activo: boolean;
+    };
 }
 
 export interface AjusteCuotaSocio {
@@ -172,11 +182,11 @@ export interface DashboardData {
 
 export interface CrearCuotaRequest {
     reciboId: number;
-    categoria: CategoriaSocio;
+    categoriaId: number;
     mes: number;
     anio: number;
-    montoBase: number;
-    montoActividades: number;
+    montoBase?: number | null; // V2: deprecated (calculado desde items)
+    montoActividades?: number | null; // V2: deprecated (calculado desde items)
     montoTotal: number;
 }
 
@@ -238,7 +248,7 @@ export interface CrearAjusteRequest {
     tipoAjuste: TipoAjusteCuota;
     valor: number;
     concepto: string;
-    motivo: string;
+    motivo?: string | null;
     fechaInicio: string;
     fechaFin?: string | null;
     aplicaA: AplicaA;

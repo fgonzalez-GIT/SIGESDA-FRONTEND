@@ -50,7 +50,7 @@ export interface Reserva {
   updatedAt?: string;
 
   // Relaciones (cuando se incluyen)
-  aulas?: Aula;
+  aula?: Aula;
   actividades?: {
     id: number;
     nombre: string;

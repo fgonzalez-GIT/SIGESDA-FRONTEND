@@ -36,7 +36,7 @@ export const createExencionSchema = z.object({
   fechaInicio: z.string().datetime('Fecha de inicio inválida'),
   fechaFin: z.string().datetime('Fecha de fin inválida').optional().nullable(),
   estado: z.enum(['PENDIENTE_APROBACION', 'APROBADA', 'RECHAZADA', 'REVOCADA', 'VIGENTE', 'EXPIRADA']).default('PENDIENTE_APROBACION'),
-  activa: z.boolean().default(true),
+  activa: z.boolean(),
 })
 .refine(data => {
   // Validar que si es PARCIAL, debe tener porcentaje

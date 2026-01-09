@@ -220,7 +220,7 @@ export const AulaEquipamientoManager: React.FC<AulaEquipamientoManagerProps> = (
               id="equipamiento-select"
               label="Equipamiento"
               value={selectedEquipamientoId}
-              onChange={(e) => setSelectedEquipamientoId(e.target.value === '' ? '' : Number(e.target.value))}
+              onChange={(e) => setSelectedEquipamientoId(e.target.value === '' ? '' as '' : Number(e.target.value))}
             >
               <MenuItem value="">
                 <em>Seleccione un equipamiento</em>

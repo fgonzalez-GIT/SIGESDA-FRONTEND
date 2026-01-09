@@ -21,6 +21,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { itemsCuotaService } from '../../services/itemsCuotaService';
 import { cuotasService } from '../../services/cuotasService';
+import { TipoItemCuota } from '../../types/cuota.types';
 
 // Schema de validación para agregar ítem manual
 const agregarItemSchema = z.object({
@@ -32,14 +33,6 @@ const agregarItemSchema = z.object({
 });
 
 type AgregarItemFormData = z.infer<typeof agregarItemSchema>;
-
-interface TipoItemCuota {
-    id: number;
-    codigo: string;
-    nombre: string;
-    descripcion?: string;
-    categoria: string;
-}
 
 interface AgregarItemModalProps {
     open: boolean;
@@ -154,7 +147,6 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({
                                                 {tiposItems.map((tipo) => (
                                                     <MenuItem key={tipo.codigo} value={tipo.codigo}>
                                                         {tipo.nombre}
-                                                        {tipo.descripcion && ` - ${tipo.descripcion}`}
                                                     </MenuItem>
                                                 ))}
                                             </Select>

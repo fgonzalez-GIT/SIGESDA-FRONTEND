@@ -21,6 +21,7 @@ export interface Equipamiento {
   estadoEquipamientoId?: number | null; // NUEVO: ID del estado del equipamiento (nullable)
   estadoEquipamiento?: EstadoEquipamiento; // NUEVO: Relación con estado del equipamiento
   cantidad: number; // NUEVO: Cantidad/stock total del equipamiento (default: 1)
+  orden?: number; // Orden de visualización
   activo: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -291,7 +292,9 @@ export const getActiveEquipamientos = (equipamientos: Equipamiento[]): Equipamie
  */
 export const sortEquipamientos = (equipamientos: Equipamiento[]): Equipamiento[] => {
   return [...equipamientos].sort((a, b) => {
-    if (a.orden !== b.orden) return a.orden - b.orden;
+    const ordenA = a.orden ?? 999;
+    const ordenB = b.orden ?? 999;
+    if (ordenA !== ordenB) return ordenA - ordenB;
     return a.nombre.localeCompare(b.nombre);
   });
 };

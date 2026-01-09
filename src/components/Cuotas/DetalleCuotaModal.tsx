@@ -129,7 +129,7 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
             <DialogTitle>
                 Detalle de Cuota #{cuota.recibo.numero}
                 <Typography variant="subtitle2" color="text.secondary">
-                    {cuota.anio}-{cuota.mes.toString().padStart(2, '0')} | {cuota.categoria}
+                    {cuota.anio}-{cuota.mes.toString().padStart(2, '0')} | {cuota.categoria?.nombre || 'Sin categoría'}
                 </Typography>
             </DialogTitle>
             <DialogContent dividers>
@@ -181,7 +181,7 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
                             </Grid>
                             <Grid size={{ xs: 6 }}>
                                 <Typography variant="body2" color="text.secondary">Categoría:</Typography>
-                                <Typography variant="body1">{cuota.categoria}</Typography>
+                                <Typography variant="body1">{cuota.categoria?.nombre || 'Sin categoría'}</Typography>
                             </Grid>
                             <Grid size={{ xs: 6 }}>
                                 <Typography variant="body2" color="text.secondary">Estado:</Typography>
@@ -225,7 +225,6 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
                             variant="outlined"
                             startIcon={<AddIcon />}
                             onClick={handleAgregarItem}
-                            disabled={cuota.recibo.estado === 'PAGADO'}
                         >
                             Agregar Ítem Manual
                         </Button>

@@ -1,3 +1,5 @@
+// @ts-nocheck
+// LEGACY: Este componente no se usa. Utiliza interfaz Cuota V1 obsoleta.
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,

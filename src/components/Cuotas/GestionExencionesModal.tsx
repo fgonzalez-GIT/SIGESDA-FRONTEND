@@ -123,7 +123,7 @@ const GestionExencionesModal: React.FC<GestionExencionesModalProps> = ({ open, o
         if (window.confirm('¿Revocar exención vigente?')) {
             try {
                 await exencionesService.revocarExencion(exencionActiva.id, {
-                    revocadoPor: 'Current User', // Should come from auth context
+                    usuario: 'Current User', // Should come from auth context
                     motivoRevocacion: 'Solicitado por administrador'
                 });
                 checkStatus();

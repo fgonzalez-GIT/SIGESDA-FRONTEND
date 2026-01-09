@@ -113,16 +113,18 @@ describe('cuotasService', () => {
         categorias: ['ACTIVO', 'ESTUDIANTE'],
         aplicarDescuentos: true,
         aplicarMotorReglas: true,
-        soloNuevas: true
+        soloNuevas: true,
+        incluirInactivos: false
       };
 
       const mockResponse = {
-        generadas: 10,
+        generated: 10,
+        errors: [],
         cuotas: [],
         resumenDescuentos: {
           totalSociosConDescuento: 5,
-          totalDescuentoAplicado: 12000,
-          descuentosPorTipo: {
+          montoTotalDescuentos: 12000,
+          reglasAplicadas: {
             FAMILIAR: 3,
             CATEGORIA: 2
           }
@@ -136,7 +138,7 @@ describe('cuotasService', () => {
       const result = await cuotasService.generarCuotasV2(requestData);
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith('/generar-v2', requestData);
-      expect(result.generadas).toBe(10);
+      expect(result.generated).toBe(10);
       expect(result.resumenDescuentos.totalSociosConDescuento).toBe(5);
     });
 
@@ -147,7 +149,8 @@ describe('cuotasService', () => {
         categorias: ['ACTIVO'],
         aplicarDescuentos: true,
         aplicarMotorReglas: true,
-        soloNuevas: true
+        soloNuevas: true,
+        incluirInactivos: false
       };
 
       mockAxiosInstance.post.mockRejectedValue(
@@ -163,8 +166,9 @@ describe('cuotasService', () => {
   describe('recalcularCuota', () => {
     it('should recalculate a cuota', async () => {
       const requestData = {
-        aplicarDescuentos: true,
-        mantenerItemsManuales: true
+        aplicarAjustes: true,
+        aplicarExenciones: true,
+        aplicarDescuentos: true
       };
 
       const mockResponse = {
@@ -233,7 +237,7 @@ describe('cuotasService', () => {
         data: { success: true, data: mockDesglose }
       });
 
-      const result = await cuotasService.getDesglose(1);
+      const result = await cuotasService.getDesgloseItems(1);
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/1/items/desglose');
       expect(result.totales.total).toBe(4250);

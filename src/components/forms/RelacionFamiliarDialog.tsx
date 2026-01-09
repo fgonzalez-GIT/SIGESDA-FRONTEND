@@ -522,7 +522,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                 </Typography>
 
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={4}>
+                  <Grid size={{ xs: 12, md: 4 }}>
                     <FormControlLabel
                       control={
                         <Checkbox
@@ -547,7 +547,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                     />
                   </Grid>
 
-                  <Grid item xs={12} md={4}>
+                  <Grid size={{ xs: 12, md: 4 }}>
                     <FormControlLabel
                       control={
                         <Checkbox
@@ -572,7 +572,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                     />
                   </Grid>
 
-                  <Grid item xs={12} md={4}>
+                  <Grid size={{ xs: 12, md: 4 }}>
                     <FormControlLabel
                       control={
                         <Checkbox
@@ -651,7 +651,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                 </Typography>
 
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <Box sx={{ p: 2, border: 1, borderColor: 'primary.main', borderRadius: 1 }}>
                       <Typography variant="subtitle1" fontWeight="bold" color="primary">
                         Persona Principal
@@ -665,7 +665,7 @@ export const RelacionFamiliarDialog: React.FC<RelacionFamiliarDialogProps> = ({
                     </Box>
                   </Grid>
 
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <Box sx={{ p: 2, border: 1, borderColor: 'secondary.main', borderRadius: 1 }}>
                       <Typography variant="subtitle1" fontWeight="bold" color="secondary">
                         Familiar

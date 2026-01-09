@@ -32,7 +32,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
 import { Delete, SelectAll, ClearAll, Person } from '@mui/icons-material';
 import { useAppSelector } from '../../hooks/redux';
-import { GenerarCuotasRequest } from '../../store/slices/cuotasSlice';
+import { GenerarCuotasRequest } from '../../types/cuota.types';
 
 interface GenerarCuotasMasivasDialogProps {
   open: boolean;
