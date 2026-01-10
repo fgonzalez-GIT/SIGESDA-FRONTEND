@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from '../helpers/auth';
 
 test.describe('Generar Cuotas V2', () => {
   test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
     await page.goto('/cuotas');
     await page.waitForLoadState('networkidle');
   });
