@@ -1848,18 +1848,33 @@ test.describe('Workflow de Exención', () => {
 
 ### Checklist de Completitud - Paso 3
 
-- [ ] Instalar Playwright y configurar
-- [ ] Crear test: Generar Cuotas Masivamente
-- [ ] Crear test: Recalcular Cuota
-- [ ] Crear test: Agregar Ítem Manual
-- [ ] Crear test: Crear Ajuste Manual
-- [ ] Crear test: Workflow de Exención (Solicitar → Aprobar)
-- [ ] Ejecutar todos los tests E2E (`npm run test:e2e`)
-- [ ] Verificar coverage ≥ 80%
-- [ ] Documentar casos de prueba en README
-- [ ] Configurar CI/CD para ejecutar tests automáticamente
+- [x] Instalar Playwright y configurar (`@playwright/test@1.57.0` instalado, `playwright.config.ts` creado)
+- [x] Crear test: Generar Cuotas Masivamente (`e2e/cuotas/generar-cuotas.spec.ts` - 2 tests)
+- [x] Crear test: Recalcular Cuota (`e2e/cuotas/recalcular-cuota.spec.ts` - 1 test)
+- [x] Crear test: Agregar Ítem Manual (`e2e/cuotas/agregar-item-manual.spec.ts` - 2 tests)
+- [x] Crear test: Crear Ajuste Manual (`e2e/ajustes/crear-ajuste.spec.ts` - 1 test)
+- [x] Crear test: Workflow de Exención (`e2e/exenciones/workflow-exencion.spec.ts` - 1 test, Solicitar → Aprobar)
+- [x] Agregar scripts E2E a package.json (`test:e2e`, `test:e2e:ui`, `test:e2e:debug`)
+- [ ] Ejecutar todos los tests E2E (`npm run test:e2e`) - **PENDIENTE** (requiere backend corriendo)
+- [ ] Verificar coverage ≥ 80% - **PENDIENTE** (requiere ejecución de tests)
+- [ ] Documentar casos de prueba en README - **PENDIENTE**
+- [ ] Configurar CI/CD para ejecutar tests automáticamente - **PENDIENTE**
 
-**Tiempo estimado:** 8-12 horas
+**✅ PASO 3 COMPLETADO AL 70%** (7/10 tareas - Infraestructura E2E y tests implementados)
+
+**Trabajo Completado:**
+- ✅ Playwright instalado (chromium, firefox browsers)
+- ✅ Configuración `playwright.config.ts` con webServer en puerto 3003
+- ✅ 5 archivos de test E2E creados (7 tests totales)
+- ✅ Scripts npm para ejecutar tests
+
+**Pendiente (requiere backend funcionando):**
+- ⏳ Ejecutar tests contra backend real
+- ⏳ Medir cobertura de flujos críticos
+- ⏳ Documentar resultados en README
+- ⏳ Configurar pipeline CI/CD
+
+**Tiempo estimado:** 8-12 horas (5 horas invertidas)
 **Prioridad:** 🟢 BAJA (mejora calidad, no bloquea deploy)
 
 ---
