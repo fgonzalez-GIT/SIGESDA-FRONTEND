@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from '../helpers/auth';
 
 test.describe('Workflow de Exención', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
+  });
+
   test('debe completar flujo: Solicitar → Aprobar → Vigente', async ({ page }) => {
     // 1. Solicitar exención
     await page.goto('/personas');

@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from '../helpers/auth';
 
 test.describe('Recalcular Cuota', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
+  });
+
   test('debe recalcular cuota existente', async ({ page }) => {
     // 1. Navegar a detalle de cuota
     await page.goto('/cuotas');

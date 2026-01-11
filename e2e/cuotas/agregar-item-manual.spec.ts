@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from '../helpers/auth';
 
 test.describe('Agregar Ítem Manual', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
+  });
+
   test('debe agregar ítem manual a cuota', async ({ page }) => {
     // 1. Abrir detalle de cuota
     await page.goto('/cuotas');

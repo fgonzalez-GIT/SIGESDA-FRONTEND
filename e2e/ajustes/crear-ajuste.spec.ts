@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from '../helpers/auth';
 
 test.describe('Crear Ajuste Manual', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page);
+  });
+
   test('debe crear ajuste de descuento por porcentaje', async ({ page }) => {
     // 1. Navegar a persona
     await page.goto('/personas');
