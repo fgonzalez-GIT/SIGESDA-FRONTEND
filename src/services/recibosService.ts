@@ -18,29 +18,87 @@ recibosAPI.interceptors.request.use((config) => {
   return config;
 });
 
+/**
+ * Transforma los datos del backend al formato esperado por el frontend
+ */
+const transformReciboFromBackend = (backendRecibo: any): Recibo => {
+  // Calcular monto pagado desde mediosPago
+  const montoPagado = backendRecibo.mediosPago?.reduce(
+    (sum: number, medio: any) => sum + parseFloat(medio.importe || '0'),
+    0
+  ) || 0;
+
+  // Obtener el tipo de persona (primer tipo activo o primer tipo disponible)
+  const tipoPersona = backendRecibo.receptor?.tipos?.find((t: any) => t.activo)?.tipoPersona?.codigo ||
+                      backendRecibo.receptor?.tipos?.[0]?.tipoPersona?.codigo ||
+                      'socio';
+
+  // Normalizar estado a minúsculas para coincidir con el tipo del frontend
+  const estadoNormalizado = backendRecibo.estado?.toLowerCase() || 'pendiente';
+
+  // Transformar concepto (string) a conceptos (array)
+  // Si hay un cuota.id, lo usamos como cuotaId
+  const conceptos = backendRecibo.concepto ? [{
+    id: backendRecibo.cuota?.id || backendRecibo.id,
+    concepto: backendRecibo.concepto,
+    cantidad: 1,
+    precio: parseFloat(backendRecibo.importe || '0'),
+    subtotal: parseFloat(backendRecibo.importe || '0'),
+    cuotaId: backendRecibo.cuota?.id || undefined,
+  }] : [];
+
+  return {
+    id: backendRecibo.id,
+    numero: backendRecibo.numero,
+    fechaEmision: backendRecibo.fecha || backendRecibo.createdAt,
+    fechaVencimiento: backendRecibo.fechaVencimiento,
+    personaId: backendRecibo.receptorId || backendRecibo.receptor?.id,
+    personaNombre: backendRecibo.receptor?.nombre || '',
+    personaApellido: backendRecibo.receptor?.apellido || '',
+    personaTipo: tipoPersona.toLowerCase() as 'socio' | 'docente' | 'estudiante',
+    personaEmail: backendRecibo.receptor?.email,
+    personaTelefono: backendRecibo.receptor?.telefono,
+    conceptos,
+    subtotal: parseFloat(backendRecibo.importe || '0'),
+    descuentos: 0, // El backend no devuelve este campo separado
+    recargos: 0, // El backend no devuelve este campo separado
+    total: parseFloat(backendRecibo.importe || '0'),
+    estado: estadoNormalizado as 'pendiente' | 'pagado' | 'vencido' | 'cancelado' | 'parcial',
+    metodoPago: backendRecibo.mediosPago?.[0]?.tipo?.toLowerCase() as any,
+    fechaPago: backendRecibo.mediosPago?.[0]?.fecha,
+    montoPagado,
+    observaciones: backendRecibo.observaciones,
+    cuotaIds: backendRecibo.cuota?.id ? [backendRecibo.cuota.id] : [],
+    enviado: false, // El backend no devuelve este campo
+    fechaEnvio: undefined,
+    archivo: undefined,
+  };
+};
+
 export const recibosService = {
   // Obtener todos los recibos con filtros opcionales
   getRecibos: async (filters: RecibosFilters = {}): Promise<Recibo[]> => {
     const response = await recibosAPI.get('/', { params: filters });
-    return response.data.data || [];
+    const backendRecibos = response.data.data || [];
+    return backendRecibos.map(transformReciboFromBackend);
   },
 
   // Obtener un recibo por ID
   getReciboById: async (id: number): Promise<Recibo> => {
     const response = await recibosAPI.get(`/${id}`);
-    return response.data.data;
+    return transformReciboFromBackend(response.data.data);
   },
 
   // Crear un nuevo recibo
   createRecibo: async (recibo: Omit<Recibo, 'id' | 'numero' | 'fechaEmision'>): Promise<Recibo> => {
     const response = await recibosAPI.post('/', recibo);
-    return response.data.data;
+    return transformReciboFromBackend(response.data.data);
   },
 
   // Actualizar un recibo existente
   updateRecibo: async (id: number, recibo: Partial<Recibo>): Promise<Recibo> => {
     const response = await recibosAPI.put(`/${id}`, recibo);
-    return response.data.data;
+    return transformReciboFromBackend(response.data.data);
   },
 
   // Eliminar un recibo
@@ -51,13 +109,13 @@ export const recibosService = {
   // Generar recibo desde cuotas
   generarRecibo: async (request: GenerarReciboRequest): Promise<Recibo> => {
     const response = await recibosAPI.post('/generar', request);
-    return response.data.data;
+    return transformReciboFromBackend(response.data.data);
   },
 
   // Pagar un recibo
   pagarRecibo: async (request: PagarReciboRequest): Promise<Recibo> => {
     const response = await recibosAPI.post(`/${request.reciboId}/pagar`, request);
-    return response.data.data;
+    return transformReciboFromBackend(response.data.data);
   },
 
   // Generar PDF del recibo
@@ -98,13 +156,13 @@ export const recibosService = {
   // Anular recibo
   anularRecibo: async (reciboId: number, motivo: string): Promise<Recibo> => {
     const response = await recibosAPI.post(`/${reciboId}/anular`, { motivo });
-    return response.data.data;
+    return transformReciboFromBackend(response.data.data);
   },
 
   // Duplicar recibo
   duplicarRecibo: async (reciboId: number, fechaVencimiento?: string): Promise<Recibo> => {
     const response = await recibosAPI.post(`/${reciboId}/duplicar`, { fechaVencimiento });
-    return response.data.data;
+    return transformReciboFromBackend(response.data.data);
   },
 
   // Obtener estadísticas de recibos
@@ -120,13 +178,15 @@ export const recibosService = {
   // Obtener recibos vencidos
   getRecibosVencidos: async (): Promise<Recibo[]> => {
     const response = await recibosAPI.get('/vencidos/listado');
-    return response.data.data || [];
+    const backendRecibos = response.data.data || [];
+    return backendRecibos.map(transformReciboFromBackend);
   },
 
   // Obtener recibos por vencer (próximos N días)
   getRecibosPorVencer: async (dias: number = 7): Promise<Recibo[]> => {
     const response = await recibosAPI.get('/por-vencer', { params: { dias } });
-    return response.data.data || [];
+    const backendRecibos = response.data.data || [];
+    return backendRecibos.map(transformReciboFromBackend);
   },
 
   // Obtener facturación por período
@@ -161,7 +221,8 @@ export const recibosService = {
   // Obtener recibos por persona
   getRecibosPorPersona: async (personaId: number): Promise<Recibo[]> => {
     const response = await recibosAPI.get(`/persona/${personaId}`);
-    return response.data.data || [];
+    const backendRecibos = response.data.data || [];
+    return backendRecibos.map(transformReciboFromBackend);
   },
 
   // Obtener resumen mensual
@@ -179,19 +240,20 @@ export const recibosService = {
       metodoPago,
       fecha
     });
-    return response.data.data;
+    return transformReciboFromBackend(response.data.data);
   },
 
   // Revertir pago
   revertirPago: async (reciboId: number, motivo: string) => {
     const response = await recibosAPI.post(`/${reciboId}/revertir-pago`, { motivo });
-    return response.data.data;
+    return transformReciboFromBackend(response.data.data);
   },
 
   // Generar recibos masivos
   generarRecibosMasivos: async (requests: GenerarReciboRequest[]): Promise<Recibo[]> => {
     const response = await recibosAPI.post('/generar-masivos', { recibos: requests });
-    return response.data.data || [];
+    const backendRecibos = response.data.data || [];
+    return backendRecibos.map(transformReciboFromBackend);
   },
 
   // Enviar recordatorio de pago

@@ -30,6 +30,43 @@ cuotasAPI.interceptors.request.use((config) => {
   return config;
 });
 
+/**
+ * Transforma una cuota del backend al formato legacy que espera GenerarReciboDialog
+ * Añade campos obsoletos (personaId, estado, montoFinal, concepto, fechaVencimiento)
+ */
+const transformCuotaToLegacy = (cuota: any): any => {
+  // Intentar obtener personaId de diferentes fuentes
+  let personaId = null;
+
+  // 1. De cuota.recibo.receptorId (si recibo está incluido)
+  if (cuota.recibo?.receptorId) {
+    personaId = cuota.recibo.receptorId;
+  }
+  // 2. Directamente de cuota.personaId (si existe en el modelo)
+  else if (cuota.personaId) {
+    personaId = cuota.personaId;
+  }
+  // 3. De cuota.receptor.id (otra posible estructura)
+  else if (cuota.receptor?.id) {
+    personaId = cuota.receptor.id;
+  }
+
+  // Log para debug (solo en desarrollo)
+  if (import.meta.env.DEV && !personaId) {
+    console.warn('[Cuotas] No se pudo obtener personaId para cuota:', cuota.id, cuota);
+  }
+
+  return {
+    ...cuota,
+    // Campos legacy para compatibilidad con GenerarReciboDialog
+    personaId,
+    estado: cuota.recibo?.estado?.toLowerCase() || cuota.estado?.toLowerCase() || 'pendiente',
+    montoFinal: cuota.montoTotal,
+    concepto: cuota.recibo?.concepto || cuota.concepto || `Cuota ${cuota.mes}/${cuota.anio}`,
+    fechaVencimiento: cuota.recibo?.fechaVencimiento || cuota.fechaVencimiento || cuota.recibo?.fecha,
+  };
+};
+
 // Response Types
 interface ApiResponse<T> {
   success: boolean;
@@ -58,26 +95,45 @@ interface DesgloseItemsResponse {
 export const cuotasService = {
   // Obtener todas las cuotas con filtros
   getCuotas: async (filters: CuotasFilters = {}): Promise<CuotasListResponse> => {
+    // El backend siempre incluye la relación 'recibo' por defecto (no requiere parámetro)
     const response = await cuotasAPI.get<ApiResponse<CuotasListResponse>>('/', { params: filters });
-    return response.data.data;
+    const result = response.data.data;
+
+    // Debug logging (solo en desarrollo)
+    if (import.meta.env.DEV) {
+      console.log('[cuotasService.getCuotas] Raw backend response:', response.data);
+      console.log('[cuotasService.getCuotas] Cuotas array length:', result.data?.length || 0);
+      if (result.data?.length > 0) {
+        console.log('[cuotasService.getCuotas] Primera cuota (raw):', result.data[0]);
+        const transformed = transformCuotaToLegacy(result.data[0]);
+        console.log('[cuotasService.getCuotas] Primera cuota (transformed):', transformed);
+        console.log('[cuotasService.getCuotas] personaId extraído:', transformed.personaId);
+      }
+    }
+
+    // Transformar cuotas al formato legacy para compatibilidad con GenerarReciboDialog
+    return {
+      ...result,
+      data: result.data?.map(transformCuotaToLegacy) || [],
+    };
   },
 
   // Obtener una cuota por ID
   getCuotaById: async (id: number): Promise<Cuota> => {
     const response = await cuotasAPI.get<ApiResponse<Cuota>>(`/${id}`);
-    return response.data.data;
+    return transformCuotaToLegacy(response.data.data);
   },
 
   // Crear una nueva cuota manual (poco común, usualmente se generan)
   createCuota: async (cuota: CrearCuotaRequest): Promise<Cuota> => {
     const response = await cuotasAPI.post<ApiResponse<Cuota>>('/', cuota);
-    return response.data.data;
+    return transformCuotaToLegacy(response.data.data);
   },
 
   // Actualizar una cuota
   updateCuota: async (id: number, cuota: Partial<Cuota>): Promise<Cuota> => {
     const response = await cuotasAPI.put<ApiResponse<Cuota>>(`/${id}`, cuota);
-    return response.data.data;
+    return transformCuotaToLegacy(response.data.data);
   },
 
   // Eliminar una cuota

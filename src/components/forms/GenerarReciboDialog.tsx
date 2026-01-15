@@ -89,14 +89,26 @@ export const GenerarReciboDialog: React.FC<GenerarReciboDialogProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Memoizar filtrado de cuotas para evitar recálculos innecesarios
-  const cuotasDisponibles = useMemo(() =>
-    cuotas.filter(cuota =>
+  const cuotasDisponibles = useMemo(() => {
+    const filtered = cuotas.filter(cuota =>
       formData.personaId &&
       cuota.personaId === formData.personaId &&
-      (cuota.estado === 'pendiente' || cuota.estado === 'vencida')
-    ),
-    [cuotas, formData.personaId]
-  );
+      (cuota.estado === 'pendiente' || cuota.estado === 'vencida' || cuota.estado === 'vencido')
+    );
+
+    // Log para debug (solo en desarrollo)
+    if (import.meta.env.DEV && formData.personaId) {
+      console.log('[GenerarReciboDialog] === DEBUGGING CUOTAS FILTER ===');
+      console.log('[GenerarReciboDialog] Persona seleccionada ID:', formData.personaId);
+      console.log('[GenerarReciboDialog] Total cuotas cargadas:', cuotas.length);
+      console.log('[GenerarReciboDialog] Todas las cuotas:', cuotas);
+      console.log('[GenerarReciboDialog] PersonaIds en cuotas:', cuotas.map(c => ({ id: c.id, personaId: c.personaId, estado: c.estado })));
+      console.log('[GenerarReciboDialog] Cuotas filtradas:', filtered.length);
+      console.log('[GenerarReciboDialog] Cuotas que coinciden:', filtered);
+    }
+
+    return filtered;
+  }, [cuotas, formData.personaId]);
 
   const cuotasSeleccionadas = useMemo(() =>
     cuotas.filter(cuota =>
@@ -104,6 +116,9 @@ export const GenerarReciboDialog: React.FC<GenerarReciboDialogProps> = ({
     ),
     [cuotas, formData.cuotaIds]
   );
+
+  // Memoizar cuotasPreseleccionadas para evitar infinite loop
+  const cuotasPreseleccionadasMemo = useMemo(() => cuotasPreseleccionadas, [cuotasPreseleccionadas.length]);
 
   useEffect(() => {
     if (open) {
@@ -113,7 +128,7 @@ export const GenerarReciboDialog: React.FC<GenerarReciboDialogProps> = ({
 
       setFormData({
         personaId: personaPreseleccionada || null,
-        cuotaIds: cuotasPreseleccionadas,
+        cuotaIds: cuotasPreseleccionadasMemo,
         fechaVencimiento: defaultVencimiento,
         observaciones: '',
         aplicarDescuentos: false,
@@ -123,7 +138,8 @@ export const GenerarReciboDialog: React.FC<GenerarReciboDialogProps> = ({
       });
       setErrors({});
     }
-  }, [open, personaPreseleccionada, cuotasPreseleccionadas]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, personaPreseleccionada]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -214,7 +230,7 @@ export const GenerarReciboDialog: React.FC<GenerarReciboDialogProps> = ({
   const personasOptions = useMemo(() =>
     personas.map(persona => ({
       id: persona.id,
-      label: `${persona.nombre} ${persona.apellido} (${persona.tipos?.map(t => t.tipoPersonaCodigo).join(', ') || 'Sin tipo'})`,
+      label: `${persona.nombre} ${persona.apellido} (${persona.tipos?.map(t => t.tipoPersona?.codigo || 'Sin código').join(', ') || 'Sin tipo'})`,
       persona
     })),
     [personas]
@@ -293,6 +309,7 @@ export const GenerarReciboDialog: React.FC<GenerarReciboDialogProps> = ({
                     error={!!errors.personaId}
                     helperText={errors.personaId}
                     required
+                    placeholder="Buscar por nombre, apellido o DNI..."
                   />
                 )}
                 renderOption={(props, option) => (
@@ -302,13 +319,16 @@ export const GenerarReciboDialog: React.FC<GenerarReciboDialogProps> = ({
                         {option.persona.nombre} {option.persona.apellido}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {option.persona.tipos?.map(t => t.tipoPersonaCodigo).join(', ') || 'Sin tipo'} - {option.persona.email}
+                        {option.persona.tipos?.map(t => t.tipoPersona?.codigo || 'Sin código').join(', ') || 'Sin tipo'} - {option.persona.email}
                       </Typography>
                     </Box>
                   </li>
                 )}
                 getOptionLabel={(option) => option.label}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
+                filterSelectedOptions
+                noOptionsText="No se encontraron personas"
+                loadingText="Cargando personas..."
                 disabled={loading}
               />
 

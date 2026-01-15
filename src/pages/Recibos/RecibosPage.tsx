@@ -71,6 +71,8 @@ import {
   Recibo,
   RecibosFilters,
 } from '../../store/slices/recibosSlice';
+import { fetchPersonas } from '../../store/slices/personasSlice';
+import { fetchCuotas } from '../../store/slices/cuotasSlice';
 import GenerarReciboDialog from '../../components/forms/GenerarReciboDialog';
 
 const RecibosPage: React.FC = () => {
@@ -113,6 +115,15 @@ const RecibosPage: React.FC = () => {
   useEffect(() => {
     dispatch(fetchRecibos());
   }, [dispatch]);
+
+  // Cargar personas y cuotas cuando se abre el diálogo de generar recibo
+  useEffect(() => {
+    if (generarReciboOpen) {
+      dispatch(fetchPersonas({}));
+      // Cargar solo cuotas impagas para generar recibos
+      dispatch(fetchCuotas({ soloImpagas: true }));
+    }
+  }, [generarReciboOpen, dispatch]);
 
   const handleFilterChange = (newFilters: Partial<RecibosFilters>) => {
     dispatch(setFilters({ ...filters, ...newFilters }));
