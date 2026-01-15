@@ -23,7 +23,6 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Label as LabelIcon,
   Search as SearchIcon,
   FilterList as FilterListIcon,
 } from '@mui/icons-material';
@@ -134,7 +133,6 @@ const CategoriasActividadPage: React.FC = () => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
       searchTerm === '' ||
-      categoria.codigo.toLowerCase().includes(searchLower) ||
       categoria.nombre.toLowerCase().includes(searchLower) ||
       (categoria.descripcion && categoria.descripcion.toLowerCase().includes(searchLower));
 
@@ -143,20 +141,9 @@ const CategoriasActividadPage: React.FC = () => {
 
   const columns: GridColDef[] = [
     {
-      field: 'codigo',
-      headerName: 'Código',
-      width: 150,
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LabelIcon color="action" fontSize="small" />
-          <strong>{params.value}</strong>
-        </Box>
-      ),
-    },
-    {
       field: 'nombre',
       headerName: 'Nombre',
-      width: 250,
+      width: 300,
       renderCell: (params) => <CategoriaActividadBadge categoria={params.row} />,
     },
     {
@@ -292,7 +279,7 @@ const CategoriasActividadPage: React.FC = () => {
         <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
           <TextField
             size="small"
-            placeholder="Buscar por código, nombre o descripción..."
+            placeholder="Buscar por nombre o descripción..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{

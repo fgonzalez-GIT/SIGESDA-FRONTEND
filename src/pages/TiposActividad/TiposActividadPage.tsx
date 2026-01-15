@@ -23,7 +23,6 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Category as CategoryIcon,
   Search as SearchIcon,
   FilterList as FilterListIcon,
 } from '@mui/icons-material';
@@ -43,7 +42,6 @@ import { TipoActividadForm } from '../../components/tiposActividad/TipoActividad
 import { TipoActividadBadge } from '../../components/tiposActividad/TipoActividadBadge';
 
 // Estilos extraídos fuera del componente para evitar recreación
-const codigoBoxStyle = { display: 'flex', alignItems: 'center', gap: 1 };
 const dataGridStyle = {
   '& .MuiDataGrid-cell': {
     padding: '8px',
@@ -51,14 +49,6 @@ const dataGridStyle = {
 };
 
 // Componentes de celda memoizados para mejor rendimiento
-const CodigoCellRenderer = React.memo(({ value }: { value: string }) => (
-  <Box sx={codigoBoxStyle}>
-    <CategoryIcon color="action" fontSize="small" />
-    <strong>{value}</strong>
-  </Box>
-));
-CodigoCellRenderer.displayName = 'CodigoCellRenderer';
-
 const DescripcionCellRenderer = React.memo(({ value }: { value?: string }) => (
   <>{value || '-'}</>
 ));
@@ -177,7 +167,6 @@ const TiposActividadPage: React.FC = () => {
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch =
         searchTerm === '' ||
-        tipo.codigo.toLowerCase().includes(searchLower) ||
         tipo.nombre.toLowerCase().includes(searchLower) ||
         (tipo.descripcion && tipo.descripcion.toLowerCase().includes(searchLower));
 
@@ -187,15 +176,9 @@ const TiposActividadPage: React.FC = () => {
 
   const columns: GridColDef[] = useMemo(() => [
     {
-      field: 'codigo',
-      headerName: 'Código',
-      width: 150,
-      renderCell: (params) => <CodigoCellRenderer value={params.value} />,
-    },
-    {
       field: 'nombre',
       headerName: 'Nombre',
-      width: 250,
+      width: 300,
       renderCell: (params) => <TipoActividadBadge tipo={params.row} />,
     },
     {
@@ -322,7 +305,7 @@ const TiposActividadPage: React.FC = () => {
         <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
           <TextField
             size="small"
-            placeholder="Buscar por código, nombre o descripción..."
+            placeholder="Buscar por nombre o descripción..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{

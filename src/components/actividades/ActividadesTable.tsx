@@ -45,7 +45,7 @@ interface ActividadesTableProps {
   onDuplicate?: (actividad: Actividad) => void;
 }
 
-type OrderBy = 'nombre' | 'codigo' | 'tipo' | 'categoria' | 'estado' | 'cupo' | 'costo';
+type OrderBy = 'nombre' | 'tipo' | 'categoria' | 'estado' | 'cupo' | 'costo';
 type Order = 'asc' | 'desc';
 
 export const ActividadesTable: React.FC<ActividadesTableProps> = ({
@@ -91,10 +91,6 @@ export const ActividadesTable: React.FC<ActividadesTableProps> = ({
         case 'nombre':
           aValue = a.nombre.toLowerCase();
           bValue = b.nombre.toLowerCase();
-          break;
-        case 'codigo':
-          aValue = a.codigoActividad.toLowerCase();
-          bValue = b.codigoActividad.toLowerCase();
           break;
         case 'tipo':
           aValue = a.tiposActividades?.nombre || '';
@@ -149,15 +145,6 @@ export const ActividadesTable: React.FC<ActividadesTableProps> = ({
         <Table sx={{ minWidth: 650 }} size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: 'grey.50' }}>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'codigo'}
-                  direction={orderBy === 'codigo' ? order : 'asc'}
-                  onClick={() => handleRequestSort('codigo')}
-                >
-                  <strong>Código</strong>
-                </TableSortLabel>
-              </TableCell>
               <TableCell>
                 <TableSortLabel
                   active={orderBy === 'nombre'}
@@ -237,12 +224,6 @@ export const ActividadesTable: React.FC<ActividadesTableProps> = ({
                   hover
                   sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                 >
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
-                      {actividad.codigoActividad}
-                    </Typography>
-                  </TableCell>
-
                   <TableCell>
                     <Tooltip title={actividad.descripcion || 'Sin descripción'} arrow>
                       <Box>
