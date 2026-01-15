@@ -267,8 +267,14 @@ const personasSlice = createSlice({
     builder.addCase(fetchPersonas.fulfilled, (state, action) => {
       state.loading = false;
       state.personas = action.payload.data;
-      if (action.payload.pagination) {
-        state.pagination = action.payload.pagination;
+      if (action.payload.meta) {
+        // Mapear 'meta' del backend a estructura de paginación del estado
+        state.pagination = {
+          page: action.payload.meta.page,
+          limit: action.payload.meta.limit,
+          total: action.payload.meta.total,
+          pages: action.payload.meta.totalPages, // Backend usa 'totalPages', estado usa 'pages'
+        };
       }
     });
     builder.addCase(fetchPersonas.rejected, (state, action) => {

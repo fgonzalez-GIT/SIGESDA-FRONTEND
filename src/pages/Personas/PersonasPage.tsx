@@ -263,7 +263,10 @@ const PersonasPage: React.FC = () => {
         catalogos={catalogos}
         onFilterChange={handleFilterChange}
         onClearFilters={handleClearFilters}
-        resultCount={personas.length}
+        resultCount={Math.min(
+          (pagination?.page || 1) * (pagination?.limit || 20),
+          pagination?.total || 0
+        )}
         totalCount={pagination?.total || 0}
       />
 

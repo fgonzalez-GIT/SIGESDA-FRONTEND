@@ -149,8 +149,14 @@ export const usePersonas = (initialParams?: PersonasQueryParams): UsePersonasRes
 
       const response = await personasApi.getAll(mergedParams);
       setPersonas(response.data);
-      if (response.pagination) {
-        setPagination(response.pagination);
+      if (response.meta) {
+        // Mapear 'meta' del backend a estructura de paginación local
+        setPagination({
+          page: response.meta.page,
+          limit: response.meta.limit,
+          total: response.meta.total,
+          pages: response.meta.totalPages, // Backend usa 'totalPages', frontend usa 'pages'
+        });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar personas');

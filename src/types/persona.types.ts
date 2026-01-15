@@ -355,18 +355,9 @@ export interface PersonasQueryParams {
 
 /**
  * Respuesta paginada de personas
+ * Usa el tipo estándar PaginatedResponse que retorna el backend con 'meta'
  */
-export interface PersonasPaginatedResponse {
-  success: boolean;
-  data: Persona[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
-  message?: string;
-}
+export type PersonasPaginatedResponse = import('../services/api').PaginatedResponse<Persona>;
 
 /**
  * Respuesta de catálogos
