@@ -145,6 +145,7 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
                                             type="number"
                                             error={!!errors.anio}
                                             helperText={errors.anio?.message}
+                                            onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)}
                                         />
                                     )}
                                 />

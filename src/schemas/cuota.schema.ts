@@ -102,6 +102,18 @@ export const generarCuotasV2Schema = z.object({
 }, {
   message: 'No se pueden generar cuotas con más de 12 meses de anticipación',
   path: ['mes'],
+}).refine(data => {
+  const periodoDate = new Date(data.anio, data.mes - 1, 1);
+  const now = new Date();
+  const maxPastMonths = 6;
+
+  const monthsDiff = (now.getFullYear() - periodoDate.getFullYear()) * 12
+                     + (now.getMonth() - periodoDate.getMonth());
+
+  return monthsDiff <= maxPastMonths;
+}, {
+  message: 'No se pueden generar cuotas de más de 6 meses en el pasado',
+  path: ['anio'],
 });
 
 /**
