@@ -27,7 +27,10 @@ import {
   MenuItem as MenuItemMui,
   ListItemIcon,
   ListItemText,
-  TablePagination
+  TablePagination,
+  Switch,
+  FormControlLabel,
+  CircularProgress
 } from '@mui/material';
 import {
   Add,
@@ -52,7 +55,9 @@ import {
   clearFilters,
   fetchDashboard,
   fetchCuotaById,
-  setSelectedCuota
+  setSelectedCuota,
+  exportCuotas,
+  fetchAllCuotas
 } from '../../store/slices/cuotasSlice';
 import { CategoriaSocio, EstadoRecibo } from '../../types/cuota.types';
 import GeneracionMasivaModal from '../../components/Cuotas/GeneracionMasivaModal';
@@ -75,6 +80,8 @@ const CuotasPage: React.FC = () => {
   const [openGenerarModal, setOpenGenerarModal] = useState(false);
   const [openDetalleModal, setOpenDetalleModal] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' } | null>(null);
+  const [showAll, setShowAll] = useState(false); // Modo "Ver Todas"
+  const [exporting, setExporting] = useState(false);
 
   // Initial load
   useEffect(() => {
@@ -130,6 +137,82 @@ const CuotasPage: React.FC = () => {
     }
   };
 
+  // Handler para alternar entre ver todas y paginadas
+  const handleToggleShowAll = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = event.target.checked;
+    setShowAll(checked);
+
+    if (checked) {
+      // Cargar todas las cuotas con los filtros actuales (sin page/limit)
+      const { page, limit, ...filtersWithoutPagination } = filters;
+      await dispatch(fetchAllCuotas(filtersWithoutPagination));
+    } else {
+      // Volver a paginación normal
+      dispatch(fetchCuotas(filters));
+    }
+  };
+
+  // Handler para exportar a CSV
+  const handleExportToCSV = async () => {
+    try {
+      setExporting(true);
+      const { page, limit, ...filtersWithoutPagination } = filters;
+      const result = await dispatch(exportCuotas(filtersWithoutPagination)).unwrap();
+
+      // Convertir a CSV
+      const csvContent = convertToCSV(result.data);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+
+      link.setAttribute('href', url);
+      link.setAttribute('download', `cuotas_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setSnackbar({
+        open: true,
+        message: `${result.total} cuotas exportadas exitosamente`,
+        severity: 'success'
+      });
+    } catch (error: any) {
+      setSnackbar({
+        open: true,
+        message: error || 'Error al exportar cuotas',
+        severity: 'error'
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Función auxiliar para convertir datos a CSV
+  const convertToCSV = (data: any[]) => {
+    if (!data || data.length === 0) return '';
+
+    const headers = ['ID', 'Mes', 'Año', 'Categoría', 'Monto Base', 'Monto Actividades', 'Monto Total', 'Estado', 'Persona'];
+    const rows = data.map(cuota => [
+      cuota.id,
+      cuota.mes,
+      cuota.anio,
+      cuota.categoria || cuota.recibo?.receptor?.categoria || '-',
+      cuota.montoBase,
+      cuota.montoActividades,
+      cuota.montoTotal,
+      cuota.recibo?.estado || '-',
+      cuota.recibo?.receptor ? `${cuota.recibo.receptor.nombre} ${cuota.recibo.receptor.apellido}` : '-'
+    ]);
+
+    const csvRows = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ];
+
+    return csvRows.join('\n');
+  };
+
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -141,7 +224,26 @@ const CuotasPage: React.FC = () => {
             Administración de cuotas, generación masiva y seguimiento de cobranzas.
           </Typography>
         </Box>
-        <Stack direction="row" spacing={2}>
+        <Stack direction="row" spacing={2} alignItems="center">
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showAll}
+                onChange={handleToggleShowAll}
+                disabled={loading}
+                color="primary"
+              />
+            }
+            label={`Ver todas (${pagination.total} cuotas)`}
+          />
+          <Button
+            variant="outlined"
+            startIcon={exporting ? <CircularProgress size={20} /> : <GetApp />}
+            onClick={handleExportToCSV}
+            disabled={exporting || loading || cuotas.length === 0}
+          >
+            Exportar CSV
+          </Button>
           <Button variant="contained" startIcon={<Add />} onClick={() => setOpenGenerarModal(true)}>
             Generar Cuotas
           </Button>

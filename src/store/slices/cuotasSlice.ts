@@ -203,6 +203,30 @@ export const deleteCuota = createAsyncThunk(
   }
 );
 
+// NUEVO: Exportar cuotas sin paginación
+export const exportCuotas = createAsyncThunk(
+  'cuotas/export',
+  async (filters: Omit<CuotasFilters, 'page' | 'limit'>, { rejectWithValue }) => {
+    try {
+      return await cuotasService.exportCuotas(filters);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al exportar cuotas');
+    }
+  }
+);
+
+// NUEVO: Obtener todas las cuotas con limit=all
+export const fetchAllCuotas = createAsyncThunk(
+  'cuotas/fetchAll',
+  async (filters: Omit<CuotasFilters, 'page' | 'limit'>, { rejectWithValue }) => {
+    try {
+      return await cuotasService.getAllCuotas(filters);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || 'Error al cargar todas las cuotas');
+    }
+  }
+);
+
 // Slice
 const cuotasSlice = createSlice({
   name: 'cuotas',
@@ -241,25 +265,15 @@ const cuotasSlice = createSlice({
       })
       .addCase(fetchCuotas.fulfilled, (state, action) => {
         state.loading = false;
-        // Handle potential different response structures
-        if (Array.isArray(action.payload)) {
-          state.cuotas = action.payload;
+        state.cuotas = action.payload.data || [];
+
+        if (action.payload.meta) {
           state.pagination = {
-            ...state.pagination,
-            total: action.payload.length
+            total: action.payload.meta.total,
+            pages: action.payload.meta.totalPages,
+            currentPage: action.payload.meta.page,
+            limit: action.payload.meta.limit
           };
-        } else if (action.payload && Array.isArray(action.payload.data)) {
-          state.cuotas = action.payload.data;
-          state.pagination = {
-            total: action.payload.total,
-            pages: action.payload.pages,
-            currentPage: action.payload.currentPage,
-            limit: state.filters.limit || 20
-          };
-        } else {
-          // Fallback
-          state.cuotas = [];
-          console.error('Unexpected cuotas response format', action.payload);
         }
       })
       .addCase(fetchCuotas.rejected, (state, action) => {
@@ -339,6 +353,44 @@ const cuotasSlice = createSlice({
       // Delete
       .addCase(deleteCuota.fulfilled, (state, action) => {
         state.cuotas = state.cuotas.filter(c => c.id !== action.payload);
+      })
+
+      // Export Cuotas
+      .addCase(exportCuotas.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(exportCuotas.fulfilled, (state, action) => {
+        state.loading = false;
+        // Los datos exportados no se guardan en el state, solo se usan para descargar
+        // Pero podríamos guardarlos temporalmente si se necesita
+      })
+      .addCase(exportCuotas.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // Fetch All Cuotas (limit=all)
+      .addCase(fetchAllCuotas.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllCuotas.fulfilled, (state, action) => {
+        state.loading = false;
+        state.cuotas = action.payload.data || [];
+
+        if (action.payload.meta) {
+          state.pagination = {
+            total: action.payload.meta.total,
+            pages: 1, // Solo una página cuando se cargan todas
+            currentPage: 1,
+            limit: action.payload.meta.total // El límite es el total
+          };
+        }
+      })
+      .addCase(fetchAllCuotas.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

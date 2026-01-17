@@ -12,6 +12,7 @@ import {
   RecalculoResponse
 } from '../types/cuota.types';
 import { CuotasFilters } from '../store/slices/cuotasSlice';
+import { PaginatedResponse } from './api';
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -74,13 +75,6 @@ interface ApiResponse<T> {
   error?: string;
 }
 
-interface CuotasListResponse {
-  data: Cuota[];
-  total: number;
-  pages: number;
-  currentPage: number;
-}
-
 interface DesgloseItemsResponse {
   desglose: Record<string, { items: ItemCuota[]; subtotal: number }>;
   totales: {
@@ -94,18 +88,18 @@ interface DesgloseItemsResponse {
 
 export const cuotasService = {
   // Obtener todas las cuotas con filtros
-  getCuotas: async (filters: CuotasFilters = {}): Promise<CuotasListResponse> => {
+  getCuotas: async (filters: CuotasFilters = {}): Promise<PaginatedResponse<Cuota>> => {
     // El backend siempre incluye la relación 'recibo' por defecto (no requiere parámetro)
-    const response = await cuotasAPI.get<ApiResponse<CuotasListResponse>>('/', { params: filters });
-    const result = response.data.data;
+    const response = await cuotasAPI.get<PaginatedResponse<Cuota>>('/', { params: filters });
 
     // Debug logging (solo en desarrollo)
     if (import.meta.env.DEV) {
       console.log('[cuotasService.getCuotas] Raw backend response:', response.data);
-      console.log('[cuotasService.getCuotas] Cuotas array length:', result.data?.length || 0);
-      if (result.data?.length > 0) {
-        console.log('[cuotasService.getCuotas] Primera cuota (raw):', result.data[0]);
-        const transformed = transformCuotaToLegacy(result.data[0]);
+      console.log('[cuotasService.getCuotas] Cuotas array length:', response.data.data?.length || 0);
+      console.log('[cuotasService.getCuotas] Meta:', response.data.meta);
+      if (response.data.data?.length > 0) {
+        console.log('[cuotasService.getCuotas] Primera cuota (raw):', response.data.data[0]);
+        const transformed = transformCuotaToLegacy(response.data.data[0]);
         console.log('[cuotasService.getCuotas] Primera cuota (transformed):', transformed);
         console.log('[cuotasService.getCuotas] personaId extraído:', transformed.personaId);
       }
@@ -113,8 +107,8 @@ export const cuotasService = {
 
     // Transformar cuotas al formato legacy para compatibilidad con GenerarReciboDialog
     return {
-      ...result,
-      data: result.data?.map(transformCuotaToLegacy) || [],
+      ...response.data,
+      data: response.data.data?.map(transformCuotaToLegacy) || [],
     };
   },
 
@@ -227,6 +221,45 @@ export const cuotasService = {
   addItemManual: async (cuotaId: number, item: any): Promise<any> => {
     const response = await cuotasAPI.post<ApiResponse<any>>(`/${cuotaId}/items`, item);
     return response.data.data;
+  },
+
+  // --- NUEVO: Exportación de Cuotas ---
+
+  /**
+   * Exporta todas las cuotas que coincidan con los filtros sin paginación
+   * Usa el endpoint dedicado /api/cuotas/export
+   * @param filters - Filtros a aplicar (sin page/limit)
+   * @returns Todas las cuotas que coincidan con los filtros
+   */
+  exportCuotas: async (filters: Omit<CuotasFilters, 'page' | 'limit'> = {}): Promise<{ data: Cuota[]; total: number; exportedAt: string }> => {
+    const response = await cuotasAPI.get<ApiResponse<{ data: Cuota[]; total: number; exportedAt: string }>>('/export', {
+      params: filters
+    });
+
+    // Transformar cuotas al formato legacy
+    const result = response.data.data;
+    return {
+      ...result,
+      data: result.data?.map(transformCuotaToLegacy) || [],
+    };
+  },
+
+  /**
+   * Obtiene todas las cuotas (sin límite) con los filtros aplicados
+   * Usa el parámetro limit=all en el endpoint principal
+   * @param filters - Filtros a aplicar (limit se fuerza a 'all')
+   * @returns Todas las cuotas que coincidan con los filtros
+   */
+  getAllCuotas: async (filters: Omit<CuotasFilters, 'page' | 'limit'> = {}): Promise<PaginatedResponse<Cuota>> => {
+    const response = await cuotasAPI.get<PaginatedResponse<Cuota>>('/', {
+      params: { ...filters, limit: 'all', page: 1 }
+    });
+
+    // Transformar cuotas al formato legacy
+    return {
+      ...response.data,
+      data: response.data.data?.map(transformCuotaToLegacy) || [],
+    };
   }
 };
 
