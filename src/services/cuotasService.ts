@@ -232,15 +232,19 @@ export const cuotasService = {
    * @returns Todas las cuotas que coincidan con los filtros
    */
   exportCuotas: async (filters: Omit<CuotasFilters, 'page' | 'limit'> = {}): Promise<{ data: Cuota[]; total: number; exportedAt: string }> => {
-    const response = await cuotasAPI.get<ApiResponse<{ data: Cuota[]; total: number; exportedAt: string }>>('/export', {
+    // El backend devuelve: { success, data: Cuota[], meta: { total, exportedAt } }
+    const response = await cuotasAPI.get<{ success: boolean; data: Cuota[]; meta: { total: number; exportedAt: string } }>('/export', {
       params: filters
     });
 
-    // Transformar cuotas al formato legacy
-    const result = response.data.data;
+    // Extraer datos y metadata correctamente
+    const cuotasArray = response.data.data;  // Array de cuotas
+    const meta = response.data.meta;  // Metadata con total y fecha
+
     return {
-      ...result,
-      data: result.data?.map(transformCuotaToLegacy) || [],
+      data: cuotasArray?.map(transformCuotaToLegacy) || [],
+      total: meta?.total || 0,
+      exportedAt: meta?.exportedAt || new Date().toISOString()
     };
   },
 
