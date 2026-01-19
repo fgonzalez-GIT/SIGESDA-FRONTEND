@@ -98,7 +98,7 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({
                 concepto: data.concepto,
                 monto: data.monto,
                 cantidad: data.cantidad,
-                observaciones: data.observaciones || null
+                observaciones: data.observaciones || ""
             });
 
             reset();

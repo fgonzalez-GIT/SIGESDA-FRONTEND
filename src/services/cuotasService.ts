@@ -162,8 +162,55 @@ export const cuotasService = {
   },
 
   getDesgloseItems: async (cuotaId: number): Promise<DesgloseItemsResponse> => {
-    const response = await cuotasAPI.get<ApiResponse<DesgloseItemsResponse>>(`/${cuotaId}/items/desglose`);
-    return response.data.data;
+    const response = await cuotasAPI.get<ApiResponse<any>>(`/${cuotaId}/items/desglose`);
+    const rawData = response.data.data;
+
+    // Debug logging
+    if (import.meta.env.DEV) {
+      console.log('[getDesgloseItems] Raw backend response:', rawData);
+    }
+
+    // Validar estructura mínima
+    if (!rawData || !Array.isArray(rawData.items)) {
+      console.error('[getDesgloseItems] Invalid backend response structure:', rawData);
+      throw new Error('Estructura de respuesta de desglose inválida');
+    }
+
+    // Transformar: Agrupar items por categoría
+    const desglose: Record<string, { items: ItemCuota[]; subtotal: number }> = {};
+
+    rawData.items.forEach((item: any) => {
+      // Obtener código de categoría desde el campo 'categoria' del item
+      const categoria = item.categoria || 'OTRO';
+
+      // Inicializar categoría si no existe
+      if (!desglose[categoria]) {
+        desglose[categoria] = { items: [], subtotal: 0 };
+      }
+
+      // Agregar item y acumular subtotal
+      desglose[categoria].items.push(item);
+      desglose[categoria].subtotal += item.monto * item.cantidad;
+    });
+
+    // Mapear 'resumen' del backend a 'totales' del frontend
+    const totales = {
+      base: rawData.resumen?.base || 0,
+      actividades: rawData.resumen?.actividades || 0,
+      descuentos: rawData.resumen?.descuentos || 0,
+      recargos: rawData.resumen?.recargos || 0,
+      total: rawData.resumen?.total || 0
+    };
+
+    const transformed = { desglose, totales };
+
+    // Debug logging
+    if (import.meta.env.DEV) {
+      console.log('[getDesgloseItems] Transformed data:', transformed);
+      console.log('[getDesgloseItems] Categorías encontradas:', Object.keys(desglose));
+    }
+
+    return transformed;
   },
 
   // --- Recálculo ---

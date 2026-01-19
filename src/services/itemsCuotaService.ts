@@ -27,7 +27,7 @@ interface ApiResponse<T> {
 export const itemsCuotaService = {
     // Catálogos
     getTiposItems: async (): Promise<TipoItemCuota[]> => {
-        const response = await itemsAPI.get<ApiResponse<TipoItemCuota[]>>('/catalogos/tipos-items');
+        const response = await itemsAPI.get<ApiResponse<TipoItemCuota[]>>('/catalogos/tipos-items-cuota');
         return response.data.data;
     },
 
