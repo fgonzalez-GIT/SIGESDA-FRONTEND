@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import cuotasService from '../../services/cuotasService';
 import reportesService from '../../services/reportesService';
-import { Cuota, DashboardData, GenerarCuotasRequest, ItemCuota, RecalcularCuotaRequest, RecalculoResponse, ValidacionGeneracionResponse } from '../../types/cuota.types';
+import { Cuota, DashboardData, GenerarCuotasRequest, RegenerarCuotasRequest, ItemCuota, RecalcularCuotaRequest, RecalculoResponse, ValidacionGeneracionResponse } from '../../types/cuota.types';
 
 // State definition
 export interface CuotasFilters {
@@ -160,7 +160,7 @@ export const previewRecalculo = createAsyncThunk(
 
 export const regenerarCuotas = createAsyncThunk(
   'cuotas/regenerar',
-  async (request: any, { rejectWithValue }) => {
+  async (request: RegenerarCuotasRequest, { rejectWithValue }) => {
     try {
       return await cuotasService.regenerarCuotas(request);
     } catch (error: any) {
@@ -302,6 +302,20 @@ const cuotasSlice = createSlice({
         // Optionally refresh list or add new ones if feasible
       })
       .addCase(generarCuotasMasivas.rejected, (state, action) => {
+        state.operationLoading = false;
+        state.error = action.payload as string;
+      })
+
+      // Regenerar Cuotas
+      .addCase(regenerarCuotas.pending, (state) => {
+        state.operationLoading = true;
+        state.error = null;
+      })
+      .addCase(regenerarCuotas.fulfilled, (state, action) => {
+        state.operationLoading = false;
+        // Optionally refresh list or add new ones if feasible
+      })
+      .addCase(regenerarCuotas.rejected, (state, action) => {
         state.operationLoading = false;
         state.error = action.payload as string;
       })

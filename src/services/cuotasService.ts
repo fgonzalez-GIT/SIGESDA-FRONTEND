@@ -6,6 +6,7 @@ import {
   CategoriaSocio,
   CrearCuotaRequest,
   GenerarCuotasRequest,
+  RegenerarCuotasRequest,
   GeneracionCuotasResponse,
   ValidacionGeneracionResponse,
   RecalcularCuotaRequest,
@@ -224,8 +225,8 @@ export const cuotasService = {
     return response.data.data;
   },
 
-  regenerarCuotas: async (request: any) => {
-    const response = await cuotasAPI.post<ApiResponse<any>>('/regenerar', request);
+  regenerarCuotas: async (request: RegenerarCuotasRequest) => {
+    const response = await cuotasAPI.post<ApiResponse<GeneracionCuotasResponse>>('/regenerar', request);
     return response.data.data;
   },
 

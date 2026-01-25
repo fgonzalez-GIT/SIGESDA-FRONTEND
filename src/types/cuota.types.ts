@@ -196,8 +196,21 @@ export interface GenerarCuotasRequest {
     anio: number;
     categoriaIds?: number[];
     aplicarDescuentos: boolean;
+    aplicarMotorReglas: boolean;
     incluirInactivos: boolean;
+    soloNuevas: boolean;
     observaciones?: string;
+}
+
+export interface RegenerarCuotasRequest {
+    mes: number;
+    anio: number;
+    categoriaId?: number;
+    personaId?: number;
+    aplicarAjustes?: boolean;
+    aplicarExenciones?: boolean;
+    aplicarDescuentos?: boolean;
+    confirmarRegeneracion: true;
 }
 
 export interface GeneracionCuotasResponse {

@@ -33,7 +33,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { generarCuotasMasivas, validarGeneracion, clearValidacion } from '../../store/slices/cuotasSlice';
+import { generarCuotasMasivas, regenerarCuotas, validarGeneracion, clearValidacion } from '../../store/slices/cuotasSlice';
 import { fetchCategorias } from '../../store/slices/categoriasSlice';
 import { GenerarCuotasRequest } from '../../types/cuota.types';
 import { FEATURES } from '../../config/features';
@@ -54,6 +54,7 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
 
     const [activeStep, setActiveStep] = useState(0);
     const [resultData, setResultData] = useState<any>(null);
+    const [showConfirmRegenerar, setShowConfirmRegenerar] = useState(false);
 
     // React Hook Form con Zod
     const { control, handleSubmit, watch, reset, formState: { errors, isValid } } = useForm<GenerarCuotasV2FormData>({
@@ -110,6 +111,23 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
 
     const handleBack = () => {
         setActiveStep((prevActiveStep) => prevActiveStep - 1);
+    };
+
+    const handleRegenerar = () => {
+        setShowConfirmRegenerar(true);
+    };
+
+    const handleConfirmRegenerar = async () => {
+        setShowConfirmRegenerar(false);
+        const payload = {
+            ...formValues,
+            categoriaIds: formValues.categoriaIds && formValues.categoriaIds.length > 0 ? formValues.categoriaIds : undefined,
+            confirmarRegeneracion: true
+        };
+        const result = await dispatch(regenerarCuotas(payload as any)).unwrap();
+        setResultData(result);
+        setActiveStep(2);
+        if (onSuccess) onSuccess();
     };
 
     const renderStepContent = (step: number) => {
@@ -237,17 +255,22 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
 
                 return (
                     <Box sx={{ mt: 2 }}>
-                        <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: validacionGeneracion.puedeGenerar ? 'success.light' : 'warning.light' }}>
+                        <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: validacionGeneracion.cuotasExistentes > 0 ? 'warning.light' : 'success.light' }}>
                             <Typography variant="h6" gutterBottom>
-                                {validacionGeneracion.puedeGenerar ? 'Listo para Generar' : 'Atención'}
+                                {validacionGeneracion.cuotasExistentes > 0 ? 'Cuotas Duplicadas' : 'Listo para Generar'}
                             </Typography>
                             <Typography variant="body1">
-                                <strong>Socios a generar:</strong> {validacionGeneracion.sociosPendientes}
+                                <strong>Socios pendientes:</strong> {validacionGeneracion.sociosPendientes}
                             </Typography>
                             {validacionGeneracion.cuotasExistentes > 0 && (
-                                <Typography variant="body2" color="warning.dark">
-                                    Ya existen {validacionGeneracion.cuotasExistentes} cuotas generadas para este período (serán omitidas).
-                                </Typography>
+                                <>
+                                    <Typography variant="body2" color="warning.dark" sx={{ mt: 1 }}>
+                                        <strong>Ya existen {validacionGeneracion.cuotasExistentes} cuotas generadas para este período.</strong>
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                        Para continuar, puede usar la opción "Regenerar" que eliminará las cuotas existentes y generará nuevas.
+                                    </Typography>
+                                </>
                             )}
                         </Paper>
 
@@ -315,6 +338,7 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
     };
 
     return (
+        <>
         <Dialog open={open} onClose={activeStep === 2 ? onClose : undefined} maxWidth="md" fullWidth>
             <DialogTitle>Generación Masiva de Cuotas</DialogTitle>
             <DialogContent>
@@ -340,10 +364,27 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
                         Validar
                     </Button>
                 )}
-                {activeStep === 1 && (
-                    <Button variant="contained" onClick={handleNext} disabled={!validacionGeneracion?.puedeGenerar || loading}>
-                        Generar Cuotas
-                    </Button>
+                {activeStep === 1 && validacionGeneracion && (
+                    <>
+                        {validacionGeneracion.cuotasExistentes > 0 ? (
+                            <Button
+                                variant="contained"
+                                onClick={handleRegenerar}
+                                disabled={loading || operationLoading}
+                                color="warning"
+                            >
+                                Regenerar Cuotas
+                            </Button>
+                        ) : (
+                            <Button
+                                variant="contained"
+                                onClick={handleNext}
+                                disabled={!validacionGeneracion.puedeGenerar || loading}
+                            >
+                                Generar Cuotas
+                            </Button>
+                        )}
+                    </>
                 )}
                 {activeStep === 2 && !operationLoading && (
                     <Button variant="contained" onClick={onClose} color="primary">
@@ -352,6 +393,36 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
                 )}
             </DialogActions>
         </Dialog>
+
+        {/* Diálogo de Confirmación para Regenerar */}
+        <Dialog
+            open={showConfirmRegenerar}
+            onClose={() => setShowConfirmRegenerar(false)}
+        >
+            <DialogTitle>Confirmar Regeneración de Cuotas</DialogTitle>
+            <DialogContent>
+                <Typography gutterBottom>
+                    ¿Está seguro de que desea <strong>eliminar las {validacionGeneracion?.cuotasExistentes || 0} cuotas existentes</strong> y generar nuevas cuotas para este período?
+                </Typography>
+                <Typography color="error" variant="body2" sx={{ mt: 2 }}>
+                    Esta acción no se puede deshacer.
+                </Typography>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setShowConfirmRegenerar(false)}>
+                    Cancelar
+                </Button>
+                <Button
+                    variant="contained"
+                    color="warning"
+                    onClick={handleConfirmRegenerar}
+                    disabled={operationLoading}
+                >
+                    Confirmar Regeneración
+                </Button>
+            </DialogActions>
+        </Dialog>
+        </>
     );
 };
 
