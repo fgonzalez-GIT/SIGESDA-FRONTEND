@@ -62,7 +62,7 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
         defaultValues: {
             mes: new Date().getMonth() + 1,
             anio: new Date().getFullYear(),
-            categoriaIds: [],
+            categoriaIds: undefined,
             aplicarDescuentos: true,
             aplicarMotorReglas: true,
             incluirInactivos: false,
@@ -95,7 +95,11 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
             setActiveStep(1);
         } else if (activeStep === 1) {
             // Ejecutar generación usando los valores validados del formulario
-            const result = await dispatch(generarCuotasMasivas(formValues as any)).unwrap();
+            const payload = {
+                ...formValues,
+                categoriaIds: formValues.categoriaIds && formValues.categoriaIds.length > 0 ? formValues.categoriaIds : undefined
+            };
+            const result = await dispatch(generarCuotasMasivas(payload as any)).unwrap();
             setResultData(result);
             setActiveStep(2);
             if (onSuccess) onSuccess();
@@ -238,7 +242,7 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
                                 {validacionGeneracion.puedeGenerar ? 'Listo para Generar' : 'Atención'}
                             </Typography>
                             <Typography variant="body1">
-                                <strong>Socios a generar:</strong> {validacionGeneracion.sociosPorGenerar}
+                                <strong>Socios a generar:</strong> {validacionGeneracion.sociosPendientes}
                             </Typography>
                             {validacionGeneracion.cuotasExistentes > 0 && (
                                 <Typography variant="body2" color="warning.dark">
@@ -257,7 +261,7 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
                         )}
 
                         <Typography variant="body2" sx={{ mt: 2 }} color="text.secondary">
-                            Se generarán las cuotas para {validacionGeneracion.sociosPorGenerar} socios.
+                            Se generarán las cuotas para {validacionGeneracion.sociosPendientes} socios.
                             {formValues.aplicarDescuentos && ' Se aplicarán las reglas de descuento configuradas.'}
                         </Typography>
                     </Box>

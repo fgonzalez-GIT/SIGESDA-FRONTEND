@@ -84,7 +84,7 @@ export const recalcularCuotaSchema = z.object({
 export const generarCuotasV2Schema = z.object({
   mes: z.number().int().min(1).max(12),
   anio: z.number().int().min(2020).max(2100),
-  categoriaIds: z.array(z.number().int().positive()).min(1, 'Seleccione al menos una categoría').optional(),
+  categoriaIds: z.array(z.number().int().positive()).optional(),
   aplicarDescuentos: z.boolean(),
   aplicarMotorReglas: z.boolean(),
   incluirInactivos: z.boolean(),

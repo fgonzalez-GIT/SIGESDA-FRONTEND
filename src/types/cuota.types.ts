@@ -1,4 +1,5 @@
 import { Persona } from './persona.types';
+import { CategoriaSocio as CategoriaSocioEntity } from './categoria.types';
 
 // Enums and Types
 export type CategoriaSocio = 'ACTIVO' | 'ESTUDIANTE' | 'JUBILADO' | 'VITALICIO' | 'BENEFACTOR';
@@ -210,13 +211,21 @@ export interface GeneracionCuotasResponse {
     };
 }
 
+export interface SocioDetalle {
+    id: number;
+    nombre: string;
+    numeroSocio: number | null;
+    categoria: CategoriaSocioEntity;
+}
+
 export interface ValidacionGeneracionResponse {
     puedeGenerar: boolean;
-    sociosPorGenerar: number;
+    sociosPendientes: number;
     cuotasExistentes: number;
-    warnings: string[];
-    sociosSinCategoria: number;
-    sociosInactivos: number;
+    detallesSocios: SocioDetalle[];
+    warnings?: string[];
+    sociosSinCategoria?: number;
+    sociosInactivos?: number;
 }
 
 export interface RecalcularCuotaRequest {
