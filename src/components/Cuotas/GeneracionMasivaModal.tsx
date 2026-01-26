@@ -47,6 +47,18 @@ interface GeneracionMasivaModalProps {
 
 const steps = ['Configuración', 'Validación', 'Generación'];
 
+// Helper function to group socios by category
+const getCategoriaBreakdown = (detallesSocios: any[] = []) => {
+    const breakdown: Record<string, number> = {};
+
+    detallesSocios.forEach((socio) => {
+        const categoriaNombre = socio.categoria?.nombre || 'Sin Categoría';
+        breakdown[categoriaNombre] = (breakdown[categoriaNombre] || 0) + 1;
+    });
+
+    return breakdown;
+};
+
 const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onClose, onSuccess }) => {
     const dispatch = useAppDispatch();
     const { categorias } = useAppSelector(state => state.categorias);
@@ -273,6 +285,47 @@ const GeneracionMasivaModal: React.FC<GeneracionMasivaModalProps> = ({ open, onC
                                 </>
                             )}
                         </Paper>
+
+                        {/* Category Breakdown Section */}
+                        {validacionGeneracion.detallesSocios && validacionGeneracion.detallesSocios.length > 0 && (() => {
+                            const categoriaBreakdown = getCategoriaBreakdown(validacionGeneracion.detallesSocios);
+                            const totalSocios = Object.values(categoriaBreakdown).reduce((sum, count) => sum + count, 0);
+
+                            return (
+                                <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'info.lighter' }}>
+                                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+                                        📊 Distribución por Categoría
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1.5 }}>
+                                        {Object.entries(categoriaBreakdown)
+                                            .sort(([, countA], [, countB]) => countB - countA)
+                                            .map(([categoria, count]) => (
+                                                <Chip
+                                                    key={categoria}
+                                                    label={`${categoria}: ${count}`}
+                                                    color="primary"
+                                                    variant="outlined"
+                                                    size="medium"
+                                                />
+                                            ))}
+                                    </Box>
+                                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block' }}>
+                                        Total verificado: {totalSocios} socios
+                                    </Typography>
+
+                                    {/* Warning if filter doesn't match breakdown (backend bug indicator) */}
+                                    {formValues.categoriaIds && formValues.categoriaIds.length > 0 && Object.keys(categoriaBreakdown).length > formValues.categoriaIds.length && (
+                                        <Alert severity="warning" sx={{ mt: 1.5 }}>
+                                            <Typography variant="body2">
+                                                <strong>⚠️ Advertencia:</strong> Se detectaron {Object.keys(categoriaBreakdown).length} categorías diferentes,
+                                                pero solo se filtraron {formValues.categoriaIds.length} categoría(s).
+                                                Esto puede indicar un problema con el filtro del backend.
+                                            </Typography>
+                                        </Alert>
+                                    )}
+                                </Paper>
+                            );
+                        })()}
 
                         {validacionGeneracion.warnings && validacionGeneracion.warnings.length > 0 && (
                             <Box sx={{ mt: 2 }}>
