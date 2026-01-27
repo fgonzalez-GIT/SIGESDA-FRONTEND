@@ -83,6 +83,17 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
 
     if (!cuota) return null;
 
+    // Debug: Verificar datos del socio (TEMPORAL - remover después de testing)
+    if (open && cuota) {
+        console.log('🔍 Debug DetalleCuotaModal:', {
+            cuotaId: cuota.id,
+            reciboNumero: cuota.recibo?.numero,
+            receptor: cuota.recibo?.receptor,
+            receptorNombre: cuota.recibo?.receptor?.nombre,
+            receptorApellido: cuota.recibo?.receptor?.apellido
+        });
+    }
+
     const renderItemsTable = (items: ItemCuota[], title: string) => (
         <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>{title}</Typography>
@@ -128,6 +139,9 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle>
                 Detalle de Cuota #{cuota.recibo.numero}
+                <Typography variant="subtitle2" color="text.secondary">
+                    {cuota.recibo?.receptor?.nombre} {cuota.recibo?.receptor?.apellido}
+                </Typography>
                 <Typography variant="subtitle2" color="text.secondary">
                     {cuota.anio}-{cuota.mes.toString().padStart(2, '0')} | {cuota.categoria?.nombre || 'Sin categoría'}
                 </Typography>
