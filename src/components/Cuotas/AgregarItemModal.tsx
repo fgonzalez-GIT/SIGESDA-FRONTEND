@@ -14,11 +14,19 @@ import {
     InputAdornment,
     Alert,
     CircularProgress,
-    Box
+    Box,
+    ListItemIcon,
+    ListItemText
 } from '@mui/material';
+import {
+    AddCircleOutline as AddCircleOutlineIcon,
+    RemoveCircleOutline as RemoveCircleOutlineIcon
+} from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useAppDispatch } from '../../store/hooks';
+import { showNotification } from '../../store/slices/uiSlice';
 import { itemsCuotaService } from '../../services/itemsCuotaService';
 import { cuotasService } from '../../services/cuotasService';
 import { TipoItemCuota } from '../../types/cuota.types';
@@ -47,6 +55,7 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({
     cuotaId,
     onSuccess
 }) => {
+    const dispatch = useAppDispatch();
     const [tiposItems, setTiposItems] = useState<TipoItemCuota[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadingTipos, setLoadingTipos] = useState(false);
@@ -65,7 +74,17 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({
 
     const watchMonto = watch('monto', 0);
     const watchCantidad = watch('cantidad', 1);
+    const watchTipoItemCodigo = watch('tipoItemCodigo', '');
     const montoTotal = watchMonto * watchCantidad;
+
+    // Determina si un tipo de ítem es positivo (suma) o negativo (resta)
+    const esPositivo = (tipo: TipoItemCuota): boolean => {
+        const categoriaCodigo = tipo.categoriaItem?.codigo;
+        return ['BASE', 'ACTIVIDAD', 'RECARGO', 'ADICIONAL'].includes(categoriaCodigo || '');
+    };
+
+    // Obtiene el tipo seleccionado
+    const tipoSeleccionado = tiposItems.find(t => t.codigo === watchTipoItemCodigo);
 
     useEffect(() => {
         if (open) {
@@ -103,9 +122,25 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({
 
             reset();
             onSuccess();
+
+            // Mostrar notificación de éxito
+            dispatch(showNotification({
+                message: 'Ítem agregado exitosamente',
+                severity: 'success'
+            }));
+
+            // Cerrar el modal automáticamente
+            onClose();
         } catch (err: any) {
             console.error('Error al agregar ítem:', err);
-            setError(err?.response?.data?.error || 'Error al agregar el ítem manual');
+            const errorMessage = err?.response?.data?.error || 'Error al agregar el ítem manual';
+            setError(errorMessage);
+
+            // Mostrar notificación de error
+            dispatch(showNotification({
+                message: errorMessage,
+                severity: 'error'
+            }));
         } finally {
             setLoading(false);
         }
@@ -144,11 +179,24 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({
                                         <FormControl fullWidth required error={!!error}>
                                             <InputLabel>Tipo de Ítem</InputLabel>
                                             <Select {...field} label="Tipo de Ítem" disabled={loading}>
-                                                {tiposItems.map((tipo) => (
-                                                    <MenuItem key={tipo.codigo} value={tipo.codigo}>
-                                                        {tipo.nombre}
-                                                    </MenuItem>
-                                                ))}
+                                                {tiposItems.map((tipo) => {
+                                                    const positivo = esPositivo(tipo);
+                                                    return (
+                                                        <MenuItem key={tipo.codigo} value={tipo.codigo}>
+                                                            <ListItemIcon sx={{ minWidth: 32 }}>
+                                                                {positivo ? (
+                                                                    <AddCircleOutlineIcon sx={{ color: 'success.main' }} />
+                                                                ) : (
+                                                                    <RemoveCircleOutlineIcon sx={{ color: 'error.main' }} />
+                                                                )}
+                                                            </ListItemIcon>
+                                                            <ListItemText
+                                                                primary={tipo.nombre}
+                                                                sx={{ color: positivo ? 'success.dark' : 'error.dark' }}
+                                                            />
+                                                        </MenuItem>
+                                                    );
+                                                })}
                                             </Select>
                                             {error && (
                                                 <Alert severity="error" sx={{ mt: 1 }}>
@@ -159,6 +207,23 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({
                                     )}
                                 />
                             </Grid>
+
+                            {/* Alert informativo cuando se selecciona un tipo */}
+                            {tipoSeleccionado && (
+                                <Grid size={{ xs: 12 }}>
+                                    <Alert
+                                        severity={esPositivo(tipoSeleccionado) ? 'success' : 'warning'}
+                                        icon={esPositivo(tipoSeleccionado) ? <AddCircleOutlineIcon /> : <RemoveCircleOutlineIcon />}
+                                        sx={{ bgcolor: esPositivo(tipoSeleccionado) ? 'success.light' : 'error.light' }}
+                                    >
+                                        {esPositivo(tipoSeleccionado) ? (
+                                            <strong>✅ Este ítem SUMARÁ al total de la cuota</strong>
+                                        ) : (
+                                            <strong>⚠️ Este ítem RESTARÁ del total de la cuota</strong>
+                                        )}
+                                    </Alert>
+                                </Grid>
+                            )}
 
                             {/* Concepto */}
                             <Grid size={{ xs: 12 }}>
@@ -234,11 +299,21 @@ export const AgregarItemModal: React.FC<AgregarItemModalProps> = ({
                                 />
                             </Grid>
 
-                            {/* Mostrar total si cantidad > 1 */}
-                            {watchCantidad > 1 && (
+                            {/* Mostrar total con color según naturaleza del ítem */}
+                            {watchCantidad > 1 && tipoSeleccionado && (
                                 <Grid size={{ xs: 12 }}>
-                                    <Alert severity="info">
-                                        <strong>Monto Total: ${montoTotal.toFixed(2)}</strong>
+                                    <Alert
+                                        severity="info"
+                                        sx={{
+                                            bgcolor: esPositivo(tipoSeleccionado) ? 'success.light' : 'error.light',
+                                            '& .MuiAlert-message': {
+                                                color: esPositivo(tipoSeleccionado) ? 'success.dark' : 'error.dark'
+                                            }
+                                        }}
+                                    >
+                                        <strong>
+                                            Monto Total: {esPositivo(tipoSeleccionado) ? '+' : '-'}${montoTotal.toFixed(2)}
+                                        </strong>
                                         {' '}(${watchMonto.toFixed(2)} × {watchCantidad})
                                     </Alert>
                                 </Grid>

@@ -31,6 +31,7 @@ import { fetchDesgloseCuota, fetchItemsCuota, recalcularCuota, deleteCuota } fro
 import { Cuota, ItemCuota } from '../../types/cuota.types';
 import { FEATURES } from '../../config/features';
 import AgregarItemModal from './AgregarItemModal';
+import BloqueAccordeonCuota from './BloqueAccordeonCuota';
 
 interface DetalleCuotaModalProps {
     open: boolean;
@@ -42,6 +43,14 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
     const dispatch = useAppDispatch();
     const { itemsCuota, desgloseCuota, loading } = useAppSelector(state => state.cuotas);
     const [openAgregarItem, setOpenAgregarItem] = useState(false);
+    const [expandedAccordion, setExpandedAccordion] = useState<string | false>(false);
+
+    const handleAccordionChange = (panel: string) => (
+        event: React.SyntheticEvent,
+        isExpanded: boolean
+    ) => {
+        setExpandedAccordion(isExpanded ? panel : false);
+    };
 
     useEffect(() => {
         if (open && cuota) {
@@ -94,46 +103,73 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
         });
     }
 
-    const renderItemsTable = (items: ItemCuota[], title: string) => (
-        <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>{title}</Typography>
-            <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                    <TableHead>
-                        <TableRow sx={{ bgcolor: 'grey.100' }}>
-                            <TableCell>Concepto</TableCell>
-                            <TableCell align="right">Monto</TableCell>
-                            <TableCell align="center">Info</TableCell>
+    // Renderiza una sección de la tabla con su título y subtotal
+    const renderTableSection = (items: ItemCuota[], title: string, showDivider: boolean = true) => {
+        if (!items || items.length === 0) return null;
+
+        const subtotal = items.reduce((acc, item) => acc + (item.monto * item.cantidad), 0);
+
+        return (
+            <React.Fragment>
+                {showDivider && <TableRow><TableCell colSpan={5} sx={{ p: 0 }}><Divider /></TableCell></TableRow>}
+                <TableRow>
+                    <TableCell colSpan={5} sx={{ bgcolor: 'grey.50', py: 1 }}>
+                        <Typography variant="subtitle2" fontWeight="bold">{title}</Typography>
+                    </TableCell>
+                </TableRow>
+                {items.map((item) => {
+                    const montoTotal = item.monto * item.cantidad;
+                    const esPositivo = montoTotal >= 0;
+                    return (
+                        <TableRow key={item.id}>
+                            <TableCell>{item.concepto}</TableCell>
+                            <TableCell align="right">
+                                {esPositivo ? (
+                                    <Typography color="success.dark" fontWeight="medium">
+                                        ${Math.abs(montoTotal).toFixed(2)}
+                                    </Typography>
+                                ) : (
+                                    <Typography color="text.disabled">-</Typography>
+                                )}
+                            </TableCell>
+                            <TableCell align="right">
+                                {!esPositivo ? (
+                                    <Typography color="error.main" fontWeight="medium">
+                                        ${Math.abs(montoTotal).toFixed(2)}
+                                    </Typography>
+                                ) : (
+                                    <Typography color="text.disabled">-</Typography>
+                                )}
+                            </TableCell>
+                            <TableCell align="center">
+                                <Typography variant="body2">{item.cantidad}</Typography>
+                            </TableCell>
+                            <TableCell align="center">
+                                <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center', flexWrap: 'wrap' }}>
+                                    {item.esAutomatico ? (
+                                        <Chip size="small" label="Auto" color="primary" variant="outlined" />
+                                    ) : (
+                                        <Chip size="small" label="Manual" color="secondary" variant="outlined" />
+                                    )}
+                                    {item.porcentaje && <Chip size="small" label={`${item.porcentaje}%`} color="info" variant="outlined" />}
+                                </Box>
+                            </TableCell>
                         </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {items.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={3} align="center">Sin items</TableCell>
-                            </TableRow>
-                        ) : (
-                            items.map((item) => (
-                                <TableRow key={item.id}>
-                                    <TableCell>{item.concepto}</TableCell>
-                                    <TableCell align="right">
-                                        <Typography color={item.monto < 0 ? 'success.main' : 'text.primary'}>
-                                            ${Math.abs(item.monto).toFixed(2)} {item.monto < 0 && '(Desc.)'}
-                                        </Typography>
-                                    </TableCell>
-                                    <TableCell align="center">
-                                        <Box>
-                                            {item.esAutomatico && <Chip size="small" label="Auto" color="primary" variant="outlined" sx={{ mr: 0.5 }} />}
-                                            {item.porcentaje && <Chip size="small" label={`${item.porcentaje}%`} color="info" variant="outlined" />}
-                                        </Box>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-        </Box>
-    );
+                    );
+                })}
+                <TableRow sx={{ bgcolor: 'grey.100' }}>
+                    <TableCell colSpan={4}>
+                        <Typography variant="body2" fontWeight="bold">Subtotal {title}</Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                        <Typography variant="body2" fontWeight="bold" color={subtotal >= 0 ? 'success.dark' : 'error.main'}>
+                            ${Math.abs(subtotal).toFixed(2)}
+                        </Typography>
+                    </TableCell>
+                </TableRow>
+            </React.Fragment>
+        );
+    };
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -152,30 +188,58 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
                     loading || !desgloseCuota ? (
                         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
                     ) : (
-                        <Grid container spacing={3}>
-                            <Grid size={{ xs: 12, md: 6 }}>
-                                {desgloseCuota.desglose['BASE'] && renderItemsTable(desgloseCuota.desglose['BASE'].items, 'Cuota Base')}
-                                {desgloseCuota.desglose['ACTIVIDAD'] && renderItemsTable(desgloseCuota.desglose['ACTIVIDAD'].items, 'Actividades')}
-                            </Grid>
-                            <Grid size={{ xs: 12, md: 6 }}>
-                                {desgloseCuota.desglose['DESCUENTO'] && renderItemsTable(desgloseCuota.desglose['DESCUENTO'].items, 'Descuentos y Beneficios')}
-                                {desgloseCuota.desglose['RECARGO'] && renderItemsTable(desgloseCuota.desglose['RECARGO'].items, 'Recargos')}
-                                {desgloseCuota.desglose['OTRO'] && renderItemsTable(desgloseCuota.desglose['OTRO'].items, 'Otros Conceptos')}
+                        <Box>
+                            {/* Acordeones con 3 bloques */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                {/* BLOQUE 1: Monto Base */}
+                                <BloqueAccordeonCuota
+                                    panel="base"
+                                    title="MONTO BASE"
+                                    tipoBloque="BASE"
+                                    items={desgloseCuota.desglose['BASE']?.items || []}
+                                    expanded={expandedAccordion === 'base'}
+                                    onChange={handleAccordionChange('base')}
+                                />
 
-                                <Paper sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText', mt: 2 }}>
-                                    <Grid container alignItems="center">
-                                        <Grid size={{ xs: 6 }}>
-                                            <Typography variant="h6">TOTAL A PAGAR</Typography>
-                                        </Grid>
-                                        <Grid size={{ xs: 6 }} textAlign="right">
-                                            <Typography variant="h4" fontWeight="bold">
-                                                ${desgloseCuota.totales.total.toFixed(2)}
-                                            </Typography>
-                                        </Grid>
+                                {/* BLOQUE 2: Actividades */}
+                                <BloqueAccordeonCuota
+                                    panel="actividad"
+                                    title="ACTIVIDADES"
+                                    tipoBloque="ACTIVIDAD"
+                                    items={desgloseCuota.desglose['ACTIVIDAD']?.items || []}
+                                    expanded={expandedAccordion === 'actividad'}
+                                    onChange={handleAccordionChange('actividad')}
+                                />
+
+                                {/* BLOQUE 3: Descuentos y Beneficios (agrupa DESCUENTO + RECARGO + OTRO) */}
+                                <BloqueAccordeonCuota
+                                    panel="descuentos"
+                                    title="DESCUENTOS Y BENEFICIOS"
+                                    tipoBloque="DESCUENTOS"
+                                    items={[
+                                        ...(desgloseCuota.desglose['DESCUENTO']?.items || []),
+                                        ...(desgloseCuota.desglose['RECARGO']?.items || []),
+                                        ...(desgloseCuota.desglose['OTRO']?.items || [])
+                                    ]}
+                                    expanded={expandedAccordion === 'descuentos'}
+                                    onChange={handleAccordionChange('descuentos')}
+                                />
+                            </Box>
+
+                            {/* Total final */}
+                            <Paper sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText', mt: 2 }}>
+                                <Grid container alignItems="center">
+                                    <Grid size={{ xs: 6 }}>
+                                        <Typography variant="h6">TOTAL A PAGAR</Typography>
                                     </Grid>
-                                </Paper>
-                            </Grid>
-                        </Grid>
+                                    <Grid size={{ xs: 6 }} textAlign="right">
+                                        <Typography variant="h4" fontWeight="bold">
+                                            ${desgloseCuota.totales.total.toFixed(2)}
+                                        </Typography>
+                                    </Grid>
+                                </Grid>
+                            </Paper>
+                        </Box>
                     )
                 ) : (
                     // Vista V1 simplificada (sin desglose de ítems)
