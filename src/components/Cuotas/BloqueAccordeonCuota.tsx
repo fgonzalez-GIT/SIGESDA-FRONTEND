@@ -16,14 +16,15 @@ import {
     ExpandMore as ExpandMoreIcon,
     AttachMoney as AttachMoneyIcon,
     SportsBasketball as SportsBasketballIcon,
-    Percent as PercentIcon
+    Percent as PercentIcon,
+    TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
 import { ItemCuota } from '../../types/cuota.types';
 
 interface BloqueAccordeonCuotaProps {
     panel: string;
     title: string;
-    tipoBloque: 'BASE' | 'ACTIVIDAD' | 'DESCUENTOS';
+    tipoBloque: 'BASE' | 'ACTIVIDAD' | 'RECARGO' | 'DESCUENTO';
     items: ItemCuota[];
     expanded: boolean;
     onChange: (event: React.SyntheticEvent, isExpanded: boolean) => void;
@@ -42,9 +43,10 @@ const BloqueAccordeonCuota: React.FC<BloqueAccordeonCuotaProps> = ({
 
     // Colores por tipo de bloque
     const colorMap = {
-        BASE: { primary: '#2e7d32', light: '#e8f5e9', bg: '#f1f8f4' },
-        ACTIVIDAD: { primary: '#1565c0', light: '#e3f2fd', bg: '#f0f7ff' },
-        DESCUENTOS: { primary: '#c62828', light: '#ffebee', bg: '#fff5f5' }
+        BASE: { primary: '#2e7d32', light: '#e8f5e9', bg: '#f1f8f4' },       // Verde oscuro (DEBE)
+        ACTIVIDAD: { primary: '#1565c0', light: '#e3f2fd', bg: '#f0f7ff' },  // Azul (Neutral)
+        RECARGO: { primary: '#43a047', light: '#e8f5e9', bg: '#f1fdf4' },    // Verde medio (DEBE)
+        DESCUENTO: { primary: '#fb8c00', light: '#fff3e0', bg: '#fffaf0' }   // Naranja (HABER)
     };
     const colors = colorMap[tipoBloque];
 
@@ -55,7 +57,9 @@ const BloqueAccordeonCuota: React.FC<BloqueAccordeonCuotaProps> = ({
                 return <AttachMoneyIcon sx={{ color: colors.primary }} />;
             case 'ACTIVIDAD':
                 return <SportsBasketballIcon sx={{ color: colors.primary }} />;
-            case 'DESCUENTOS':
+            case 'RECARGO':
+                return <TrendingUpIcon sx={{ color: colors.primary }} />;
+            case 'DESCUENTO':
                 return <PercentIcon sx={{ color: colors.primary }} />;
         }
     };

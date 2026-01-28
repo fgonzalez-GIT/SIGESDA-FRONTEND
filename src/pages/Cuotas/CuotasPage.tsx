@@ -45,7 +45,8 @@ import {
   Schedule,
   Refresh,
   GetApp,
-  Description
+  Description,
+  Visibility
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import {
@@ -62,6 +63,7 @@ import {
 import { CategoriaSocio, EstadoRecibo } from '../../types/cuota.types';
 import GeneracionMasivaModal from '../../components/Cuotas/GeneracionMasivaModal';
 import DetalleCuotaModal from '../../components/Cuotas/DetalleCuotaModal';
+import { PersonaAutocompleteFilter } from '../../components/common/PersonaAutocompleteFilter';
 
 const CuotasPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -82,6 +84,7 @@ const CuotasPage: React.FC = () => {
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' } | null>(null);
   const [showAll, setShowAll] = useState(false); // Modo "Ver Todas"
   const [exporting, setExporting] = useState(false);
+  const [soloSocios, setSoloSocios] = useState(true); // Filtrar solo SOCIOS por defecto
 
   // Initial load
   useEffect(() => {
@@ -293,62 +296,102 @@ const CuotasPage: React.FC = () => {
 
       {/* Filters */}
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction="row" spacing={2} alignItems="center">
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Mes</InputLabel>
-            <Select
-              value={filters.mes || ''}
-              label="Mes"
-              onChange={(e) => handleFilterChange('mes', e.target.value)}
+        <Stack spacing={2}>
+          {/* Primera fila: filtros básicos */}
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Mes</InputLabel>
+              <Select
+                value={filters.mes || ''}
+                label="Mes"
+                onChange={(e) => handleFilterChange('mes', e.target.value)}
+              >
+                <MenuItem value="">Todos</MenuItem>
+                {[...Array(12)].map((_, i) => (
+                  <MenuItem key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('es', { month: 'long' })}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Año</InputLabel>
+              <Select
+                value={filters.anio || ''}
+                label="Año"
+                onChange={(e) => handleFilterChange('anio', e.target.value)}
+              >
+                <MenuItem value="">Todos</MenuItem>
+                <MenuItem value={2025}>2025</MenuItem>
+                <MenuItem value={2024}>2024</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Categoría</InputLabel>
+              <Select
+                value={filters.categoria || ''}
+                label="Categoría"
+                onChange={(e) => handleFilterChange('categoria', e.target.value)}
+              >
+                <MenuItem value="">Todas</MenuItem>
+                <MenuItem value="ACTIVO">Activo</MenuItem>
+                <MenuItem value="ESTUDIANTE">Estudiante</MenuItem>
+                <MenuItem value="JUBILADO">Jubilado</MenuItem>
+              </Select>
+            </FormControl>
+
+            <PersonaAutocompleteFilter
+              value={filters.personaId}
+              onChange={(personaId) => handleFilterChange('personaId', personaId)}
+              label="Socio"
+              placeholder="Buscar por apellido, nombre o DNI..."
+              soloSocios={soloSocios}
+              size="small"
+              sx={{ minWidth: 250 }}
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={!soloSocios}
+                  onChange={(e) => {
+                    setSoloSocios(!e.target.checked);
+                    // Limpiar filtro de persona al cambiar el tipo
+                    if (filters.personaId) {
+                      handleFilterChange('personaId', null);
+                    }
+                  }}
+                  size="small"
+                />
+              }
+              label={
+                <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>
+                  Todas las personas
+                </Typography>
+              }
+            />
+          </Stack>
+
+          {/* Segunda fila: botones de acción */}
+          <Stack direction="row" spacing={2}>
+            <Button
+              variant="outlined"
+              startIcon={<Refresh />}
+              onClick={() => dispatch(fetchCuotas(filters))}
             >
-              <MenuItem value="">Todos</MenuItem>
-              {[...Array(12)].map((_, i) => (
-                <MenuItem key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('es', { month: 'long' })}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              Refrescar
+            </Button>
 
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Año</InputLabel>
-            <Select
-              value={filters.anio || ''}
-              label="Año"
-              onChange={(e) => handleFilterChange('anio', e.target.value)}
+            <Button
+              variant="text"
+              onClick={() => {
+                dispatch(clearFilters());
+                setSoloSocios(true); // Resetear switch a estado por defecto
+              }}
             >
-              <MenuItem value="">Todos</MenuItem>
-              <MenuItem value={2025}>2025</MenuItem>
-              <MenuItem value={2024}>2024</MenuItem>
-            </Select>
-          </FormControl>
-
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Categoría</InputLabel>
-            <Select
-              value={filters.categoria || ''}
-              label="Categoría"
-              onChange={(e) => handleFilterChange('categoria', e.target.value)}
-            >
-              <MenuItem value="">Todas</MenuItem>
-              <MenuItem value="ACTIVO">Activo</MenuItem>
-              <MenuItem value="ESTUDIANTE">Estudiante</MenuItem>
-              <MenuItem value="JUBILADO">Jubilado</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Button
-            variant="outlined"
-            startIcon={<Refresh />}
-            onClick={() => dispatch(fetchCuotas(filters))}
-          >
-            Refrescar
-          </Button>
-
-          <Button
-            variant="text"
-            onClick={() => dispatch(clearFilters())}
-          >
-            Limpiar Filtros
-          </Button>
+              Limpiar Filtros
+            </Button>
+          </Stack>
         </Stack>
       </Paper>
 
@@ -398,6 +441,15 @@ const CuotasPage: React.FC = () => {
                     />
                   </TableCell>
                   <TableCell>
+                    <Tooltip title="Ver Detalle">
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => handleOpenDetalle(cuota.id)}
+                      >
+                        <Visibility />
+                      </IconButton>
+                    </Tooltip>
                     <IconButton size="small" onClick={(e) => {
                       setMenuAnchor(e.currentTarget);
                       setSelectedCuotaId(cuota.id);

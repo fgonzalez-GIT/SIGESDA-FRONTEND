@@ -211,15 +211,28 @@ const DetalleCuotaModal: React.FC<DetalleCuotaModalProps> = ({ open, onClose, cu
                                     onChange={handleAccordionChange('actividad')}
                                 />
 
-                                {/* BLOQUE 3: Descuentos y Beneficios (agrupa DESCUENTO + RECARGO + OTRO) */}
+                                {/* BLOQUE 3: Recargos y Adicionales */}
+                                <BloqueAccordeonCuota
+                                    panel="recargos"
+                                    title="RECARGOS Y ADICIONALES"
+                                    tipoBloque="RECARGO"
+                                    items={[
+                                        ...(desgloseCuota.desglose['RECARGO']?.items || []),
+                                        ...(desgloseCuota.desglose['ADICIONAL']?.items || []),
+                                        ...(desgloseCuota.desglose['OTRO']?.items.filter((item) => item.monto >= 0) || [])
+                                    ]}
+                                    expanded={expandedAccordion === 'recargos'}
+                                    onChange={handleAccordionChange('recargos')}
+                                />
+
+                                {/* BLOQUE 4: Descuentos y Beneficios */}
                                 <BloqueAccordeonCuota
                                     panel="descuentos"
                                     title="DESCUENTOS Y BENEFICIOS"
-                                    tipoBloque="DESCUENTOS"
+                                    tipoBloque="DESCUENTO"
                                     items={[
                                         ...(desgloseCuota.desglose['DESCUENTO']?.items || []),
-                                        ...(desgloseCuota.desglose['RECARGO']?.items || []),
-                                        ...(desgloseCuota.desglose['OTRO']?.items || [])
+                                        ...(desgloseCuota.desglose['OTRO']?.items.filter((item) => item.monto < 0) || [])
                                     ]}
                                     expanded={expandedAccordion === 'descuentos'}
                                     onChange={handleAccordionChange('descuentos')}
