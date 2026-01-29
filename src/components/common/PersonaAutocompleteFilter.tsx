@@ -57,6 +57,9 @@ export const PersonaAutocompleteFilter = ({
   const [asyncLoading, setAsyncLoading] = useState(false);
   const [useAsyncSearch, setUseAsyncSearch] = useState(false);
 
+  // Estado para persona seleccionada cargada individualmente
+  const [loadedSelectedPersona, setLoadedSelectedPersona] = useState<PersonaOption | null>(null);
+
   // Cargar personas al montar si no están cargadas
   useEffect(() => {
     if (personas.length === 0 && !loading) {
@@ -100,8 +103,9 @@ export const PersonaAutocompleteFilter = ({
   // Encontrar la opción seleccionada
   const selectedOption = useMemo(() => {
     if (!value) return null;
-    return personasOptions.find((p) => p.id === value) || null;
-  }, [personasOptions, value]);
+    const found = personasOptions.find((p) => p.id === value);
+    return found || loadedSelectedPersona;
+  }, [personasOptions, value, loadedSelectedPersona]);
 
   // Búsqueda asíncrona con debounce
   const performAsyncSearch = useCallback(
@@ -144,6 +148,39 @@ export const PersonaAutocompleteFilter = ({
 
     return () => clearTimeout(timer);
   }, [searchQuery, useAsyncSearch, performAsyncSearch]);
+
+  // Cargar persona seleccionada si no está en las opciones
+  useEffect(() => {
+    const loadSelectedPersona = async () => {
+      if (!value) {
+        setLoadedSelectedPersona(null);
+        return;
+      }
+
+      // Buscar en opciones actuales
+      const found = personasOptions.find((p) => p.id === value);
+      if (found) {
+        setLoadedSelectedPersona(null); // Ya está en opciones
+        return;
+      }
+
+      // No está en opciones, cargar individualmente
+      try {
+        const response = await personasApi.getById(value);
+        const persona = response.data;
+        setLoadedSelectedPersona({
+          id: persona.id,
+          label: `${persona.apellido}, ${persona.nombre}${persona.dni ? ` (DNI: ${persona.dni})` : ''}`,
+          persona,
+        });
+      } catch (error) {
+        console.error('Error cargando persona seleccionada:', error);
+        setLoadedSelectedPersona(null);
+      }
+    };
+
+    loadSelectedPersona();
+  }, [value, personasOptions]);
 
   // Handler de cambio de input (para búsqueda asíncrona)
   const handleInputChange = (_: any, newInputValue: string) => {

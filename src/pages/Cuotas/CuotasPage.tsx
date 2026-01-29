@@ -46,7 +46,9 @@ import {
   Refresh,
   GetApp,
   Description,
-  Visibility
+  Visibility,
+  Search,
+  Clear
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import {
@@ -85,6 +87,7 @@ const CuotasPage: React.FC = () => {
   const [showAll, setShowAll] = useState(false); // Modo "Ver Todas"
   const [exporting, setExporting] = useState(false);
   const [soloSocios, setSoloSocios] = useState(true); // Filtrar solo SOCIOS por defecto
+  const [tempPersonaId, setTempPersonaId] = useState<number | null>(null); // Selección temporal de persona
 
   // Initial load
   useEffect(() => {
@@ -93,10 +96,28 @@ const CuotasPage: React.FC = () => {
     // Default current month for dashboard
     const now = new Date();
     dispatch(fetchDashboard({ mes: now.getMonth() + 1, anio: now.getFullYear() }));
-  }, [dispatch, filters.page, filters.limit, filters.soloImpagas]); // Reload when these change
+  }, [dispatch]); // Only on mount
 
   const handleFilterChange = (key: string, value: any) => {
-    dispatch(setFilters({ ...filters, [key]: value }));
+    const newFilters = { ...filters, [key]: value };
+    dispatch(setFilters(newFilters));
+    dispatch(fetchCuotas(newFilters)); // Fetch with new filters
+  };
+
+  // Handler para cambio de persona (no dispara búsqueda automática)
+  const handlePersonaChange = (personaId: number | null) => {
+    setTempPersonaId(personaId);
+  };
+
+  // Handler para buscar por persona
+  const handleBuscarPorPersona = () => {
+    handleFilterChange('personaId', tempPersonaId);
+  };
+
+  // Handler para limpiar selección de persona
+  const handleLimpiarPersona = () => {
+    setTempPersonaId(null);
+    handleFilterChange('personaId', null);
   };
 
   const handlePageChange = (event: unknown, newPage: number) => {
@@ -297,7 +318,7 @@ const CuotasPage: React.FC = () => {
       {/* Filters */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Stack spacing={2}>
-          {/* Primera fila: filtros básicos */}
+          {/* Primera fila: filtros básicos (automáticos) */}
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
             <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel>Mes</InputLabel>
@@ -339,15 +360,18 @@ const CuotasPage: React.FC = () => {
                 <MenuItem value="JUBILADO">Jubilado</MenuItem>
               </Select>
             </FormControl>
+          </Stack>
 
+          {/* Segunda fila: Selector de persona + botones */}
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
             <PersonaAutocompleteFilter
-              value={filters.personaId}
-              onChange={(personaId) => handleFilterChange('personaId', personaId)}
+              value={tempPersonaId}
+              onChange={handlePersonaChange}
               label="Socio"
               placeholder="Buscar por apellido, nombre o DNI..."
               soloSocios={soloSocios}
               size="small"
-              sx={{ minWidth: 250 }}
+              sx={{ minWidth: 250, flexGrow: 1 }}
             />
 
             <FormControlLabel
@@ -356,10 +380,9 @@ const CuotasPage: React.FC = () => {
                   checked={!soloSocios}
                   onChange={(e) => {
                     setSoloSocios(!e.target.checked);
-                    // Limpiar filtro de persona al cambiar el tipo
-                    if (filters.personaId) {
-                      handleFilterChange('personaId', null);
-                    }
+                    // Limpiar selección temporal y filtro al cambiar el tipo
+                    setTempPersonaId(null);
+                    handleFilterChange('personaId', null);
                   }}
                   size="small"
                 />
@@ -370,9 +393,32 @@ const CuotasPage: React.FC = () => {
                 </Typography>
               }
             />
+
+            <Button
+              variant="contained"
+              startIcon={<Search />}
+              onClick={handleBuscarPorPersona}
+              disabled={!tempPersonaId || tempPersonaId === filters.personaId}
+              size="small"
+            >
+              Buscar
+            </Button>
+
+            <Tooltip title="Limpiar selección de persona">
+              <span>
+                <IconButton
+                  onClick={handleLimpiarPersona}
+                  disabled={!tempPersonaId && !filters.personaId}
+                  size="small"
+                  color="error"
+                >
+                  <Clear />
+                </IconButton>
+              </span>
+            </Tooltip>
           </Stack>
 
-          {/* Segunda fila: botones de acción */}
+          {/* Tercera fila: botones generales */}
           <Stack direction="row" spacing={2}>
             <Button
               variant="outlined"
@@ -385,8 +431,9 @@ const CuotasPage: React.FC = () => {
             <Button
               variant="text"
               onClick={() => {
+                setTempPersonaId(null);
                 dispatch(clearFilters());
-                setSoloSocios(true); // Resetear switch a estado por defecto
+                setSoloSocios(true);
               }}
             >
               Limpiar Filtros
